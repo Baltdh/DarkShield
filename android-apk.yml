@@ -1,0 +1,64 @@
+name: Build DarkShield APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "DarkShield_backup_v0.6.0.zip"
+      - ".github/workflows/android-apk.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle 8.11.1
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.11.1"
+
+      - name: Check input archive
+        run: |
+          test -f DarkShield_backup_v0.6.0.zip
+          unzip -t DarkShield_backup_v0.6.0.zip
+
+      - name: Extract project
+        run: |
+          rm -rf build-project
+          mkdir build-project
+          unzip -q DarkShield_backup_v0.6.0.zip -d build-project
+          test -f build-project/DarkShield/settings.gradle
+          test -f build-project/DarkShield/app/build.gradle
+
+      - name: Build debug APK
+        working-directory: build-project/DarkShield
+        run: |
+          gradle --no-daemon --stacktrace assembleDebug
+
+      - name: Verify APK
+        working-directory: build-project/DarkShield
+        run: |
+          test -f app/build/outputs/apk/debug/app-debug.apk
+          sha256sum app/build/outputs/apk/debug/app-debug.apk | tee app/build/outputs/apk/debug/app-debug.apk.sha256
+          ls -lh app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: DarkShield-debug-apk
+          path: |
+            build-project/DarkShield/app/build/outputs/apk/debug/app-debug.apk
+            build-project/DarkShield/app/build/outputs/apk/debug/app-debug.apk.sha256
+          if-no-files-found: error
