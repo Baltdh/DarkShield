@@ -38,6 +38,10 @@ Atualizado: 2026-09-18 — etapa de auditoria contínua
    - Comandos locais foram alinhados ao Gradle Wrapper (`./gradlew`) e incluem `lintDebug`.
    - Commit: `2d07c43415f6e391f780f0bf41e33a45cf868a0b`.
 
+5. `.github/workflows/android-apk.yml`
+   - A descoberta do `apksigner` foi tornada robusta para `ANDROID_HOME` ou `ANDROID_SDK_ROOT`.
+   - Commit: `6eccb579543a9059994c3a119169b761e687d699`.
+
 ## Trabalho paralelo observado
 
 - `35f66f16c678bb46cae58ce71012fa6940608344`: contenção da pontuação heurística por pacote.
