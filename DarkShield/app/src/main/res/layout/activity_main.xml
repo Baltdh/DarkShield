@@ -28,8 +28,8 @@
 
             <TextView
                 android:id="@+id/title"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
             android:contentDescription="DarkShield"
             android:text="DarkShield"
             android:textColor="#FFFFFF"
@@ -196,6 +196,7 @@
             android:layout_height="48dp"
             android:layout_marginTop="8dp"
             android:text="ABRIR CONFIGURAÇÕES DE SEGURANÇA"
+            android:contentDescription="Abrir as configurações de segurança do Android"
             android:textSize="13sp" />
 
         <LinearLayout
@@ -211,6 +212,7 @@
                 android:layout_weight="1"
                 android:layout_marginEnd="4dp"
                 android:text="COMPARTILHAR"
+                android:contentDescription="Compartilhar relatório de segurança"
                 android:textSize="12sp" />
 
             <Button
