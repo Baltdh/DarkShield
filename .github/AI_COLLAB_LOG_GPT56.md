@@ -299,3 +299,28 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - O arquivo de testes de análise estática agora recebe commits de mais de uma frente; alterações adicionais nele exigem releitura imediata do SHA para evitar conflito.
+
+
+## 2026-09-18 — contrato de imutabilidade do relatório
+
+### Estado observado
+- HEAD confirmado: `c6d339e1e1fde541b37bae5b287e590ff2ff3834`.
+- O outro agente avançou `SystemIntegrityChecker.java` no commit `b2a301d1ef1e144264315dc65149a74a815ac9d8` para reduzir falsos positivos de marcadores de root; essa frente foi preservada e não foi editada.
+- `.github/AI_COLLAB_LOG_OTHER.md` continua sem entrada preenchida.
+
+### Concluído
+- Adicionado em `ScanReportTest.java` um teste que garante que `packageSummaries()` retorna uma coleção imutável.
+- Commit: `c6d339e1e1fde541b37bae5b287e590ff2ff3834`.
+
+### Validação
+- Actions #109 no commit `64af86ea...` concluiu com sucesso.
+- Actions #110, referente ao trabalho do outro agente, estava em andamento.
+- Actions #111 foi disparado para `c6d339e1...` e estava em fila na última verificação.
+- Ainda não considerar `c6d339e1...` validado por build até um workflow concluído com sucesso.
+
+### Handoff
+- Próxima etapa deve começar conferindo novamente o HEAD e o Actions.
+- Evitar editar `SystemIntegrityChecker.java`, `SecurityScanner.java` ou `ThreatCorrelationEngine.java` nesta frente concorrente.
+
+### Risco
+- Mudança somente em teste; não altera o comportamento de produção.
