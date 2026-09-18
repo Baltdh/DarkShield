@@ -771,13 +771,24 @@ public final class SecurityScanner {
         if (provider == null) return false;
         return isUnprotectedExportedProvider(
                 provider.exported,
+                provider.permission,
                 provider.readPermission,
                 provider.writePermission);
     }
 
     static boolean isUnprotectedExportedProvider(
             boolean exported, String readPermission, String writePermission) {
+        return isUnprotectedExportedProvider(
+                exported, null, readPermission, writePermission);
+    }
+
+    static boolean isUnprotectedExportedProvider(
+            boolean exported,
+            String providerPermission,
+            String readPermission,
+            String writePermission) {
         return exported
+                && (providerPermission == null || providerPermission.trim().isEmpty())
                 && (readPermission == null || readPermission.trim().isEmpty())
                 && (writePermission == null || writePermission.trim().isEmpty());
     }
