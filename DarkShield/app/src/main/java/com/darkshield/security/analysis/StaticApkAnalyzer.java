@@ -287,7 +287,11 @@ public final class StaticApkAnalyzer {
         // inflating nearly the whole stream, defeating the analysis budget.
         if (entry.getMethod() != ZipEntry.STORED
                 && start >= MAX_COMPRESSED_TAIL_SKIP_BYTES) {
-            return new byte[0];
+            // The tail is intentionally not sampled when reaching it would
+            // require inflating an excessive uncompressed prefix. Report the
+            // sample as unavailable instead of silently treating the head-only
+            // sample as complete coverage.
+            return null;
         }
 
         return readRange(zip, entry, start, limit);
