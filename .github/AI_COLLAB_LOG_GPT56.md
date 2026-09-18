@@ -466,3 +466,23 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - A alteração só amplia tolerância a dados incompletos; não muda o score para níveis válidos.
+
+## 2026-09-18 — proteção contra overflow da pontuação
+
+### Estado observado
+- HEAD antes do registro: `db6a8523d32dc4bc32c3af45885e98121def3c4a`.
+- A frente concorrente continua separada; as mudanças recentes de ciclo de vida da Activity foram preservadas.
+
+### Concluído
+- `RiskCalculator.score()` passou a acumular pontos em `long` antes de multiplicar e limitar o score a 100.
+- Isso elimina overflow de `int` em entradas positivas extremas, sem mudar os resultados normais.
+- Produção: `0c575be40a8c450e546b4547edb96f18bc26b9e1`.
+- Teste de regressão com dois `Integer.MAX_VALUE`: `db6a8523d32dc4bc32c3af45885e98121def3c4a`.
+
+### Validação
+- Releitura no `main` confirmou a implementação e o teste.
+- O endpoint disponível de Actions retornou `[]` para o commit de teste; portanto o CI completo ainda não foi declarado aprovado.
+
+### Handoff
+- Manter esta frente focada em robustez/testes independentes enquanto a outra frente ocupa scanner/correlação.
+- Próximo passo natural: validar a suíte completa via Actions quando uma execução ficar exposta e continuar procurando casos-limite determinísticos.
