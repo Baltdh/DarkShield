@@ -506,3 +506,20 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Handoff
 - Antes de qualquer nova edição em arquivos de produção, comparar novamente o conteúdo completo e o SHA após a escrita.
 - Preservar a frente concorrente e aguardar o resultado do #120 antes de novas alterações no RiskCalculator.
+
+
+## 2026-09-18 — proteção do raw points do relatório
+
+### Concluído
+- `ScanReport.getRawPoints()` agora acumula em `long` e satura em `Integer.MAX_VALUE`, evitando overflow na representação do relatório.
+- `PackageSummary` também usa soma saturada para não embrulhar pontos positivos extremos.
+- Adicionado teste de regressão com dois `Integer.MAX_VALUE`.
+- Produção e teste foram gravados em commits separados para reduzir conflito com a frente concorrente.
+
+### Validação
+- O Actions #117 já validou a suíte no estado anterior.
+- O Actions #119 falhou no commit de teste concorrente porque aquele commit chegou ao runner com `RiskCalculator.java` truncado; a versão atual do `main` foi posteriormente restaurada para o arquivo Java completo e correto.
+- As novas alterações de `ScanReport` ainda aguardam um CI que alcance o estado atual do `main`.
+
+### Handoff
+- Próximo passo: acompanhar o CI do estado atual e não declarar o APK validado até build + testes concluírem com sucesso.
