@@ -120,7 +120,7 @@ public final class SecurityScanner {
         List<AccessibilityServiceInfo> enabled=am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK);
         if(enabled.isEmpty()){out.add(new ScanFinding(ScanFinding.Level.INFO,"Serviços de acessibilidade ativos","Nenhum serviço de terceiros retornado como ativo",null,0,null));return;}
         for(AccessibilityServiceInfo info:enabled){
-            ComponentName cn=null; try{cn=info.getResolveInfo().serviceInfo.getComponentName();}catch(Exception ignored){}
+            ComponentName cn=null; try{ServiceInfo si=info.getResolveInfo().serviceInfo; cn=new ComponentName(si.packageName,si.name);}catch(Exception ignored){}
             String pkg=cn==null?null:cn.getPackageName(); boolean system=pkg!=null&&isSystemPackage(pkg);
             out.add(new ScanFinding(system?ScanFinding.Level.LOW:ScanFinding.Level.HIGH,"Serviço de acessibilidade ativo",cn==null?"Serviço ativo detectado":cn.flattenToShortString(),pkg,system?1:8,system?"Revise apenas se não reconhecer o componente":"Abra Acessibilidade e confirme se você o ativou conscientemente"));
         }
