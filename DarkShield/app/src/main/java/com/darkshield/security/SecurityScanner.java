@@ -34,7 +34,7 @@ public final class SecurityScanner {
     };
     private static final Set<String> REMOTE_MARKERS = new HashSet<>(Arrays.asList(
         "anydesk","teamviewer","airdroid","rustdesk","splashtop","vysor","scrcpy",
-        "remote","remotecontrol","remote support","support","control"
+        "remotecontrol","remote support","remote desktop","remote access"
     ));
     private final Context c;
     private final PackageManager pm;
