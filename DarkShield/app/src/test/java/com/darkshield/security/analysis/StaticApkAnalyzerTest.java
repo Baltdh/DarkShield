@@ -349,6 +349,8 @@ public class StaticApkAnalyzerTest {
                 .noneMatch(x -> x.title.contains("conteúdo de DEX")));
         assertTrue(findings.stream()
                 .anyMatch(x -> x.title.equals("Estrutura ZIP do APK")));
+        assertTrue(findings.stream()
+                .anyMatch(x -> x.title.equals("Amostra de conteúdo indisponível")));
 
         assertTrue(apk.delete());
     }
