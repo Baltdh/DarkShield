@@ -43,7 +43,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="3dp"
-            android:text="Proteção e auditoria local do Android"
+            android:text="Auditoria de segurança local do Android"
             android:textColor="#AEB4C2"
             android:textSize="15sp" />
 
@@ -58,7 +58,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="PROTEÇÃO DO DISPOSITIVO"
+                android:text="ESTADO DE SEGURANÇA"
                 android:textColor="#8F97A8"
                 android:textSize="12sp"
                 android:textStyle="bold"
