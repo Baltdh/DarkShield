@@ -3,6 +3,7 @@ package com.darkshield.security;
 import android.accessibilityservice.AccessibilityServiceInfo;
 import android.app.AppOpsManager;
 import android.app.admin.DevicePolicyManager;
+import android.app.KeyguardManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
@@ -501,8 +502,7 @@ public final class SecurityScanner {
             for (android.content.pm.ProviderInfo provider : p.providers) {
                 if (!provider.exported) continue;
                 exportedProviders++;
-                if (TextUtils.isEmpty(provider.readPermission)
-                        && TextUtils.isEmpty(provider.writePermission)) {
+                if (isUnprotectedExportedProvider(provider)) {
                     unprotectedProviders++;
                 }
             }
@@ -664,6 +664,50 @@ public final class SecurityScanner {
                 adb == 1 ? "Ativada" : "Desativada",
                 null, adb == 1 ? 4 : 0,
                 adb == 1 ? "Desative quando não estiver usando ADB" : null));
+
+        checkDevicePosture(out);
+    }
+
+    private void checkDevicePosture(List<ScanFinding> out) {
+        if (Build.VERSION.SDK_INT >= 23) {
+            try {
+                KeyguardManager keyguard =
+                        (KeyguardManager) c.getSystemService(Context.KEYGUARD_SERVICE);
+                if (keyguard != null) {
+                    boolean secure = keyguard.isDeviceSecure();
+                    out.add(new ScanFinding(
+                            ScanFinding.Level.INFO,
+                            "Bloqueio de tela seguro",
+                            secure ? "Um método de bloqueio seguro está configurado"
+                                   : "Nenhum método de bloqueio seguro foi identificado",
+                            null, 0,
+                            secure ? null
+                                   : "Configure PIN, senha ou padrão para reforçar a proteção física do dispositivo"));
+                }
+            } catch (SecurityException ignored) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Bloqueio de tela seguro",
+                        "Não foi possível consultar o estado do bloqueio de tela",
+                        null, 0, null));
+            }
+        }
+
+        String patch = Build.VERSION.SECURITY_PATCH;
+        out.add(new ScanFinding(
+                ScanFinding.Level.INFO,
+                "Nível do patch de segurança",
+                patch == null || patch.trim().isEmpty()
+                        ? "O sistema não informou a data do patch de segurança"
+                        : patch,
+                null, 0, null));
+    }
+
+    static boolean isUnprotectedExportedProvider(android.content.pm.ProviderInfo provider) {
+        if (provider == null || !provider.exported) return false;
+        return TextUtils.isEmpty(provider.permission)
+                && TextUtils.isEmpty(provider.readPermission)
+                && TextUtils.isEmpty(provider.writePermission);
     }
 
     private void checkAccessibility(List<ScanFinding> out) {
