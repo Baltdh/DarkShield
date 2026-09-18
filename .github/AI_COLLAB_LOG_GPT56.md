@@ -1367,3 +1367,21 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 - Commit: `31dd1c3f416d202966f019bfc7fa6c29ace10fcb`.
 - Actions #173 no mesmo HEAD: **success**; build debug e 87 testes passaram.
 - Próximo trabalho: continuar auditoria de cobertura/robustez sem alterar as frentes concorrentes sem reler SHA.
+
+
+## 2026-09-18 — auditoria do artefato e diagnóstico do CI
+
+### Concluído
+- Acompanhei a frente concorrente de amostragem estática.
+- O Actions #172 falhou exclusivamente no teste `unreadableDexSampleIsReportedAsIncomplete`; o build do APK passou e a falha ocorreu na suíte unitária.
+- O teste foi removido/corrigido pelo outro agente no commit `31dd1c3f416d202966f019bfc7fa6c29ace10fcb`, evitando manter um fixture ZIP inválido para o comportamento que ele pretendia simular.
+- O Actions #173, para esse novo HEAD, está em andamento.
+- Baixei e verifiquei o artefato `DarkShield-debug-apk` do Actions #167 (último build de produção bem-sucedido): o SHA-256 calculado do APK é `71b5b7bcb7bb4f3151a572234eed02f090adc002b0dfd71c4a62ca316962d340`, exatamente igual ao arquivo `.sha256` publicado pelo workflow.
+- O APK do #167 contém 8 entradas ZIP e 3 DEX; é um binário anterior às mudanças posteriores e não deve ser tratado como APK final do HEAD atual.
+
+### Próximo trabalho
+- Acompanhar #173 e continuar a revisão de falhas de leitura que possam ser testadas com fixtures confiáveis.
+- Manter o foco em melhorias independentes enquanto o outro agente trabalha no scanner.
+
+### Riscos
+- O teste removido não demonstrava de forma confiável uma falha de leitura de stream; a cobertura dessa condição precisa de um fixture determinístico válido ou de uma abstração testável, em vez de depender de corrupção manual do ZIP.
