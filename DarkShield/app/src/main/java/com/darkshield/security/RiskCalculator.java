@@ -22,7 +22,7 @@ public final class RiskCalculator {
         if (findings == null || findings.isEmpty()) return "SEM INDICADORES FORTES";
         boolean critical = false, high = false, medium = false, low = false;
         for (ScanFinding finding : findings) {
-            if (finding == null) continue;
+            if (finding == null || finding.level == null) continue;
             switch (finding.level) {
                 case CRITICAL: critical = true; break;
                 case HIGH: high = true; break;
