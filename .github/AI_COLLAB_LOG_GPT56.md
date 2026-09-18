@@ -245,3 +245,30 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Risco
 - Os testes aumentam cobertura sem mudar comportamento de produção ou score.
+
+## 2026-09-18 — guarda de tamanho do APK e sincronização final da passagem
+
+### Estado observado
+- HEAD confirmado antes deste registro: `0cd9d8918eefbee9cbf6dbdbc4abe31e9c814a7b`.
+- O outro agente corrigiu em paralelo a sintaxe de `ScanFinding.java` no commit `0ea81ad...`; o arquivo atual foi conferido e está sintaticamente normal.
+- A frente de UI/relatório também avançou a ação de copiar relatório; nenhuma dessas alterações foi sobrescrita.
+
+### Concluído
+- Adicionado teste de guarda para APK acima de 200 MiB, verificando que o analisador encerra antes de processar a estrutura ZIP e produz apenas o aviso LOW de análise limitada.
+- Commit inicial do teste: `633dc66e5fb5dbb6f0051f58f7ca421c1f2c0d52`.
+- Correção imediata do teste para usar `RandomAccessFile.setLength()`, criando corretamente um arquivo esparso acima do limite sem gravar 200 MiB.
+- Commit corretivo: `0cd9d8918eefbee9cbf6dbdbc4abe31e9c814a7b`.
+- Arquivo da frente: `DarkShield/app/src/test/java/com/darkshield/security/analysis/StaticApkAnalyzerTest.java`.
+
+### Validação
+- Conferidos no `main` os arquivos atuais de `ScanFinding.java` e `StaticApkAnalyzerTest.java`.
+- O teste agora usa uma construção compatível com a semântica real de extensão de arquivo.
+- O endpoint disponível de Actions não expôs run associado ao HEAD; não há declaração de build aprovado.
+
+### Próximo passo
+- Manter a frente de análise estática/testes pronta para a validação no Actions.
+- Após um workflow concluído, revisar eventuais falhas de compilação/testes e integrar somente mudanças que não conflitem com scanner/correlação e UI/relatório.
+
+### Riscos
+- O teste oversized usa arquivo esparso; mantém o custo de escrita baixo, mas depende de suporte normal do sistema de arquivos do runner.
+- O log do outro agente continua sem entrada própria preenchida; commits são usados apenas como estado verificável e não como substituto de tarefas não confirmadas.
