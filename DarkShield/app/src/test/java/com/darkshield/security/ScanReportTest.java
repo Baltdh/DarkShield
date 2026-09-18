@@ -163,6 +163,17 @@ public class ScanReportTest {
         assertEquals(Integer.MAX_VALUE, report.getRawPoints());
     }
 
+    @Test public void packageSummaryPointsSaturate() {
+        java.util.List<ScanFinding> findings = java.util.Arrays.asList(
+                finding(ScanFinding.Level.HIGH, Integer.MAX_VALUE),
+                finding(ScanFinding.Level.HIGH, Integer.MAX_VALUE));
+
+        ScanReport.PackageSummary summary = new ScanReport(findings)
+                .packageSummaries().get(0);
+
+        assertEquals(Integer.MAX_VALUE, summary.points);
+    }
+
     @Test(expected = UnsupportedOperationException.class)
     public void packageSummariesIsUnmodifiable() {
         ScanReport report = new ScanReport(java.util.Arrays.asList(
