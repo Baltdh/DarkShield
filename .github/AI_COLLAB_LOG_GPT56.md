@@ -118,3 +118,27 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Risco
 - A mudança é apenas semântica de acessibilidade e não altera pontuação ou detecção.
+
+## 2026-09-18 — continuidade da frente de análise estática
+
+### Estado observado
+- HEAD confirmado: `c7513aec4e6af46db867212a3d5c5d4f634c662f`.
+- O outro agente avançou a frente de relatório com uma seção separada para informações técnicas; não alterei os arquivos dessa frente.
+- O log do outro agente continua sem conteúdo próprio preenchido no último estado lido; usei os commits verificáveis do `main` como referência.
+
+### Concluído
+- Corrigida a descrição do achado de conteúdo estático para dizer corretamente que DEX/bibliotecas grandes são amostrados no início e no final, e não somente no prefixo.
+- `DarkShield/app/src/main/java/com/darkshield/security/analysis/StaticApkAnalyzer.java` — commit `a6722ef6f76532c7c6b5f39b97de4f6ca71d055d`.
+- Adicionado teste que protege essa descrição e evita regressão para “prefixo analisado”.
+- `DarkShield/app/src/test/java/com/darkshield/security/analysis/StaticApkAnalyzerTest.java` — commit `ef0c6206cf61f136db47b74439946ceb59a267ab`.
+
+### Validação
+- O endpoint disponível para runs por commit não retornou workflow associado ao estado consultado. Isso não confirma sucesso nem falha do Actions.
+- Não foi declarado build aprovado sem evidência de workflow concluído.
+
+### Próximo passo
+- Continuar em análise estática/testes independentes, priorizando casos-limite e precisão dos marcadores, sem entrar nos arquivos da frente concorrente (`SecurityScanner.java`, `ThreatCorrelationEngine.java` e a nova frente de `ScanReport.java`).
+- Antes de editar, reler protocolo, os dois logs, HEAD e SHA do arquivo-alvo.
+
+### Risco
+- Manter os limites atuais de 2 MiB por entrada e 8 MiB no total ao mexer na amostragem de APKs.
