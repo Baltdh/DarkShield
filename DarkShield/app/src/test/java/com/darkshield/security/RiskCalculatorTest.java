@@ -48,6 +48,11 @@ public class RiskCalculatorTest {
                 finding(ScanFinding.Level.CRITICAL, 1))));
     }
 
+    @Test public void lowSeverityProducesLowIndicatorStatus() {
+        assertEquals("POUCOS INDICADORES", RiskCalculator.status(Arrays.asList(
+                finding(ScanFinding.Level.LOW, 1))));
+    }
+
     @Test public void infoDoesNotRaiseStatus() {
         assertEquals("SEM INDICADORES FORTES", RiskCalculator.status(Arrays.asList(
                 finding(ScanFinding.Level.INFO, 0))));
