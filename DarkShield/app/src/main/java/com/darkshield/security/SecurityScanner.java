@@ -374,6 +374,49 @@ public final class SecurityScanner {
         }
     }
 
+    static String defaultInputMethodPackage(String setting) {
+        if (setting == null || setting.trim().isEmpty()) return null;
+        ComponentName component = ComponentName.unflattenFromString(setting.trim());
+        return component == null ? null : component.getPackageName();
+    }
+
+    private void checkDefaultInputMethod(List<ScanFinding> out) {
+        String setting;
+        try {
+            setting = Settings.Secure.getString(
+                    c.getContentResolver(), Settings.Secure.DEFAULT_INPUT_METHOD);
+        } catch (Exception e) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.LOW,
+                    "Teclado padrão",
+                    "Não foi possível consultar o método de entrada padrão",
+                    null, 1,
+                    "Revise manualmente o teclado configurado em Configurações > Sistema > Teclado"));
+            return;
+        }
+
+        String pkg = defaultInputMethodPackage(setting);
+        if (pkg == null) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Teclado padrão",
+                    "Nenhum método de entrada padrão foi identificado",
+                    null, 0, null));
+            return;
+        }
+
+        boolean system = isSystemPackage(pkg);
+        out.add(new ScanFinding(
+                system ? ScanFinding.Level.INFO : ScanFinding.Level.LOW,
+                system ? "Teclado padrão do sistema" : "Teclado de terceiros ativo",
+                "Método de entrada padrão: " + setting,
+                pkg,
+                system ? 0 : 2,
+                system
+                        ? null
+                        : "Confirme se você reconhece e confia no teclado; métodos de entrada podem processar o texto digitado"));
+    }
+
     private void checkSystemIntegrity(List<ScanFinding> out) {
         boolean rootBinary = SystemIntegrityChecker.hasRootBinary();
         boolean testKeys = SystemIntegrityChecker.hasTestKeys();
@@ -695,6 +738,7 @@ public final class SecurityScanner {
                 adb == 1 ? "Desative quando não estiver usando ADB" : null));
 
         checkDevicePosture(out);
+        checkDefaultInputMethod(out);
     }
 
     private void checkDevicePosture(List<ScanFinding> out) {
