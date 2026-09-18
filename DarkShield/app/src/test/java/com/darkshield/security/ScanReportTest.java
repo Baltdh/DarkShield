@@ -155,6 +155,14 @@ public class ScanReportTest {
     }
 
 
+    @Test public void rawPointsDoesNotOverflow() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                finding(ScanFinding.Level.HIGH, Integer.MAX_VALUE),
+                finding(ScanFinding.Level.HIGH, Integer.MAX_VALUE)));
+
+        assertEquals(Integer.MAX_VALUE, report.getRawPoints());
+    }
+
     @Test(expected = UnsupportedOperationException.class)
     public void packageSummariesIsUnmodifiable() {
         ScanReport report = new ScanReport(java.util.Arrays.asList(
