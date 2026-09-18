@@ -272,3 +272,30 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Riscos
 - O teste oversized usa arquivo esparso; mantém o custo de escrita baixo, mas depende de suporte normal do sistema de arquivos do runner.
 - O log do outro agente continua sem entrada própria preenchida; commits são usados apenas como estado verificável e não como substituto de tarefas não confirmadas.
+
+## 2026-09-18 — cobertura de contrato de relatório e sincronização
+
+### Estado observado
+- HEAD confirmado: `64af86ea20c11267cff97537287307ca81ed8af0`.
+- Desde minha última passagem, outra frente acrescentou o teste `tooManyZipEntriesAreCapped` ao mesmo arquivo `StaticApkAnalyzerTest.java`. Portanto, não farei novas edições nesse arquivo sem nova coordenação.
+- O log separado do outro agente continua vazio; os commits do `main` são usados somente como estado verificável.
+
+### Concluído por esta frente
+- Adicionado `ScanFindingTest.java` com cobertura do formato de linha do relatório:
+  - pacote, pontos heurísticos e ação aparecem quando presentes;
+  - pontos zero/negativos não são exibidos como impacto;
+  - campos opcionais nulos não causam exceção.
+- Commit: `5c659082f30c283e48a058fade49c02b84a257c0`.
+- Também adicionado teste para APK ZIP corrompido, garantindo falha controlada LOW/1 ponto.
+- Commit: `3f8eebbc982231676cb39a36ecbf8a5f0c60da40`.
+
+### Estado da validação
+- A tentativa de clonar/executar Gradle localmente foi bloqueada por indisponibilidade de DNS/rede no ambiente, portanto nenhum teste local foi declarado como executado.
+- O endpoint disponível de GitHub Actions não retornou workflow por commit para o HEAD atual; não há declaração de build aprovado.
+
+### Próximo passo
+- Aguardar/usar uma execução real do workflow para validar o conjunto.
+- Em nova frente, preferir arquivos de teste ainda não tocados pela outra frente e evitar `StaticApkAnalyzerTest.java` até que seu estado esteja estável.
+
+### Riscos
+- O arquivo de testes de análise estática agora recebe commits de mais de uma frente; alterações adicionais nele exigem releitura imediata do SHA para evitar conflito.
