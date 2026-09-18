@@ -62,6 +62,7 @@ public final class StaticApkAnalyzer {
         boolean manifest = false;
         boolean resources = false;
         List<String> suspicious = new ArrayList<>();
+        List<String> suspiciousResourceMarkers = new ArrayList<>();
         List<String> suspiciousContent = new ArrayList<>();
         long contentScanned = 0L;
 
@@ -88,8 +89,14 @@ public final class StaticApkAnalyzer {
                 if (lower.endsWith(".dex")) dex++;
                 if (lower.startsWith("lib/") && lower.endsWith(".so")) nativeLibs++;
 
-                if (containsSuspiciousMarker(lower) && suspicious.size() < MAX_SUSPICIOUS_NAMES) {
-                    suspicious.add(name);
+                if (containsSuspiciousMarker(lower)) {
+                    if (isExecutableEntry(lower)) {
+                        if (suspicious.size() < MAX_SUSPICIOUS_NAMES) {
+                            suspicious.add(name);
+                        }
+                    } else if (suspiciousResourceMarkers.size() < MAX_SUSPICIOUS_NAMES) {
+                        suspiciousResourceMarkers.add(name);
+                    }
                 }
 
                 boolean binaryCode = lower.endsWith(".dex")
@@ -138,6 +145,24 @@ public final class StaticApkAnalyzer {
                                 + ". Isso é um indicador heurístico e não prova comportamento malicioso.",
                         packageName, 2,
                         "Revise o app e, quando necessário, compare com a origem oficial do APK"));
+            }
+
+            if (!suspiciousResourceMarkers.isEmpty()) {
+                StringBuilder detail = new StringBuilder();
+                int shown = Math.min(6, suspiciousResourceMarkers.size());
+                for (int i = 0; i < shown; i++) {
+                    if (i > 0) detail.append(", ");
+                    detail.append(suspiciousResourceMarkers.get(i));
+                }
+                if (suspiciousResourceMarkers.size() > shown) detail.append(" …");
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Marcador suspeito em recurso não executável",
+                        "Foi encontrado um marcador nominal associado a ferramentas de instrumentação em recurso(s) não executável(is): "
+                                + detail
+                                + ". Isso pode ser documentação, recurso empacotado ou outro conteúdo legítimo; não foi pontuado isoladamente.",
+                        packageName, 0,
+                        "Considere revisar somente se houver outros sinais relacionados"));
             }
 
             if (!suspiciousContent.isEmpty()) {
@@ -255,6 +280,14 @@ public final class StaticApkAnalyzer {
             if (hits.size() >= MAX_SUSPICIOUS_CONTENT_HITS) return;
             if (text.contains(marker)) hits.add(entryName + ":" + marker);
         }
+    }
+
+    private static boolean isExecutableEntry(String name) {
+        return name.endsWith(".dex")
+                || (name.startsWith("lib/") && name.endsWith(".so"))
+                || name.startsWith("bin/")
+                || (name.startsWith("assets/") && (
+                        name.endsWith(".dex") || name.endsWith(".so") || name.endsWith(".odex")));
     }
 
     private static boolean containsSuspiciousMarker(String name) {
