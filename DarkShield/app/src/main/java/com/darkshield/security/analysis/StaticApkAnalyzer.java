@@ -139,7 +139,7 @@ public final class StaticApkAnalyzer {
                 "Falha na análise estática",
                 detail,
                 packageName, 1,
-                "Repita a análise com um APK legível e íntegro"));
+                "Repita a análise com um APK legível e íntegro");
     }
 
     private static String sha256(File file) {
