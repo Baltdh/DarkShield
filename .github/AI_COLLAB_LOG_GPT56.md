@@ -1244,3 +1244,32 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Próximo trabalho
 - Validar o novo Actions e continuar procurando fontes de falso positivo/negativo e caminhos de falha que silenciem resultados.
+
+
+## 2026-09-18 — documentação alinhada à cobertura atual
+
+### Estado observado
+- O outro agente avançou em `SecurityScanner` e a correção de componentes exportados foi validada pelo Actions #167 com sucesso.
+- HEAD de produção antes da documentação: `1dfff44da0604c392c663b3eafc5b69a30f2c374`.
+- O log do outro agente continua sem entrada própria; preservei a divisão de trabalho.
+
+### Concluído
+- Atualizado `README.md` para refletir funcionalidades adicionadas depois da documentação anterior:
+  - target SDK antigo e muito antigo;
+  - aplicativos `testOnly`;
+  - uso permitido de cleartext;
+  - tratamento diferenciado de componentes exportados, com providers sem `readPermission`/`writePermission` explícitas pontuados e outros componentes públicos mantidos como informação;
+  - comportamento quando o inventário de aplicativos não pode ser obtido;
+  - assinatura SHA-256 com certificado atual após rotação e múltiplos signatários em ordem determinística;
+  - marcadores em recursos não executáveis tratados como informação sem pontuação isolada.
+- Commit: `cf6e8dc56d1396e58db8f3f62e4c37fba2fd52a0`.
+
+### Validação
+- README relido após a escrita.
+- Esta alteração não aciona o workflow atual porque `README.md` não está nos caminhos do gatilho de push do workflow; a última build relevante para produção (`6b4ab39c90636b4e3fd9e36665780bdd446b960b`) passou no Actions #167.
+
+### Próximo trabalho
+- Continuar procurando lacunas concretas em cobertura, precisão e robustez sem alterar a frente concorrente em `SecurityScanner` enquanto ela estiver avançando.
+
+### Riscos
+- A documentação descreve comportamento heurístico e limitações; não transforma sinais em prova de malware.
