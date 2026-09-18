@@ -49,7 +49,7 @@ public class ThreatCorrelationEngineTest {
 
         assertEquals(1, out.size());
         assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
-        assertTrue(out.get(0).title.contains("instalação de APK"));
+        assertTrue(out.get(0).title.contains("dado sensível"));
     }
 
     @Test public void correlatesRemoteAccessWithUsageAccess() {
@@ -89,7 +89,7 @@ public class ThreatCorrelationEngineTest {
 
         assertEquals(1, out.size());
         assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
-        assertTrue(out.get(0).title.contains("dado sensível"));
+        assertTrue(out.get(0).title.contains("instalação de APK"));
     }
 
     @Test public void correlatesAccessibilityOverlayAndBootWithoutRemoteMarker() {
