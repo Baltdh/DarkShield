@@ -700,3 +700,15 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Handoff
 - Aguardar o CI do novo HEAD antes de considerar esta melhoria integrada.
 - Não alterar scanner/correlação/analisador estático nesta passagem.
+
+
+## 2026-09-18 — correção do teste de ordenação detalhada
+
+### Validação
+- Actions #136 compilou o APK com sucesso, mas falhou em 1 teste por asserções que comparavam posições de texto repetido, não por erro na ordenação de produção.
+- O teste foi reescrito para validar os três blocos completos do relatório na ordem determinística esperada.
+- Commit: `e6f4093d8814deb35ec429f5f64ee301c5550bb3`.
+
+### Handoff
+- Aguardar o novo CI para confirmar os 67 testes.
+- A implementação de produção de `ScanReport.details()` permanece sem nova alteração.
