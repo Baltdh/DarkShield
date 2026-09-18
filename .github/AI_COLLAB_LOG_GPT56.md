@@ -1027,3 +1027,28 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Próximo trabalho
 - Continuar em testes de análise estática e limites de custo, sem aumentar superfície de falso positivo.
+
+
+## 2026-09-18 — seleção determinística sob os limites de marcadores
+
+### Estado observado
+- Releitura do protocolo e dos dois logs concluída antes da alteração.
+- SHA atual de `StaticApkAnalyzer.java` antes da edição: `b7d1f4e0645bdffc2822ad8bce1813ebfa46e1a4`.
+- A frente concorrente permanece preservada; não alterei `SecurityScanner.java`, `ThreatCorrelationEngine.java` ou `ScanReport.java`.
+
+### Concluído
+- A seleção limitada de marcadores agora é determinística mesmo quando existem mais de 50 nomes/recursos ou mais de 20 ocorrências de conteúdo.
+- Em vez de manter os primeiros itens encontrados pelo ZIP, o analisador mantém o menor conjunto lexicográfico dentro do limite, usando comparação case-insensitive com desempate case-sensitive.
+- A ordenação final usa o mesmo comparador, mantendo o texto do finding estável entre APKs equivalentes com ordens ZIP diferentes.
+- Produção: `7c41b2d0ae6b08a34b46f3afce6760882daca8b0`.
+- Teste: `8898414f9b6da88885efe19edb953a157a4e98bf`, cobrindo 60 bibliotecas suspeitas em ordens inversas e confirmando detalhes idênticos.
+
+### Validação
+- Os arquivos foram relidos após os commits e os SHAs atuais são os esperados.
+- O conector de status/runs não oferece uma confirmação confiável de workflow disparado por push para estes commits; não declarei build aprovado.
+
+### Próximo trabalho
+- Verificar o status do novo HEAD e, se permanecer sem checks expostos, revisar outro caso-limite independente da análise estática sem ampliar o orçamento de leitura.
+
+### Riscos
+- A seleção determinística descarta candidatos acima do limite por projeto; isso é intencional para manter memória/custo previsíveis.
