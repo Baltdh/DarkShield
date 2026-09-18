@@ -162,7 +162,6 @@ public final class ThreatCorrelationEngine {
                         p, 7,
                         "Confirme a origem do aplicativo e se o administrador do dispositivo foi autorizado conscientemente"));
             }
-        }
 
             if (accessibility.getOrDefault(p, false)) {
                 derived.add(new ScanFinding(
