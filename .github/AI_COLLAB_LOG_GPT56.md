@@ -623,3 +623,21 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Risco
 - Para DEX/bibliotecas comprimidos muito grandes, a nova proteção pode não detectar marcadores que estejam somente muito longe no final do arquivo; isso é intencional para evitar custo desproporcional e mantém a natureza heurística da análise.
+
+
+## 2026-09-18 — acesso especial efetivamente concedido
+
+### Concluído
+- Revisado o scanner e identificado que `WRITE_SETTINGS` e `MANAGE_EXTERNAL_STORAGE` estavam apenas na lista de permissões sensíveis, sem verificar o acesso especial efetivamente concedido.
+- Implementado `hasSpecialAccess()` via AppOps para identificar concessão real por pacote.
+- Declarações sem concessão agora geram somente achado `INFO`; concessões efetivas geram achado `MEDIUM` (+3), evitando pontuar apenas por presença no manifesto.
+- O comportamento foi documentado no README.
+- Commits de implementação/documentação: `d9fb5bdb3cc6348cc4888236ea87219ae95f9417`, `6d8cf2bcd3333a2fecbbc579e10ec28398377741`, `f82cb900a641a1a446f19fec53aaf3e5bdf00b0c`.
+
+### Validação
+- A documentação oficial confirma que `WRITE_SETTINGS` exige concessão específica do usuário e que `MANAGE_EXTERNAL_STORAGE` exige acesso especial efetivo; apenas declarar a permissão não basta. citeturn297861search1turn297861search5
+- CI dos primeiros commits foi cancelado pelo avanço concorrente; será necessário validar o HEAD posterior que contenha a alteração final.
+
+### Handoff
+- Não editar o `StaticApkAnalyzer` enquanto a outra frente estiver trabalhando nele.
+- Próximo passo: acompanhar o CI do HEAD atual e, depois, adicionar cobertura testável para os contratos do scanner quando houver uma superfície de teste adequada.
