@@ -261,7 +261,7 @@ public final class StaticApkAnalyzer {
         // entries, skipping a very large uncompressed prefix may require
         // inflating nearly the whole stream, defeating the analysis budget.
         if (entry.getMethod() != ZipEntry.STORED
-                && start > MAX_COMPRESSED_TAIL_SKIP_BYTES) {
+                && start >= MAX_COMPRESSED_TAIL_SKIP_BYTES) {
             return new byte[0];
         }
 
