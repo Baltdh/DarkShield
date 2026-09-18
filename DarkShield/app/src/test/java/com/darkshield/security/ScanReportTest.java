@@ -112,6 +112,15 @@ public class ScanReportTest {
         assertTrue(summary.contains("… e mais 1 pacote(s)"));
     }
 
+    @Test public void detailsShowsHeuristicImpactWhenPointsArePositive() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.MEDIUM, "Teste", "detail",
+                        "com.example.test", 3, null)));
+
+        String details = report.details();
+        assertTrue(details.contains("impacto heurístico: +3 ponto(s)"));
+    }
+
     @Test public void nullLevelCountIsZero() {
         ScanReport report = new ScanReport(null);
         assertEquals(0, report.count(null));
