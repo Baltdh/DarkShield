@@ -205,8 +205,8 @@ public class StaticApkAnalyzerTest {
     @Test public void oversizedApkIsRejectedBeforeZipProcessing() throws Exception {
         File apk = File.createTempFile("darkshield-test", ".apk");
         try {
-            try (FileOutputStream out = new FileOutputStream(apk)) {
-                out.getChannel().truncate(200L * 1024L * 1024L + 1L);
+            try (java.io.RandomAccessFile out = new java.io.RandomAccessFile(apk, "rw")) {
+                out.setLength(200L * 1024L * 1024L + 1L);
             }
 
             List<ScanFinding> findings =
