@@ -1310,3 +1310,28 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - A consolidação reduz pontuação duplicada de correlações; os achados-base continuam presentes no relatório e não são removidos.
+
+
+## 2026-09-18 — amostragem estática não silenciosa
+
+### Concluído
+- Identificada uma falha de cobertura em `StaticApkAnalyzer`: erros ao ler o conteúdo de uma entrada DEX/biblioteca eram convertidos em amostra vazia, sem registrar a perda de cobertura.
+- Alterado o analisador para registrar `INFO — Amostra de conteúdo indisponível` quando pelo menos uma entrada de código não pôde ser lida.
+- O finding recebe 0 pontos e explica que a ausência de marcador naquela entrada não equivale à ausência de risco.
+- Adicionado teste que corrompe deliberadamente uma entrada `classes.dex` e exige o aviso de cobertura incompleta.
+- Commits:
+  - `0075d576bbe1ea3417f47cb9989c22a807e1f03a` — produção;
+  - `2d57c459f546557bd0b4a1621bec3ed96892b86c` — teste.
+
+### Verificação do arquivo enviado
+- `DarkShield-debug-apk.zip` foi inspecionado localmente.
+- O SHA-256 declarado do `app-debug.apk` confere com os bytes extraídos.
+- O APK contém 8 entradas ZIP, 3 arquivos DEX, `AndroidManifest.xml`, recursos e metadata de build.
+- Esse APK é de uma build anterior às últimas correções do scanner; portanto não deve ser usado como evidência de que o binário já contém todas as mudanças atuais.
+
+### Validação
+- O Actions será usado para validar os novos testes.
+- A alteração mantém a análise heurística local e não transforma o finding em prova de malware.
+
+### Próximo trabalho
+- Conferir o Actions e revisar outros pontos em que erros de leitura/hash podem ser convertidos silenciosamente em ausência de indicador.
