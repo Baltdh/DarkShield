@@ -71,11 +71,11 @@ public final class StaticApkAnalyzer {
                 ZipEntry entry = e.nextElement();
                 if (++entries > MAX_ENTRIES) {
                     out.add(new ScanFinding(
-                            ScanFinding.Level.LOW,
+                            ScanFinding.Level.INFO,
                             "APK com muitas entradas",
                             "A análise foi limitada após " + MAX_ENTRIES
                                     + " entradas para manter o custo previsível",
-                            packageName, 1,
+                            packageName, 0,
                             "Considere uma análise ADB/forense separada para esse APK"));
                     break;
                 }
@@ -165,10 +165,10 @@ public final class StaticApkAnalyzer {
                         packageName, 0, null));
             } else if (dex > 4) {
                 out.add(new ScanFinding(
-                        ScanFinding.Level.LOW,
+                        ScanFinding.Level.INFO,
                         "Múltiplos arquivos DEX",
                         "O APK contém " + dex + " arquivos DEX",
-                        packageName, 1,
+                        packageName, 0,
                         "Quantidade elevada pode ser legítima; revise apenas junto de outros indicadores"));
             }
         } catch (IOException | SecurityException ex) {
