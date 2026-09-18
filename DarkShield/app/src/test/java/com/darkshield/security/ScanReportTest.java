@@ -198,6 +198,16 @@ public class ScanReportTest {
         assertTrue(info.indexOf("Alpha") < info.indexOf("Zeta"));
     }
 
+    @Test public void nullLevelFindingsAreIgnoredByReportDetails() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(null, "null-level", "detail", "com.example.null", 9, null),
+                finding(ScanFinding.Level.LOW, 1)));
+
+        assertEquals(1, report.countRequiringReview());
+        assertTrue(!report.details().contains("null-level"));
+        assertTrue(report.packageSummary().contains("com.example.null") == false);
+    }
+
     @Test public void nullLevelCountIsZero() {
         ScanReport report = new ScanReport(null);
         assertEquals(0, report.count(null));
