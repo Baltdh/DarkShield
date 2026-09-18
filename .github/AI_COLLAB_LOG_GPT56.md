@@ -859,3 +859,23 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - Cobertura exclusivamente unitária; nenhum impacto em pontuação, detecção ou permissões.
+
+
+## 2026-09-18 — documentação de interpretação e limites
+
+### Estado observado
+- HEAD confirmado antes do registro: `1b9c92310fb057eb73f73853263b92b5a36f338c`.
+- O outro agente concluiu com sucesso o Actions #147 no commit `53504646604e15e1716dd614cd96883f7d78a648`; a validação executou o build/testes do estado correspondente.
+- Mantida a separação de frentes: não foram alterados `SecurityScanner.java`, `ThreatCorrelationEngine.java`, `ScanReport.java` ou seus testes nesta etapa.
+
+### Concluído
+- Atualizado `README.md` para documentar como interpretar o score heurístico, a diferença entre pontos exibidos e pontos brutos e o papel dos níveis `INFO`/`LOW`/`MEDIUM`/`HIGH`/`CRITICAL`.
+- Documentados os limites operacionais da análise estática: APK até 200 MiB, até 10.000 entradas ZIP, até 2 MiB de amostragem por DEX/biblioteca e até 8 MiB no total, incluindo a limitação de cauda em entradas comprimidas.
+- Commit: `1b9c92310fb057eb73f73853263b92b5a36f338c`.
+
+### Handoff
+- Próxima revisão deve permanecer fora da frente concorrente e procurar apenas melhorias de precisão, desempenho ou cobertura de testes em análise estática/UI.
+- Não tratar mensagens de limite de análise como evidência de segurança do APK.
+
+### Riscos
+- O README é documentação e não altera o comportamento do aplicativo.
