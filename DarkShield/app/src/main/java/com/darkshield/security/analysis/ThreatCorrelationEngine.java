@@ -154,6 +154,16 @@ public final class ThreatCorrelationEngine {
         }
 
         for (String p : admin.keySet()) {
+            if (remote.getOrDefault(p, false)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de acesso remoto e administrador",
+                        "O mesmo pacote apresenta indicador de acesso remoto e administrador do dispositivo ativo. A combinação merece revisão porque reúne controle remoto heurístico com uma capacidade de gerenciamento privilegiada; isso não constitui prova automática de malware.",
+                        p, 7,
+                        "Confirme a origem do aplicativo e se o administrador do dispositivo foi autorizado conscientemente"));
+            }
+        }
+
             if (accessibility.getOrDefault(p, false)) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.HIGH,
