@@ -67,6 +67,16 @@ jobs:
             echo "No unit tests yet; build validation continues."
           fi
 
+      - name: Run Android lint
+        working-directory: DarkShield
+        run: |
+          set -euo pipefail
+          if [ -x "./gradlew" ]; then
+            ./gradlew --no-daemon lintDebug
+          else
+            gradle --no-daemon lintDebug
+          fi
+
       - name: Locate and verify APK
         working-directory: DarkShield
         run: |
