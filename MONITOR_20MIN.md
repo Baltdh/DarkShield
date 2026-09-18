@@ -46,6 +46,13 @@ Atualizado: 2026-09-18 — auditoria contínua / correção de regressões
    - Commit: `5bf4c38907394e4a7eee0e518d87193b5a4c11b1`.
 
 
+10. Foram detectados commits adicionais recentes na `main` sobre análise de payloads executáveis dentro de `assets/`, e foram confirmados no código atual:
+   - `801e34320acdc1a58a840c6f28c473f96fe9612c` — análise de payloads executáveis em assets.
+   - `01232de9d9180866807d049d1b99f00882084d17` — cobertura de testes para esse cenário.
+   - A regra cobre `assets/*.dex`, `assets/*.so` e `assets/*.odex`, mantendo os mesmos limites de amostragem do analisador.
+
+11. A revisão da correlação adicionada nesta etapa permanece separada dos indicadores brutos: o novo HIGH de remoto + administrador é uma heurística contextual e não uma confirmação de malware.
+
 ## Próxima verificação obrigatória
 
 - O próximo run disparado pelos commits acima precisa ser confirmado no GitHub.
