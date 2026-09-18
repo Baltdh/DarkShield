@@ -24,6 +24,18 @@ public class SecurityScannerTest {
                 true, null, "com.example.WRITE"));
     }
 
+    @Test public void providerLevelPermissionProtectsExportedProvider() {
+        assertFalse(SecurityScanner.isUnprotectedExportedProvider(
+                true, "com.example.PROVIDER_ACCESS", null, null));
+    }
+
+    @Test public void readOrWritePermissionStillProtectsWithNoProviderPermission() {
+        assertFalse(SecurityScanner.isUnprotectedExportedProvider(
+                true, null, "com.example.READ", null));
+        assertFalse(SecurityScanner.isUnprotectedExportedProvider(
+                true, null, null, "com.example.WRITE"));
+    }
+
     @Test public void nonExportedProviderIsNeverReportedAsUnprotected() {
         assertFalse(SecurityScanner.isUnprotectedExportedProvider(
                 false, null, null));
