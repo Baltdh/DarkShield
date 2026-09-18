@@ -198,9 +198,22 @@ public class ThreatCorrelationEngineTest {
         assertEquals(1, out.size());
         assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
         assertEquals(7, out.get(0).points);
-        assertTrue(out.get(0).title.contains("Correlação de administrador e acessibilidade")
-                || out.get(0).title.contains("Correlação de acesso remoto e administrador")
-                || out.get(0).title.contains("Correlação de controle remoto"));
+        // With equal severity/points, the engine's deterministic tie-breaker
+        // should select the lexicographically first strong correlation.
+        assertEquals("Correlação de acesso remoto e administrador", out.get(0).title);
+    }
+
+    @Test public void correlationTieBreakIsStableForEqualStrengthFindings() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),
+                f("Permissão de sobreposição concedida", ScanFinding.Level.MEDIUM),
+                f("Administrador do dispositivo ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(7, out.get(0).points);
+        assertEquals("Correlação de acesso remoto e administrador", out.get(0).title);
     }
 
 }
