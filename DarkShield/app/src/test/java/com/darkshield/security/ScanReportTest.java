@@ -43,6 +43,17 @@ public class ScanReportTest {
         assertEquals(2, report.countRequiringReview());
     }
 
+    @Test public void detailsSortsBySeverity() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                finding(ScanFinding.Level.LOW, 1),
+                finding(ScanFinding.Level.CRITICAL, 8),
+                finding(ScanFinding.Level.MEDIUM, 3)));
+
+        String details = report.details();
+        assertTrue(details.indexOf("[CRITICAL]") < details.indexOf("[MEDIUM]"));
+        assertTrue(details.indexOf("[MEDIUM]") < details.indexOf("[LOW]"));
+    }
+
     @Test public void nullLevelCountIsZero() {
         ScanReport report = new ScanReport(null);
         assertEquals(0, report.count(null));
