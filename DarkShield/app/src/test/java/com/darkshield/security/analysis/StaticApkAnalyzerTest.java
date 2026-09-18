@@ -265,6 +265,34 @@ public class StaticApkAnalyzerTest {
         assertTrue(apk.delete());
     }
 
+
+    @Test public void executableAssetMarkerRemainsHeuristic() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "assets/frida-helper.so", new byte[]{1});
+            add(zip, "assets/xposed-hook.odex", new byte[]{2});
+            add(zip, "bin/magisk-tool", new byte[]{3});
+        }
+
+        List<ScanFinding> findings =
+                StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+
+        ScanFinding hit = findings.stream()
+                .filter(x -> x.title.equals(
+                        "Nomes de arquivos associados a ferramentas de instrumentação"))
+                .findFirst().orElse(null);
+
+        assertTrue(hit != null);
+        assertEquals(ScanFinding.Level.LOW, hit.level);
+        assertEquals(2, hit.points);
+        assertTrue(hit.detail.contains("assets/frida-helper.so"));
+        assertTrue(hit.detail.contains("assets/xposed-hook.odex"));
+        assertTrue(hit.detail.contains("bin/magisk-tool"));
+
+        assertTrue(apk.delete());
+    }
+
     @Test public void unreadablePathProducesFinding() {
         List<ScanFinding> findings = StaticApkAnalyzer.analyze("/definitely/missing/app.apk", "com.example.test");
         assertEquals(1, findings.size());
