@@ -1,6 +1,9 @@
 package com.darkshield.security;
 
 import android.accessibilityservice.AccessibilityServiceInfo;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
 import android.app.admin.DevicePolicyManager;
 import android.content.ComponentName;
 import android.content.Context;
@@ -39,7 +42,7 @@ public final class SecurityScanner {
         out.add(new ScanFinding(ScanFinding.Level.INFO,"Aplicativos analisados",
                 apps.size()+" pacote(s) visíveis para o scanner",null,0,null));
         for(PackageInfo p:apps) inspectApp(p,out);
-        checkAccessibility(out); checkNotificationListeners(out); checkDeviceAdmins(out);
+        checkAccessibility(out); checkNotificationListeners(out); checkDeviceAdmins(out); checkSystemIntegrity(out); checkNetworkState(out);
         return out;
     }
 
@@ -92,6 +95,68 @@ public final class SecurityScanner {
         if(hasVpnService(p) && !system)
             out.add(new ScanFinding(ScanFinding.Level.MEDIUM,"Serviço VPN declarado","O aplicativo declara um serviço BIND_VPN_SERVICE; VPN legítima é comum, mas vale revisar apps desconhecidos",p.packageName,3,"Confirme se a VPN é esperada e reconhecida"));
         String cert=signingSha256(p); if(cert!=null) out.add(new ScanFinding(ScanFinding.Level.INFO,"Assinatura SHA-256",cert,p.packageName,0,null));
+    }
+
+    private void checkSystemIntegrity(List<ScanFinding> out) {
+        boolean rootBinary = SystemIntegrityChecker.hasRootBinary();
+        boolean testKeys = SystemIntegrityChecker.hasTestKeys();
+        boolean debuggableBuild = SystemIntegrityChecker.hasDebuggableBuild();
+        boolean rootMarker = SystemIntegrityChecker.hasRootManagementMarker();
+
+        if (rootBinary) {
+            out.add(new ScanFinding(ScanFinding.Level.HIGH, "Binário de root detectado",
+                    "Foi encontrado um executável su em um caminho conhecido; isso indica alteração do ambiente do sistema, mas não identifica sozinho qual aplicativo fez a alteração",
+                    null, 8, "Revise o estado do dispositivo e aplicativos que exigem root"));
+        } else if (testKeys) {
+            out.add(new ScanFinding(ScanFinding.Level.LOW, "Build assinado com test-keys",
+                    "O sistema reporta uma assinatura de build normalmente associada a builds de teste/desenvolvimento",
+                    null, 1, "Confirme a origem da ROM se o aparelho deveria usar uma build oficial"));
+        }
+
+        if (debuggableBuild) {
+            out.add(new ScanFinding(ScanFinding.Level.MEDIUM, "Build do sistema debuggable",
+                    "ro.debuggable está ativado; isso aumenta a superfície de diagnóstico e é comum em ambientes de desenvolvimento",
+                    null, 3, "Revise apenas se esse estado não for esperado no seu dispositivo"));
+        }
+
+        if (rootMarker) {
+            out.add(new ScanFinding(ScanFinding.Level.MEDIUM, "Indicador de gerenciamento de root",
+                    "Foram encontrados marcadores de ferramentas/estado de gerenciamento de root nas propriedades observáveis",
+                    null, 4, "Revise ferramentas de root instaladas e o estado de integridade do sistema"));
+        }
+
+        if (!rootBinary && !testKeys && !debuggableBuild && !rootMarker) {
+            out.add(new ScanFinding(ScanFinding.Level.INFO, "Integridade básica do sistema",
+                    "Nenhum dos indicadores locais de root/build de teste foi detectado",
+                    null, 0, null));
+        }
+    }
+
+    private void checkNetworkState(List<ScanFinding> out) {
+        String proxy = SystemIntegrityChecker.getProxyHost();
+        if (proxy != null && !proxy.isEmpty()) {
+            out.add(new ScanFinding(ScanFinding.Level.MEDIUM, "Proxy de rede configurado",
+                    "Host de proxy observado: " + proxy,
+                    null, 3, "Confirme se o proxy foi configurado conscientemente"));
+        } else {
+            out.add(new ScanFinding(ScanFinding.Level.INFO, "Proxy de rede",
+                    "Nenhum proxy HTTP/HTTPS foi observado nas propriedades do processo",
+                    null, 0, null));
+        }
+
+        ConnectivityManager cm = (ConnectivityManager) c.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (cm == null) return;
+        try {
+            Network active = cm.getActiveNetwork();
+            NetworkCapabilities caps = active == null ? null : cm.getNetworkCapabilities(active);
+            boolean vpn = caps != null && caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN);
+            out.add(new ScanFinding(vpn ? ScanFinding.Level.MEDIUM : ScanFinding.Level.INFO,
+                    "VPN ativa", vpn ? "A rede ativa usa transporte VPN" : "Nenhuma VPN ativa foi identificada pela rede ativa",
+                    null, vpn ? 3 : 0, vpn ? "Confirme se a VPN ativa é esperada e reconhecida" : null));
+        } catch (SecurityException e) {
+            out.add(new ScanFinding(ScanFinding.Level.LOW, "Estado de VPN",
+                    "O sistema restringiu a consulta do estado de rede", null, 1, null));
+        }
     }
 
     private boolean hasVpnService(PackageInfo p) {
