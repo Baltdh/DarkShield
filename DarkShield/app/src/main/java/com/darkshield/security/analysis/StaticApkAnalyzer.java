@@ -176,7 +176,7 @@ public final class StaticApkAnalyzer {
                 out.add(new ScanFinding(
                         ScanFinding.Level.LOW,
                         "Marcadores suspeitos no conteúdo de DEX/bibliotecas",
-                        "Foram encontrados textos associados a instrumentação dentro do prefixo analisado de DEX/bibliotecas: "
+                        "Foram encontrados textos associados a instrumentação dentro da amostra analisada de DEX/bibliotecas (início/final): "
                                 + detail + ". Isso é um indicador heurístico e não prova comportamento malicioso.",
                         packageName, 2,
                         "Revise a origem do APK e compare o certificado/versão com a distribuição oficial"));
