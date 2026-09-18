@@ -337,4 +337,19 @@ public class ScanReportTest {
         assertTrue(blocks[1].contains("z-detail"));
     }
 
+
+    @Test public void detailsBreaksIdenticalDetailTiesByAction() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.MEDIUM, "Same", "Same detail",
+                        "com.example.same", 2, "z-action"),
+                new ScanFinding(ScanFinding.Level.MEDIUM, "Same", "Same detail",
+                        "com.example.same", 2, "A-action")));
+
+        String details = report.details();
+        String[] blocks = details.split("\\n\\n");
+        assertEquals(2, blocks.length);
+        assertTrue(blocks[0].contains("A-action"));
+        assertTrue(blocks[1].contains("z-action"));
+    }
+
 }
