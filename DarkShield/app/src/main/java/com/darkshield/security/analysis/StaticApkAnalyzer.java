@@ -99,9 +99,9 @@ public final class StaticApkAnalyzer {
                     int budget = (int) Math.min(
                             MAX_ENTRY_CONTENT_SCAN_BYTES,
                             MAX_TOTAL_CONTENT_SCAN_BYTES - contentScanned);
-                    byte[] prefix = readPrefix(zip, entry, budget);
-                    contentScanned += prefix.length;
-                    collectContentMarkers(name, prefix, suspiciousContent);
+                    byte[] sample = readContentSample(zip, entry, budget);
+                    contentScanned += sample.length;
+                    collectContentMarkers(name, sample, suspiciousContent);
                 }
             }
 
@@ -187,10 +187,29 @@ public final class StaticApkAnalyzer {
         return out;
     }
 
-    private static byte[] readPrefix(ZipFile zip, ZipEntry entry, int limit) {
+    private static byte[] readContentSample(ZipFile zip, ZipEntry entry, int limit) {
+        if (limit <= 0) return new byte[0];
+        if (entry.getSize() <= limit || entry.getSize() < 0) {
+            return readRange(zip, entry, 0L, limit);
+        }
+
+        int headLimit = limit / 2;
+        int tailLimit = limit - headLimit;
+        byte[] head = readRange(zip, entry, 0L, headLimit);
+        byte[] tail = readTail(zip, entry, tailLimit);
+
+        ByteArrayOutputStream combined =
+                new ByteArrayOutputStream(head.length + tail.length);
+        combined.write(head, 0, head.length);
+        combined.write(tail, 0, tail.length);
+        return combined.toByteArray();
+    }
+
+    private static byte[] readRange(ZipFile zip, ZipEntry entry, long skipBytes, int limit) {
         if (limit <= 0) return new byte[0];
         try (InputStream in = zip.getInputStream(entry);
              ByteArrayOutputStream out = new ByteArrayOutputStream(Math.min(limit, 64 * 1024))) {
+            skipFully(in, skipBytes);
             byte[] buffer = new byte[64 * 1024];
             int total = 0;
             while (total < limit) {
@@ -204,6 +223,26 @@ public final class StaticApkAnalyzer {
             return out.toByteArray();
         } catch (IOException | SecurityException e) {
             return new byte[0];
+        }
+    }
+
+    private static byte[] readTail(ZipFile zip, ZipEntry entry, int limit) {
+        long size = entry.getSize();
+        if (size <= 0) return new byte[0];
+        long start = Math.max(0L, size - limit);
+        return readRange(zip, entry, start, limit);
+    }
+
+    private static void skipFully(InputStream in, long bytes) throws IOException {
+        long remaining = bytes;
+        while (remaining > 0) {
+            long skipped = in.skip(remaining);
+            if (skipped > 0) {
+                remaining -= skipped;
+                continue;
+            }
+            if (in.read() < 0) break;
+            remaining--;
         }
     }
 
