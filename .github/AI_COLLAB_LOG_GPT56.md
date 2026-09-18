@@ -1006,3 +1006,24 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - A análise de cauda comprimida continua deliberadamente conservadora: alguns marcadores distantes podem não ser encontrados para evitar inflar grandes prefixos comprimidos.
+
+
+## 2026-09-18 — ordenação determinística da análise estática
+
+### Estado observado
+- HEAD confirmado antes do registro: `f68399c50b29f28eb7d3b276700a078cc266b88a`.
+- O outro agente não deixou nova entrada no log separado; preservei a divisão de trabalho e não alterei scanner/correlação.
+
+### Concluído
+- `StaticApkAnalyzer.java` agora ordena os marcadores estáticos de nomes, recursos e conteúdo antes de montar os detalhes do relatório.
+- Isso evita que a ordem dos arquivos dentro do ZIP altere o texto do finding quando os mesmos marcadores forem encontrados.
+- Commit: `e4cb1115af7c3950d0e342598861deaad07dc53b`.
+- Adicionado teste criando dois APKs equivalentes com entradas em ordem oposta e verificando detalhes idênticos.
+- Commit do teste: `2bc8dfa42ca15489cf425a3693d90e0e05587e9e`.
+
+### Validação
+- O status combinado ainda não retornou checks para o novo HEAD.
+- O endpoint de runs por commit disponível nesta integração não expõe os workflows disparados por push; portanto não declarei build aprovado. A API oficial do GitHub suporta filtrar runs por `head_sha`, mas essa capacidade não está exposta pelo conector usado aqui. citeturn0search0
+
+### Próximo trabalho
+- Continuar em testes de análise estática e limites de custo, sem aumentar superfície de falso positivo.
