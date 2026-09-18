@@ -233,6 +233,15 @@ public class ScanReportTest {
     }
 
     @Test(expected = UnsupportedOperationException.class)
+    public void findingsSnapshotIsUnmodifiable() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.LOW, "low", "detail",
+                        "com.example.test", 1, null)));
+
+        report.getFindings().clear();
+    }
+
+    @Test(expected = UnsupportedOperationException.class)
     public void packageSummariesIsUnmodifiable() {
         ScanReport report = new ScanReport(java.util.Arrays.asList(
                 new ScanFinding(ScanFinding.Level.LOW, "low", "detail",
