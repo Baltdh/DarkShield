@@ -110,6 +110,12 @@ public final class StaticApkAnalyzer {
                     if (sample == null) {
                         contentSampleReadFailure = true;
                     } else {
+                        // For oversized entries the normal sample is exactly
+                        // the requested budget (head + tail). A shorter sample
+                        // means a bounded portion was intentionally unavailable.
+                        if (entry.getSize() > budget && sample.length < budget) {
+                            contentSampleReadFailure = true;
+                        }
                         contentScanned += sample.length;
                         collectContentMarkers(name, sample, suspiciousContent);
                     }
