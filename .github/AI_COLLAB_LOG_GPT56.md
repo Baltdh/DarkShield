@@ -596,3 +596,30 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Validação
 - O teste dedicado permanece em `ScanReportTest`.
 - O novo commit disparou uma nova execução do workflow; aguardar o CI antes de declarar esta frente concluída.
+
+
+## 2026-09-18 — limite de custo na amostragem de cauda de APK
+
+### Estado observado
+- HEAD antes da frente: `7c6ca27f777a9ac2d6a96e9664765b51c8d72336`.
+- O Actions #127 concluiu com sucesso, validando o tratamento de `level == null` em `ScanReport`.
+- A frente do outro agente continua sem entrada preenchida no log separado; o estado foi verificado pelo `main`.
+
+### Concluído
+- `StaticApkAnalyzer.readTail()` agora limita a distância de `skip` em entradas ZIP comprimidas a 2 MiB.
+- Entradas `STORED` continuam podendo ser lidas pela cauda normalmente.
+- Para uma entrada comprimida muito grande, o analisador mantém a amostra inicial em vez de inflar quase todo o arquivo apenas para alcançar o final.
+- A mensagem técnica agora explicita que a cauda só é incluída quando a leitura permanece dentro do limite seguro.
+- Adicionado teste com DEX comprimido de mais de 4 MiB e marcador na cauda muito distante, protegendo contra regressão para leitura desnecessariamente grande.
+- Commits: `c46a2c6ee5eb87b4d5c6fca31c7b60af78036db7` e `934d51e2630b7664536457e2cda0f2d6fb6502e9`.
+
+### Validação
+- O teste foi adicionado imediatamente após a produção; o workflow final deve validar os dois commits, sujeito à política de cancelamento por concorrência.
+- Não houve build local.
+
+### Handoff
+- Próximo passo: confirmar o workflow no HEAD final e revisar se há outros caminhos de custo não limitado no analisador estático, sem ampliar o orçamento de leitura.
+- Preservar as correções recentes de `ScanReport`, risco e scanner/correlação.
+
+### Risco
+- Para DEX/bibliotecas comprimidos muito grandes, a nova proteção pode não detectar marcadores que estejam somente muito longe no final do arquivo; isso é intencional para evitar custo desproporcional e mantém a natureza heurística da análise.
