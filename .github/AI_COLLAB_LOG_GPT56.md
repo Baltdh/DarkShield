@@ -523,3 +523,19 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Handoff
 - Próximo passo: acompanhar o CI do estado atual e não declarar o APK validado até build + testes concluírem com sucesso.
+
+
+## 2026-09-18 — cobertura de saturação por pacote
+
+### Concluído
+- Adicionado teste para garantir que os pontos acumulados em `PackageSummary` também não sofram overflow.
+- O teste usa dois achados com `Integer.MAX_VALUE` e espera `Integer.MAX_VALUE` como limite.
+- Commit de teste: `6c55f6ff6488baa4f62654ebdb5276a4905b6f86`.
+
+### Validação
+- Actions #117 passou no estado anterior.
+- Actions #119 revelou a regressão de compilação do commit concorrente; a implementação atual de `RiskCalculator` foi confirmada completa.
+- O teste desta entrada aguarda CI no HEAD atual.
+
+### Handoff
+- Aguardar estabilização do CI antes de novas mudanças estruturais.
