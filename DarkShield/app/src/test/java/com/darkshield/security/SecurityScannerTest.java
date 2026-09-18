@@ -13,10 +13,10 @@ public class SecurityScannerTest {
         assertTrue(SecurityScanner.isUnprotectedExportedProvider(provider));
     }
 
-    @Test public void exportedProviderWithComponentPermissionIsProtected() {
+    @Test public void exportedProviderWithReadPermissionIsProtected() {
         ProviderInfo provider = new ProviderInfo();
         provider.exported = true;
-        provider.permission = "com.example.PROVIDER_ACCESS";
+        provider.readPermission = "com.example.PROVIDER_ACCESS";
         assertFalse(SecurityScanner.isUnprotectedExportedProvider(provider));
     }
 
