@@ -18,6 +18,7 @@ public final class ThreatCorrelationEngine {
         Map<String, Boolean> overlay = new HashMap<>();
         Map<String, Boolean> admin = new HashMap<>();
         Map<String, Boolean> notification = new HashMap<>();
+        Map<String, Boolean> boot = new HashMap<>();
         Map<String, Integer> sensitive = new HashMap<>();
 
         for (ScanFinding f : findings) {
@@ -30,6 +31,7 @@ public final class ThreatCorrelationEngine {
             if (t.contains("sobreposição")) overlay.put(p, true);
             if (t.contains("administrador do dispositivo")) admin.put(p, true);
             if (t.contains("acesso a notificações ativo")) notification.put(p, true);
+            if (t.contains("inicialização automática declarada")) boot.put(p, true);
             if (t.contains("acesso a sms")
                     || t.contains("histórico de chamadas")
                     || t.contains("microfone/câmera")
@@ -45,6 +47,7 @@ public final class ThreatCorrelationEngine {
             boolean a = accessibility.getOrDefault(p, false);
             boolean o = overlay.getOrDefault(p, false);
             boolean n = notification.getOrDefault(p, false);
+            boolean b = boot.getOrDefault(p, false);
             int s = sensitive.getOrDefault(p, 0);
 
             if (a && o) {
@@ -68,6 +71,13 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote apresenta indicador de acesso remoto e acesso ativo às notificações.",
                         p, 4,
                         "Confirme se o aplicativo é reconhecido e se a leitura de notificações é necessária"));
+            } else if (b) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Acesso remoto combinado com inicialização automática",
+                        "O mesmo pacote apresenta indicador de acesso remoto e declara inicialização automática após o boot.",
+                        p, 4,
+                        "Confirme se o aplicativo é reconhecido e se iniciar com o sistema é realmente necessário"));
             } else if (s > 0) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,
