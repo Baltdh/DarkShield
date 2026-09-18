@@ -53,7 +53,8 @@ public final class ScanReport {
     public List<PackageSummary> packageSummaries() {
         java.util.Map<String, PackageSummary> byPackage = new java.util.HashMap<>();
         for (ScanFinding finding : findings) {
-            if (finding == null || finding.level == ScanFinding.Level.INFO
+            if (finding == null || finding.level == null
+                    || finding.level == ScanFinding.Level.INFO
                     || finding.packageName == null || finding.packageName.trim().isEmpty()) {
                 continue;
             }
@@ -134,7 +135,8 @@ public final class ScanReport {
     public String details() {
         List<ScanFinding> review = new ArrayList<>();
         for (ScanFinding finding : findings) {
-            if (finding != null && finding.level != ScanFinding.Level.INFO) {
+            if (finding != null && finding.level != null
+                    && finding.level != ScanFinding.Level.INFO) {
                 review.add(finding);
             }
         }
