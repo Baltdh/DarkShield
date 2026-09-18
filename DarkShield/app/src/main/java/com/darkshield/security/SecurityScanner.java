@@ -52,6 +52,21 @@ public final class SecurityScanner {
         List<ScanFinding> out = new ArrayList<>();
         addBaseline(out);
         List<PackageInfo> apps = getApps();
+        if (apps == null) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.MEDIUM,
+                    "Inventário de aplicativos incompleto",
+                    "O Android não permitiu consultar a lista de aplicativos instalados; a verificação por pacote não pôde ser concluída.",
+                    null, 3,
+                    "Repita a verificação e confirme se o sistema não está restringindo a visibilidade dos pacotes"));
+            checkAccessibility(out);
+            checkNotificationListeners(out);
+            checkDeviceAdmins(out);
+            out.addAll(ThreatCorrelationEngine.correlate(out));
+            checkSystemIntegrity(out);
+            checkNetworkState(out);
+            return out;
+        }
         out.add(new ScanFinding(
                 ScanFinding.Level.INFO, "Aplicativos analisados",
                 apps.size() + " pacote(s) visíveis para o scanner", null, 0, null));
@@ -92,7 +107,7 @@ public final class SecurityScanner {
             }
             return pm.getInstalledPackages(flags);
         } catch (Exception e) {
-            return Collections.emptyList();
+            return null;
         }
     }
 
