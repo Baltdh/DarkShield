@@ -23,7 +23,11 @@ public final class SystemIntegrityChecker {
     }
 
     public static boolean hasTestKeys() {
-        return Build.TAGS != null && Build.TAGS.toLowerCase(Locale.ROOT).contains("test-keys");
+        return hasTestKeys(Build.TAGS);
+    }
+
+    static boolean hasTestKeys(String tags) {
+        return tags != null && tags.toLowerCase(Locale.ROOT).contains("test-keys");
     }
 
     /**
@@ -32,8 +36,12 @@ public final class SystemIntegrityChecker {
      * Android's system properties to an application process.
      */
     public static boolean hasDebuggableBuild() {
-        String type = Build.TYPE == null ? "" : Build.TYPE.toLowerCase(Locale.ROOT);
-        return "eng".equals(type) || "userdebug".equals(type);
+        return isDebuggableBuildType(Build.TYPE);
+    }
+
+    static boolean isDebuggableBuildType(String type) {
+        String value = type == null ? "" : type.toLowerCase(Locale.ROOT);
+        return "eng".equals(value) || "userdebug".equals(value);
     }
 
     /**
@@ -46,8 +54,18 @@ public final class SystemIntegrityChecker {
 
     public static String getProxyHost() {
         String host = System.getProperty("http.proxyHost");
-        if (host == null || host.trim().isEmpty()) host = System.getProperty("https.proxyHost");
+        if (!isUsableProxyHost(host)) host = System.getProperty("https.proxyHost");
         return host == null ? "" : host.trim();
+    }
+
+    static boolean isUsableProxyHost(String host) {
+        return host != null && !host.trim().isEmpty();
+    }
+
+    static boolean hasRootManagerEnvironmentMarker(String path) {
+        if (path == null) return false;
+        String value = path.toLowerCase(Locale.ROOT);
+        return value.contains("magisk") || value.contains("ksu");
     }
 
     private static boolean existsAny(String[] paths) {
@@ -63,10 +81,7 @@ public final class SystemIntegrityChecker {
 
     private static boolean hasRootManagerEnvironmentMarker() {
         try {
-            String path = System.getenv("PATH");
-            if (path == null) return false;
-            String value = path.toLowerCase(Locale.ROOT);
-            return value.contains("magisk") || value.contains("ksu");
+            return hasRootManagerEnvironmentMarker(System.getenv("PATH"));
         } catch (SecurityException e) {
             return false;
         }
