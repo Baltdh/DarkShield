@@ -1117,3 +1117,28 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - A correção pode analisar entradas adicionais até o orçamento global, mas não aumenta os limites de bytes; somente permite que a seleção limitada seja realmente determinística.
+
+
+
+## 2026-09-18 — cobertura determinística de marcadores em recursos
+
+### Estado observado
+- HEAD após a alteração de teste: `aba9bdc019bb9e81eed21811ee569e57ab4dff2d`.
+- O protocolo e os dois logs foram relidos antes da alteração; a frente concorrente permanece preservada.
+- `StaticApkAnalyzer` já usa a seleção limitada determinística para recursos não executáveis, mas faltava cobertura específica acima do limite de 50.
+
+### Concluído
+- Adicionado teste com 51 recursos contendo `frida`, escritos em duas ordens ZIP inversas.
+- O teste confirma detalhe idêntico entre as duas análises, mantém os primeiros marcadores lexicográficos esperados e descarta o marcador posterior acima do limite.
+- Arquivo alterado: `DarkShield/app/src/test/java/com/darkshield/security/analysis/StaticApkAnalyzerTest.java`.
+- Commit: `aba9bdc019bb9e81eed21811ee569e57ab4dff2d`.
+
+### Validação
+- Teste commitado no `main` e arquivo relido após a alteração.
+- Ainda não há confirmação de build/Actions para este novo commit pelo conector disponível; não declarei CI aprovado.
+
+### Próximo trabalho
+- Continuar a revisão de integração e limites de custo, priorizando casos concretos e evitando alterações de produção sem necessidade.
+
+### Riscos
+- O teste confirma somente determinismo da seleção limitada de recursos; não altera o limite de 50 nem amplia o orçamento de análise.
