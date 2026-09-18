@@ -46,6 +46,16 @@ public class RiskCalculatorTest {
                 finding(ScanFinding.Level.INFO, 0))));
     }
 
+    @Test public void nullLevelDoesNotAffectStatus() {
+        assertEquals("REVISÃO RECOMENDADA", RiskCalculator.status(Arrays.asList(
+                finding(null, 9),
+                finding(ScanFinding.Level.MEDIUM, 1)
+        )));
+        assertEquals("SEM INDICADORES FORTES", RiskCalculator.status(Arrays.asList(
+                finding(null, 9)
+        )));
+    }
+
     @Test public void nullFindingsDoNotAffectStatus() {
         assertEquals("REVISÃO RECOMENDADA", RiskCalculator.status(Arrays.asList(
                 null,
