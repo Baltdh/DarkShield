@@ -100,13 +100,8 @@ public final class StaticApkAnalyzer {
                     }
                 }
 
-                boolean binaryCode = lower.endsWith(".dex")
-                        || (lower.startsWith("lib/") && lower.endsWith(".so"))
-                        || (lower.startsWith("assets/")
-                            && (lower.endsWith(".dex")
-                                || lower.endsWith(".so")
-                                || lower.endsWith(".odex")));
-                if (binaryCode && contentScanned < MAX_TOTAL_CONTENT_SCAN_BYTES) {
+                boolean executablePayload = isExecutablePayload(zip, entry, lower);
+                if (executablePayload && contentScanned < MAX_TOTAL_CONTENT_SCAN_BYTES) {
                     int budget = (int) Math.min(
                             MAX_ENTRY_CONTENT_SCAN_BYTES,
                             MAX_TOTAL_CONTENT_SCAN_BYTES - contentScanned);
@@ -202,7 +197,7 @@ public final class StaticApkAnalyzer {
                 out.add(new ScanFinding(
                         ScanFinding.Level.LOW,
                         "Marcadores suspeitos no conteúdo de DEX/bibliotecas",
-                        "Foram encontrados textos associados a instrumentação dentro da amostra analisada de DEX/bibliotecas (início/final, quando a leitura da cauda permaneceu dentro do limite): "
+                        "Foram encontrados textos associados a instrumentação dentro da amostra analisada de DEX/bibliotecas ou outro payload executável reconhecido por assinatura (início/final, quando a leitura da cauda permaneceu dentro do limite): "
                                 + detail + ". Isso é um indicador heurístico e não prova comportamento malicioso.",
                         packageName, 2,
                         "Revise a origem do APK e compare o certificado/versão com a distribuição oficial"));
@@ -362,10 +357,39 @@ public final class StaticApkAnalyzer {
 
     private static boolean isExecutableEntry(String name) {
         return name.endsWith(".dex")
+                || name.endsWith(".odex")
+                || name.endsWith(".vdex")
                 || (name.startsWith("lib/") && name.endsWith(".so"))
                 || name.startsWith("bin/")
                 || (name.startsWith("assets/") && (
-                        name.endsWith(".dex") || name.endsWith(".so") || name.endsWith(".odex")));
+                        name.endsWith(".dex") || name.endsWith(".so")
+                                || name.endsWith(".odex") || name.endsWith(".vdex")));
+    }
+
+    /**
+     * Prefer the path/extension signal, but also recognize disguised executable
+     * payloads from their file signatures so a payload named e.g. .bin or .dat
+     * still receives bounded content inspection.
+     */
+    private static boolean isExecutablePayload(
+            ZipFile zip, ZipEntry entry, String lowerName) {
+        if (isExecutableEntry(lowerName)) return true;
+
+        byte[] magic = readRange(zip, entry, 0L, 4);
+        if (magic == null || magic.length < 4) return false;
+
+        // Dalvik/ART bytecode: dex\n / dey\n (ODEX) and VDEX containers.
+        if ((magic[0] == 'd' && magic[1] == 'e' && magic[2] == 'x' && magic[3] == '\n')
+                || (magic[0] == 'd' && magic[1] == 'e' && magic[2] == 'y' && magic[3] == '\n')
+                || (magic[0] == 'v' && magic[1] == 'd' && magic[2] == 'e' && magic[3] == 'x')) {
+            return true;
+        }
+
+        // ELF native executable/shared-object signature.
+        return (magic[0] & 0xFF) == 0x7F
+                && magic[1] == 'E'
+                && magic[2] == 'L'
+                && magic[3] == 'F';
     }
 
     private static boolean containsSuspiciousMarker(String name) {
