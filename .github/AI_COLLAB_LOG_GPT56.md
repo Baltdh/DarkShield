@@ -1207,3 +1207,24 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Próximo trabalho
 - Procurar outros caminhos que possam transformar falha de coleta em ausência de indicador, além de revisar limites de desempenho da varredura completa.
+
+
+## 2026-09-18 — revisão de inventário incompleto e CI
+
+### Estado observado
+- O outro agente avançou após a última passagem e adicionou tratamento explícito para falha de `getInstalledPackages()`.
+- HEAD atual observado: `3082ad2addb755a0477fbafafd9c867c0e713809`.
+- O commit anterior de metadados/assinatura (`575ee650beedb747ff586b3c23007da998d1dd2e`) também permanece no histórico.
+
+### Revisão
+- Conferi o pipeline atual de `SecurityScanner.scan()`: quando o inventário fica indisponível, o scanner agora registra um finding MEDIUM em vez de tratar a ausência de pacotes como uma varredura normal vazia.
+- A verificação continua executando acessibilidade, notificações, administradores, correlação, integridade e rede nesse cenário.
+- Não alterei esse código para evitar conflito com a frente concorrente.
+- Acompanhei o Actions diretamente pela API: workflow #166 para o HEAD atual está `in_progress`.
+
+### Próximo trabalho
+- Aguardar o resultado do workflow #166 antes de propor alterações na frente de scanner.
+- Depois, continuar procurando casos concretos de cobertura/robustez que possam ser testados sem interferir no trabalho concorrente.
+
+### Riscos
+- Sem o inventário de pacotes, a auditoria por aplicativo não pode ser considerada completa; o novo finding explicita essa limitação e aplica impacto heurístico moderado.
