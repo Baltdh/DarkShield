@@ -1168,3 +1168,27 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - A mudança afeta somente ordenação textual; nenhuma pontuação, severidade ou conteúdo dos achados foi alterado.
+
+
+## 2026-09-18 — endurecimento de metadados e assinatura
+
+### Estado observado
+- HEAD confirmado antes da edição: `eee4186047cbb0e4740897e4d37fff85aa42492e`.
+- O outro agente continua avançando a determinização de `ScanReport`; preservei os commits concorrentes.
+
+### Concluído
+- `SecurityScanner.java` passou a reutilizar `ApplicationInfo` e `AppOpsManager` durante uma varredura, reduzindo consultas repetidas ao sistema.
+- Adicionada sinalização heurística para apps de terceiros com target SDK muito antigo e para APKs marcados como `testOnly`.
+- Adicionada informação não pontuada quando o app permite tráfego cleartext.
+- Corrigida a leitura da assinatura: para rotação de certificado, o relatório usa o certificado atual (último da história); para múltiplos signatários, todos os hashes são exibidos em ordem determinística.
+- Commit: `575ee650beedb747ff586b3c23007da998d1dd2e`.
+
+### Validação
+- Actions #165 foi disparado para o novo HEAD e está na fila; o Actions #164 anterior concluiu com sucesso.
+- As referências Android usadas para a alteração confirmam que a história de assinatura é ordenada do certificado original ao atual e que `FLAG_USES_CLEARTEXT_TRAFFIC` representa permissão para tráfego sem criptografia.
+
+### Próximo trabalho
+- Acompanhar #165 e continuar a auditoria por casos concretos de precisão, desempenho, cobertura e robustez, sem duplicar a frente concorrente.
+
+### Riscos
+- target SDK antigo, `testOnly` e cleartext são sinais contextuais; não devem ser tratados como prova de malware. Cleartext foi mantido sem pontuação justamente para evitar falso positivo.
