@@ -21,6 +21,7 @@ public final class StaticApkAnalyzer {
     private static final int MAX_SUSPICIOUS_CONTENT_HITS = 20;
     private static final int MAX_ENTRY_CONTENT_SCAN_BYTES = 2 * 1024 * 1024;
     private static final long MAX_TOTAL_CONTENT_SCAN_BYTES = 8L * 1024L * 1024L;
+    private static final long MAX_COMPRESSED_TAIL_SKIP_BYTES = 2L * 1024L * 1024L;
 
     // Keep distinctive markers here. Very short/generic terms such as "rat"
     // can match innocent filenames and create excessive false positives.
@@ -176,7 +177,7 @@ public final class StaticApkAnalyzer {
                 out.add(new ScanFinding(
                         ScanFinding.Level.LOW,
                         "Marcadores suspeitos no conteúdo de DEX/bibliotecas",
-                        "Foram encontrados textos associados a instrumentação dentro da amostra analisada de DEX/bibliotecas (início/final): "
+                        "Foram encontrados textos associados a instrumentação dentro da amostra analisada de DEX/bibliotecas (início/final, quando a leitura da cauda permaneceu dentro do limite): "
                                 + detail + ". Isso é um indicador heurístico e não prova comportamento malicioso.",
                         packageName, 2,
                         "Revise a origem do APK e compare o certificado/versão com a distribuição oficial"));
@@ -255,6 +256,15 @@ public final class StaticApkAnalyzer {
         long size = entry.getSize();
         if (size <= 0) return new byte[0];
         long start = Math.max(0L, size - limit);
+
+        // ZipFile can seek cheaply through STORED entries. For compressed
+        // entries, skipping a very large uncompressed prefix may require
+        // inflating nearly the whole stream, defeating the analysis budget.
+        if (entry.getMethod() != ZipEntry.STORED
+                && start > MAX_COMPRESSED_TAIL_SKIP_BYTES) {
+            return new byte[0];
+        }
+
         return readRange(zip, entry, start, limit);
     }
 
