@@ -89,11 +89,7 @@ public class MainActivity extends android.app.Activity {
         summary.setText(summaryBuilder, TextView.BufferType.SPANNABLE);
 
         lastReport = buildShareReport(scanReport, status, risk, details, informational);
-        report.setText(
-                details.isEmpty()
-                        ? "Nenhum indicador que exija revisão imediata foi encontrado."
-                        : details
-        );
+        report.setText(renderReportDetails(details, informational));
 
         progress.setVisibility(View.GONE);
         scan.setEnabled(true);
@@ -147,8 +143,21 @@ public class MainActivity extends android.app.Activity {
         Toast.makeText(this, "A verificação não foi concluída.", Toast.LENGTH_SHORT).show();
     }
 
+    private String renderReportDetails(String details, String informational) {
+        if (details.isEmpty() && informational.isEmpty()) {
+            return "Nenhum indicador que exija revisão imediata foi encontrado.";
+        }
+        StringBuilder out = new StringBuilder();
+        if (!details.isEmpty()) out.append(details);
+        if (!informational.isEmpty()) {
+            if (out.length() > 0) out.append("\n\n");
+            out.append("INFORMAÇÕES TÉCNICAS\n\n").append(informational);
+        }
+        return out.toString();
+    }
+
     private String buildShareReport(
-            ScanReport report, String status, int risk, String details) {
+            ScanReport report, String status, int risk, String details, String informational) {
         StringBuilder b = new StringBuilder();
         b.append("DarkShield — Relatório de segurança\n");
         b.append("Status: ").append(status).append("\n");
@@ -159,14 +168,9 @@ public class MainActivity extends android.app.Activity {
         if (!packageSummary.isEmpty()) {
             b.append("\nPacotes com sinais para revisão:\n").append(packageSummary).append("\n");
         }
-        b.append("\n");
+        b.append("\n").append(renderReportDetails(details, informational)).append("\n");
         b.append(
-                details.isEmpty()
-                        ? "Nenhum indicador exigindo revisão imediata.\n"
-                        : details
-        );
-        b.append(
-                "\nNota: indicadores heurísticos não constituem prova automática "
+                "Nota: indicadores heurísticos não constituem prova automática "
                         + "de malware ou invasão.\n"
         );
         return b.toString();
