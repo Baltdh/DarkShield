@@ -42,6 +42,20 @@ O scanner usa apenas APIs e informações acessíveis a um aplicativo Android se
 
 O uso de QUERY_ALL_PACKAGES pode estar sujeito às políticas de distribuição da Google Play. O projeto foi estruturado para auditoria local e pode ser instalado fora da Play Store.
 
+## Como interpretar o relatório
+
+O **score exibido** é uma medida heurística de revisão, não uma probabilidade de malware. O relatório soma os pontos positivos dos achados e aplica uma escala de exibição limitada a 100 (pontos exibidos = mínimo de 100 e pontos brutos × 3). O campo de **pontos brutos** permanece separado para mostrar quando a escala já atingiu o teto.
+
+Os níveis são derivados da severidade dos achados encontrados: `CRITICAL` resulta em **RISCO CRÍTICO**; `HIGH`, em **RISCO ALTO**; `MEDIUM`, em **REVISÃO RECOMENDADA**; `LOW`, em **POUCOS INDICADORES**. Quando existem somente informações técnicas (`INFO`) ou nenhum achado, o estado é **SEM INDICADORES FORTES**.
+
+Achados `INFO` são mantidos como informação técnica e não entram na contagem de itens que exigem revisão. O resumo por pacote mostra a maior severidade observada, a quantidade de achados relevantes e os pontos brutos acumulados; a lista detalhada de revisão não inclui os registros `INFO`.
+
+## Limites de custo da análise estática
+
+Para manter a verificação completa previsível em aparelhos comuns, o analisador estático impõe limites: APKs acima de 200 MiB não são processados pela análise ZIP; a estrutura é limitada a 10.000 entradas; cada DEX/biblioteca tem amostragem de até 2 MiB; e o orçamento combinado de conteúdo amostrado é de até 8 MiB.
+
+Quando o final de uma entrada ZIP comprimida exigiria pular um prefixo descompactado muito grande, a amostragem da cauda é omitida para evitar custo excessivo. Esses limites podem reduzir a cobertura da análise estática, e por isso seus avisos não devem ser interpretados como prova de segurança ou ausência de malware.
+
 ## Compilação
 
 O workflow do GitHub Actions usa JDK 17 e Gradle 8.11.1 para gerar um APK de debug e executar os testes unitários.
