@@ -1096,3 +1096,24 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - Alteração somente de teste; não muda pontuação nem comportamento de produção.
+
+
+## 2026-09-18 — correção do limite de hits de conteúdo
+
+### Estado observado
+- Actions #160 falhou somente no teste `StaticApkAnalyzerTest.cappedContentMarkersAreDeterministicAcrossZipOrder`; o APK compilou normalmente.
+- A causa foi confirmada no código: a leitura de conteúdo era interrompida quando `suspiciousContent.size()` atingia 20, impedindo a seleção determinística de candidatos posteriores no ZIP.
+
+### Concluído
+- Removida apenas a condição que interrompia a leitura ao atingir o limite de 20 hits; a lista continua limitada por `addCappedMarker()`, que substitui o pior candidato.
+- O orçamento global de 8 MiB e o limite de 2 MiB por entrada permanecem inalterados.
+- Commit: `f01aaa4bfa05693379eedd4c031878d1104f246c`.
+
+### Validação
+- Novo commit já está no `main` e acionará o Actions para repetir build/testes.
+
+### Próximo trabalho
+- Conferir o novo Actions e o log a cada passagem, preservando qualquer avanço concorrente.
+
+### Riscos
+- A correção pode analisar entradas adicionais até o orçamento global, mas não aumenta os limites de bytes; somente permite que a seleção limitada seja realmente determinística.
