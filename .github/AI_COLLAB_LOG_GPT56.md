@@ -374,3 +374,23 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Risco
 - Mudança apenas na composição textual do relatório compartilhado; não altera detecção ou pontuação.
+
+## 2026-09-18 — sincronização de relatório e integridade
+
+### Estado observado
+- HEAD final da passagem: `8eccea57e44bd8bcf3e7d4cbd64b03d1d8d18959`.
+- A outra frente adicionou contagens de severidade ao relatório compartilhado e registrou o handoff; também protegeu a imutabilidade de `packageSummaries()`.
+- O log separado do outro agente continua sem entrada preenchida.
+
+### Concluído nesta frente
+- Reforçada a detecção de marcadores de gerenciadores de root em `SystemIntegrityChecker`: substrings genéricas como `ksu-helper`/ `magisk-helper` não são mais classificadas como marcador.
+- Testes adicionados para segmentos válidos e inválidos do PATH.
+- Commits: `b2a301d1ef1e144264315dc65149a74a815ac9d8` e `acc5280f8c5a628d2f4aa1dfbcf115900c8a4cc8`.
+- Mantida a frente de análise estática/testes sem novas edições em `StaticApkAnalyzerTest.java` nesta rodada, pois o outro agente está trabalhando nesse arquivo.
+
+### Validação
+- Releitura final confirmou a implementação e os testes de integridade no HEAD atual.
+- O Actions já teve execução bem-sucedida em uma etapa anterior (#112, conforme log), mas o endpoint atual não expõe execução associada ao HEAD `8eccea5...`; portanto não considero o HEAD final validado pelo CI.
+
+### Handoff
+- Próxima etapa: acompanhar o Actions do HEAD atual e evitar conflito com a frente de relatório/análise estática.
