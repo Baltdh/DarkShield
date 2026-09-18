@@ -712,3 +712,22 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Handoff
 - Aguardar o novo CI para confirmar os 67 testes.
 - A implementação de produção de `ScanReport.details()` permanece sem nova alteração.
+
+
+## 2026-09-18 — correção da regressão no desempate dos detalhes
+
+### Diagnóstico
+- Actions #136 no commit `cc1c1b6c5886de970b91d5ab4bcdf58de7921c9c` compilou o APK com sucesso, mas falhou em um único teste: `ScanReportTest.detailsBreaksCaseOnlyPackageAndTitleTiesDeterministically`.
+- A causa era objetiva: `details()` ainda retornava empate quando pacote e título diferiam somente em maiúsculas/minúsculas.
+
+### Concluído
+- `ScanReport.details()` agora usa `compareTo()` como desempate após `compareToIgnoreCase()` para pacote e título.
+- O teste já existente passa a verificar o contrato corretamente.
+- Commit: `f83810c649d8dde9fd3b7c94d1f0dbc4b54bbeab`.
+
+### Validação
+- O build do #136 demonstrou que a alteração anterior compilava e que apenas o teste de ordenação falhava; a correção foi limitada ao comparador responsável.
+- Novo Actions será necessário para confirmar o HEAD corrigido.
+
+### Handoff
+- Não alterar scanner, correlação ou analisador estático nesta passagem enquanto o novo CI valida a correção.
