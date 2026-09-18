@@ -20,6 +20,7 @@ import android.text.TextUtils;
 import android.view.accessibility.AccessibilityManager;
 import java.security.MessageDigest;
 import java.util.*;
+import com.darkshield.security.analysis.StaticApkAnalyzer;
 
 public final class SecurityScanner {
     private static final String[] SENSITIVE_PERMISSIONS = {
@@ -192,6 +193,10 @@ public final class SecurityScanner {
             out.add(new ScanFinding(
                     ScanFinding.Level.INFO, "Assinatura SHA-256",
                     cert, p.packageName, 0, null));
+        }
+
+        if (!system && ai.sourceDir != null && !ai.sourceDir.isEmpty()) {
+            out.addAll(StaticApkAnalyzer.analyze(ai.sourceDir, p.packageName));
         }
     }
 
