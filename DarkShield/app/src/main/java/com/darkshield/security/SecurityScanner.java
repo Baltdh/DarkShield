@@ -21,6 +21,7 @@ import android.view.accessibility.AccessibilityManager;
 import java.security.MessageDigest;
 import java.util.*;
 import com.darkshield.security.analysis.StaticApkAnalyzer;
+import com.darkshield.security.analysis.ThreatCorrelationEngine;
 
 public final class SecurityScanner {
     private static final String[] SENSITIVE_PERMISSIONS = {
@@ -54,6 +55,7 @@ public final class SecurityScanner {
         checkAccessibility(out);
         checkNotificationListeners(out);
         checkDeviceAdmins(out);
+        out.addAll(ThreatCorrelationEngine.correlate(out));
         checkSystemIntegrity(out);
         checkNetworkState(out);
         return out;
