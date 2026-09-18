@@ -34,6 +34,15 @@ public class ScanReportTest {
         assertTrue(!details.contains("[INFO]"));
     }
 
+    @Test public void reviewCountExcludesInfoFindings() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                finding(ScanFinding.Level.INFO, 0),
+                finding(ScanFinding.Level.MEDIUM, 3),
+                finding(ScanFinding.Level.LOW, 1)));
+
+        assertEquals(2, report.countRequiringReview());
+    }
+
     @Test public void nullLevelCountIsZero() {
         ScanReport report = new ScanReport(null);
         assertEquals(0, report.count(null));
