@@ -89,6 +89,10 @@ jobs:
           test -n "$SDK_ROOT"
           APKSIGNER="$(find "$SDK_ROOT/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
           test -x "$APKSIGNER"
+          BUILD_TOOLS="$(dirname "$APKSIGNER")"
+          ZIPALIGN="$BUILD_TOOLS/zipalign"
+          test -x "$ZIPALIGN"
+          "$ZIPALIGN" -c -v 4 "$APK"
           "$APKSIGNER" verify --verbose "$APK"
           ls -lh "$APK" "$APK.sha256"
 
