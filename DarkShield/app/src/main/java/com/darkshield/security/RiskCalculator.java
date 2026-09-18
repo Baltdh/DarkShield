@@ -14,6 +14,10 @@ public final class RiskCalculator {
         return Math.min(100, points * 3);
     }
 
+    public static int scoreForDisplay(List<ScanFinding> findings) {
+        return score(findings);
+    }
+
     public static String status(List<ScanFinding> findings) {
         if (findings == null || findings.isEmpty()) return "SEM INDICADORES FORTES";
         boolean critical = false, high = false, medium = false, low = false;
