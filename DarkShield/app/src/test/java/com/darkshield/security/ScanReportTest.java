@@ -99,6 +99,21 @@ public class ScanReportTest {
         assertEquals("com.example.b", summaries.get(1).packageName);
     }
 
+    @Test public void packageSummaryBreaksCaseOnlyPackageTiesDeterministically() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.LOW, "upper", "detail",
+                        "com.example.Zeta", 1, null),
+                new ScanFinding(ScanFinding.Level.LOW, "lower", "detail",
+                        "com.example.alpha", 1, null),
+                new ScanFinding(ScanFinding.Level.LOW, "case", "detail",
+                        "com.example.Alpha", 1, null)));
+
+        java.util.List<ScanReport.PackageSummary> summaries = report.packageSummaries();
+
+        assertEquals("com.example.Alpha", summaries.get(0).packageName);
+        assertEquals("com.example.alpha", summaries.get(1).packageName);
+    }
+
     @Test public void packageSummaryShowsTopFiveAndCountsRemaining() {
         java.util.List<ScanFinding> findings = new java.util.ArrayList<>();
         for (int i = 0; i < 6; i++) {
