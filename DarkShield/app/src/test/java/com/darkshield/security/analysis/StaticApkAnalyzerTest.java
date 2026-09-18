@@ -200,6 +200,28 @@ public class StaticApkAnalyzerTest {
         assertTrue(apk.delete());
     }
 
+    @Test public void compressedTailAtSkipLimitDoesNotExceedBudget() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        byte[] data = new byte[(3 * 1024 * 1024) + 256];
+        byte[] marker = "boundary-tail-frida-marker".getBytes("ISO-8859-1");
+        System.arraycopy(marker, 0, data, data.length - marker.length, marker.length);
+
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "classes.dex", data);
+        }
+
+        List<ScanFinding> findings =
+                StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+
+        assertTrue(findings.stream()
+                .noneMatch(x -> x.title.contains("conteúdo de DEX")));
+        assertTrue(findings.stream()
+                .anyMatch(x -> x.title.equals("Estrutura ZIP do APK")));
+
+        assertTrue(apk.delete());
+    }
+
     @Test public void veryFarCompressedTailDoesNotForceLargeSkip() throws Exception {
         File apk = File.createTempFile("darkshield-test", ".apk");
         byte[] data = new byte[(4 * 1024 * 1024) + 256];
