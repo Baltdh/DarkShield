@@ -58,7 +58,7 @@
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="STATUS DO DISPOSITIVO"
+                android:text="PROTEÇÃO DO DISPOSITIVO"
                 android:textColor="#8F97A8"
                 android:textSize="12sp"
                 android:textStyle="bold"
@@ -79,7 +79,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:text="A análise não remove nada automaticamente."
+                android:text="Verificação local, sem remoção automática de aplicativos."
                 android:textColor="#B8BECC"
                 android:textSize="14sp"
                 android:lineSpacingExtra="2dp" />
@@ -141,7 +141,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="22dp"
-            android:text="RESULTADOS DA ANÁLISE"
+            android:text="RESULTADOS DA VERIFICAÇÃO"
             android:textColor="#8F97A8"
             android:textSize="12sp"
             android:textStyle="bold"
@@ -164,7 +164,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Dica: toque em um pacote listado no resultado para abrir os detalhes do aplicativo. O DarkShield não remove aplicativos automaticamente."
+            android:text="Dica: toque em um pacote listado para abrir os detalhes do aplicativo. Indicadores são analisados em conjunto; um sinal isolado não confirma malware."
             android:textColor="#7F8797"
             android:textSize="12sp"
             android:lineSpacingExtra="2dp" />
