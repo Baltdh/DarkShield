@@ -64,11 +64,15 @@ public class MainActivity extends android.app.Activity {
         String status = scanReport.getStatus();
         String details = scanReport.details();
         score.setText(status + "  •  " + risk + "/100");
+        String packageSummary = scanReport.packageSummary();
         summary.setText(
                 "Crítico: " + critical + "   Alto: " + high
                         + "   Médio: " + medium + "   Baixo: " + low
                         + "\n" + scanReport.countRequiringReview()
                         + " item(ns) exigem revisão; " + findings.size() + " registro(s) no total.\n\n"
+                        + (packageSummary.isEmpty()
+                                ? ""
+                                : "Pacotes com sinais para revisão:\n" + packageSummary + "\n\n")
                         + "A pontuação é heurística: um achado não prova invasão ou malware."
         );
 
