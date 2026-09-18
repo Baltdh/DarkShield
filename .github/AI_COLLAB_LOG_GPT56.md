@@ -584,3 +584,15 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Handoff
 - Validar o HEAD atual no Actions e, após sucesso, continuar a busca por casos-limite fora das frentes ocupadas.
+
+
+## 2026-09-18 — fechamento da inconsistência de contagem
+
+### Concluído
+- O teste de regressão mostrou que `countRequiringReview()` ainda contabilizava achados com `level == null`, apesar de `details()` e `packageSummaries()` já os ignorarem.
+- Ajustado `ScanReport.countRequiringReview()` para ignorar níveis nulos, mantendo o contrato consistente com `RiskCalculator.status()`.
+- Commit: `1dbf6415368e3b01ff60da4d35f1e38b622e73ef`.
+
+### Validação
+- O teste dedicado permanece em `ScanReportTest`.
+- O novo commit disparou uma nova execução do workflow; aguardar o CI antes de declarar esta frente concluída.
