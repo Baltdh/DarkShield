@@ -1385,3 +1385,20 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - O teste removido não demonstrava de forma confiável uma falha de leitura de stream; a cobertura dessa condição precisa de um fixture determinístico válido ou de uma abstração testável, em vez de depender de corrupção manual do ZIP.
+
+
+## 2026-09-18 — CI hardening during parallel audit
+
+### Alteração desta frente
+- Reforcei o workflow `.github/workflows/android-apk.yml` para executar **Android Lint** (`lintDebug`) depois da suíte unitária.
+- Commit: `56d3f314452185eba6012b880a016484761b4843`.
+- O build continua usando o projeto real em `DarkShield/`, mantendo a validação do APK e SHA-256.
+- A mudança é independente do scanner estático e não altera a lógica de detecção em andamento pelo outro agente.
+
+### Objetivo
+- Fazer o CI bloquear regressões de qualidade Android que não aparecem apenas no `assembleDebug` ou nos testes unitários.
+- Manter a execução compatível com o estado atual: usa `./gradlew` quando o wrapper existir e o Gradle configurado pelo Actions como fallback.
+
+### Próxima verificação
+- Conferir o próximo CI e corrigir problemas de lint reais, sem mascarar warnings/erros.
+- Continuar a auditoria de falsos positivos, cobertura estática e falhas silenciosas sem sobrescrever trabalho concorrente.
