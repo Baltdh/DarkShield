@@ -55,7 +55,7 @@ Achados `INFO` são mantidos como informação técnica e não entram na contage
 
 Para manter a verificação completa previsível em aparelhos comuns, o analisador estático impõe limites: APKs acima de 200 MiB não são processados pela análise ZIP; a estrutura é limitada a 10.000 entradas; cada DEX/biblioteca tem amostragem de até 2 MiB; e o orçamento combinado de conteúdo amostrado é de até 8 MiB.
 
-Quando o final de uma entrada ZIP comprimida exigiria pular um prefixo descompactado muito grande, a amostragem da cauda é omitida para evitar custo excessivo. Esses limites podem reduzir a cobertura da análise estática, e por isso seus avisos não devem ser interpretados como prova de segurança ou ausência de malware.
+Quando o final de uma entrada ZIP comprimida exigiria pular um prefixo descompactado muito grande, a amostragem da cauda é omitida para evitar custo excessivo. Se uma entrada DEX/biblioteca não puder ser lida, o relatório registra explicitamente a amostra indisponível e não interpreta essa falha como ausência de risco. Esses limites podem reduzir a cobertura da análise estática, e por isso seus avisos não devem ser interpretados como prova de segurança ou ausência de malware.
 
 ## Compilação
 
