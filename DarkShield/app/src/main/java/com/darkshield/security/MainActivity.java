@@ -219,6 +219,15 @@ public class MainActivity extends android.app.Activity {
         share.setEnabled(false);
         copy.setEnabled(false);
         lastReport = "";
+        countCritical.setText("CRÍTICO\\n0");
+        countHigh.setText("ALTO\\n0");
+        countMedium.setText("MÉDIO\\n0");
+        countLow.setText("BAIXO\\n0");
+        updateSeverityAccessibility(countCritical, "crítico", 0);
+        updateSeverityAccessibility(countHigh, "alto", 0);
+        updateSeverityAccessibility(countMedium, "médio", 0);
+        updateSeverityAccessibility(countLow, "baixo", 0);
+        coverageHint.setText("Cobertura desta verificação: indisponível porque a análise não foi concluída.");
         score.setText("VERIFICAÇÃO NÃO CONCLUÍDA");
         lastScan.setText("Última verificação: falhou");
         nextAction.setText("Próximo passo: tente a verificação novamente. O erro, por si só, não indica comprometimento.");
