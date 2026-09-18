@@ -495,6 +495,28 @@ public final class SecurityScanner {
         return false;
     }
 
+    private boolean hasSpecialAccess(String permission, String packageName) {
+        try {
+            ApplicationInfo ai = pm.getApplicationInfo(packageName, 0);
+            AppOpsManager appOps =
+                    (AppOpsManager) c.getSystemService(Context.APP_OPS_SERVICE);
+            if (appOps == null) return false;
+
+            String op = AppOpsManager.permissionToOp(permission);
+            if (op == null
+                    && "android.permission.MANAGE_EXTERNAL_STORAGE".equals(permission)
+                    && Build.VERSION.SDK_INT >= 30) {
+                op = "android:manage_external_storage";
+            }
+            if (op == null) return false;
+
+            return appOps.checkOpNoThrow(op, ai.uid, packageName)
+                    == AppOpsManager.MODE_ALLOWED;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private boolean isPermissionGranted(String permission, String packageName) {
         try {
             String op = AppOpsManager.permissionToOp(permission);
