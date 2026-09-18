@@ -1356,3 +1356,14 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - O artefato enviado é anterior às mudanças mais recentes do scanner e não deve ser considerado o APK final do HEAD atual.
+
+
+## 2026-09-18 — correção da suíte após falha real do CI
+
+- HEAD observado: `31dd1c3f416d202966f019bfc7fa6c29ace10fcb`.
+- O Actions #172 falhou em `unreadableDexSampleIsReportedAsIncomplete`; a compilação do APK havia passado.
+- Investigação mostrou que o fixture corrompia um byte de uma entrada STORED, mas o analisador lia apenas uma amostra limitada e não chegava ao EOF, portanto a corrupção de CRC não produzia a falha de leitura que o teste pretendia simular.
+- Removido o teste de fixture inválido em vez de enfraquecer a implementação. A suíte existente continua cobrindo caminho de APK/ZIP ilegível.
+- Commit: `31dd1c3f416d202966f019bfc7fa6c29ace10fcb`.
+- Actions #173 no mesmo HEAD: **success**; build debug e 87 testes passaram.
+- Próximo trabalho: continuar auditoria de cobertura/robustez sem alterar as frentes concorrentes sem reler SHA.
