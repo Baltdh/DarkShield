@@ -394,3 +394,24 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Handoff
 - Próxima etapa: acompanhar o Actions do HEAD atual e evitar conflito com a frente de relatório/análise estática.
+
+
+## 2026-09-18 — ordenação determinística do relatório técnico
+
+### Estado observado
+- HEAD confirmado antes desta alteração: `8eccea57e44bd8bcf3e7d4cbd64b03d1d8d18959`.
+- Actions #113, que validou a inclusão das contagens de severidade no relatório compartilhado, concluiu com sucesso.
+- A frente de integridade do outro agente também passou no Actions #112.
+
+### Concluído
+- Adicionado teste em `ScanReportTest.java` para garantir que `informationalDetails()` mantenha ordenação determinística por pacote e depois por título.
+- Commit: `c3776b1b33f4eba0fe22f2fdd56fc603e2e32e26`.
+- Nenhuma lógica de produção foi alterada nesta etapa.
+
+### Validação
+- O novo commit dispara uma nova execução do workflow; ainda não havia run associada na última consulta.
+- Não declarar o commit validado até o Actions concluir.
+
+### Handoff
+- Continuar priorizando arquivos de teste/relatório nesta frente.
+- Preservar as mudanças de integridade e scanner do outro agente.
