@@ -1291,3 +1291,22 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - Alteração somente de teste; não muda score nem comportamento de produção.
+
+
+## 2026-09-18 — contenção de inflação por correlações sobrepostas
+
+### Estado observado
+- HEAD antes da alteração: `701c17b0ee81971b6f001c9fd31d396241ca9754`.
+- A frente concorrente continua concentrada em scanner/correlação; o arquivo `ThreatCorrelationEngine.java` foi relido imediatamente antes da edição.
+
+### Concluído
+- `ThreatCorrelationEngine.correlate()` agora consolida correlações derivadas por pacote e mantém apenas a correlação mais forte, evitando que várias regras descrevendo o mesmo conjunto de sinais somem pontos repetidamente.
+- O desempate entre correlações de mesma força permanece determinístico por título, detalhe e ação.
+- Adicionado teste cobrindo pacote com acesso remoto + acessibilidade + sobreposição + notificações + administrador, garantindo uma única correlação forte (+7).
+- Commits: `c326af2b4c480ad4d9b712cafe5332cac2aa396b` e `1e78fd317e7de9243e96c97d8d062f64fb83ed13`.
+
+### Próximo trabalho
+- Verificar o Actions do novo estado e continuar a auditoria por falsos positivos, caminhos de falha e limites de custo, preservando commits concorrentes.
+
+### Riscos
+- A consolidação reduz pontuação duplicada de correlações; os achados-base continuam presentes no relatório e não são removidos.
