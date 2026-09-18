@@ -1052,3 +1052,26 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - A seleção determinística descarta candidatos acima do limite por projeto; isso é intencional para manter memória/custo previsíveis.
+
+
+## 2026-09-18 — cobertura determinística de hits de conteúdo
+
+### Estado observado
+- Releitura do protocolo, dos dois logs e dos arquivos da frente concluída antes da alteração.
+- A implementação de seleção limitada já mantém os menores marcadores determinísticos; esta passagem completou a cobertura desse comportamento para conteúdo DEX.
+- Nenhum arquivo da frente concorrente foi alterado.
+
+### Concluído
+- Adicionado teste com 21 arquivos DEX contendo marcadores diferentes, escritos em duas ordens ZIP inversas.
+- O teste confirma que, mesmo ultrapassando o limite de 20 hits, o finding mantém exatamente o mesmo detalhe e descarta os candidatos lexicograficamente posteriores.
+- Commit: `9d4055c3241a222224cd3454b38525fdcd139de3`.
+
+### Validação
+- Arquivo de teste relido após o commit.
+- Ainda não há status de CI exposto para este novo estado pelo conector; portanto não declaro build aprovado.
+
+### Próximo trabalho
+- Revisar a integração final da análise estática com o scanner e documentação, procurando inconsistências de interpretação, sem alterar a frente concorrente.
+
+### Riscos
+- O limite de 20 hits continua preservado; o teste verifica apenas determinismo e não aumenta o orçamento de análise.
