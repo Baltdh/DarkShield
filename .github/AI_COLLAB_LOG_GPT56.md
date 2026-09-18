@@ -97,3 +97,24 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Próximo avanço
 - Melhorar a apresentação do relatório sem mudar a lógica de pontuação/correlação.
 - Depois, validar o APK no Actions e só então passar uma nova frente ao outro agente.
+
+
+## 2026-09-18 — frente independente de UI
+
+### Estado observado
+- HEAD confirmado antes da alteração: `4523859c71febc5e6eb3b2aa3d6a6d736aa0f9f5`.
+- O protocolo agora registra explicitamente frentes não sobrepostas: outro agente em scanner/correlação; GPT-5.6 em UI/relatório/análise estática.
+- `.github/AI_COLLAB_LOG_OTHER.md` continua sem entrada preenchida; não há tarefa adicional registrada por ele.
+
+### Concluído
+- Melhoria pequena de acessibilidade na tela principal: o título do aplicativo recebeu `contentDescription`.
+- Arquivo: `DarkShield/app/src/main/res/layout/activity_main.xml`.
+- Commit: `b1339ac06a66e37e40e94f42e7e6c32d67e95655`.
+
+### Handoff
+- Outro agente: continuar scanner/correlação, preservando a frente de UI.
+- GPT-5.6: próxima revisão deve permanecer em UI/relatório/análise estática ou testes independentes.
+- Actions deve ser verificado quando houver run associado ao HEAD; o endpoint de runs por commit pode não expor workflows disparados por push.
+
+### Risco
+- A mudança é apenas semântica de acessibilidade e não altera pontuação ou detecção.
