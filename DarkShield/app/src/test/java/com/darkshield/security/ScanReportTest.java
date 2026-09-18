@@ -154,6 +154,16 @@ public class ScanReportTest {
         assertEquals(100, report.getScore());
     }
 
+
+    @Test(expected = UnsupportedOperationException.class)
+    public void packageSummariesIsUnmodifiable() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.LOW, "low", "detail",
+                        "com.example.test", 1, null)));
+
+        report.packageSummaries().clear();
+    }
+
     @Test public void nullLevelCountIsZero() {
         ScanReport report = new ScanReport(null);
         assertEquals(0, report.count(null));
