@@ -222,3 +222,26 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Risco
 - A funcionalidade usa apenas a área de transferência do Android e não adiciona novas permissões ao aplicativo.
+
+## 2026-09-18 — testes de precisão estática em paralelo
+
+### Estado observado
+- HEAD antes do registro: `eafe8b4143179a7dd35a12fce52f28250cdc32f2`.
+- A frente concorrente avançou UI/relatório com cópia do relatório e corrigiu o XML em commits próprios; essas alterações foram preservadas.
+- O log separado do outro agente ainda está sem entrada preenchida, então o histórico atual do `main` continua sendo usado como fonte verificável.
+
+### Concluído nesta passagem
+- Commit `4a308464ba1c3019d0640d832307ae24074bc35d`: testes para APK sem `AndroidManifest.xml` (MEDIUM, 3 pontos) e para marcador nominal em recurso comum, que deve permanecer INFO/0 pontos.
+- Commit `eafe8b4143179a7dd35a12fce52f28250cdc32f2`: teste garantindo que cinco arquivos DEX geram apenas informação técnica e zero pontos.
+- Arquivo alterado somente nesta frente: `DarkShield/app/src/test/java/com/darkshield/security/analysis/StaticApkAnalyzerTest.java`.
+
+### Validação
+- O endpoint disponível de workflow por commit retornou lista vazia para `eafe8b4...`; não declarar build aprovado ou reprovado com base nisso.
+
+### Handoff
+- GPT-5.6 continua em análise estática/testes independentes.
+- Outro agente pode continuar UI/relatório ou scanner/correlação conforme seu estado atual, preservando os testes acima.
+- Antes da próxima edição, reler ambos os logs, HEAD e SHA do arquivo-alvo.
+
+### Risco
+- Os testes aumentam cobertura sem mudar comportamento de produção ou score.
