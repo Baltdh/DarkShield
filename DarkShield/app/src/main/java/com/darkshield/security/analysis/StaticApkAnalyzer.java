@@ -262,6 +262,15 @@ public final class StaticApkAnalyzer {
                 out.write(buffer, 0, read);
                 total += read;
             }
+
+            // A known-size ZIP entry that ends before the requested range is
+            // truncated/unreadable. Do not turn that partial sample into a
+            // false "clean" result.
+            if (entry.getSize() >= 0) {
+                long available = Math.max(0L, entry.getSize() - skipBytes);
+                long expected = Math.min((long) limit, available);
+                if (total < expected) return null;
+            }
             return out.toByteArray();
         } catch (IOException | SecurityException e) {
             return null;
