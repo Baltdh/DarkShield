@@ -573,3 +573,14 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Handoff
 - Próximo passo: acompanhar o CI do HEAD atual e continuar a revisão de contratos entre findings, score e relatório.
+
+
+## 2026-09-18 — regressão para níveis nulos no relatório
+
+### Concluído
+- Após a correção `75090f5ff2f8b70f805e51e4c17b87bb2ccede57`, foi adicionado teste específico para `ScanReport` ignorar achados com `level == null` em contagem de revisão, detalhes e agrupamento por pacote.
+- O teste foi mantido isolado no arquivo de testes, sem reabrir a implementação já corrigida.
+- Commit do teste: `d5dcdb29c1ad3101e81fa486e45bad2f27983c4b`.
+
+### Handoff
+- Validar o HEAD atual no Actions e, após sucesso, continuar a busca por casos-limite fora das frentes ocupadas.
