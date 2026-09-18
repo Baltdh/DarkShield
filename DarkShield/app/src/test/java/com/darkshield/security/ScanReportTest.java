@@ -308,4 +308,33 @@ public class ScanReportTest {
         assertEquals(0, report.count(null));
         assertEquals(0, report.getScore());
     }
+
+    @Test public void detailsBreaksIdenticalTitleTiesByDetailAndAction() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.MEDIUM, "Same", "z-detail",
+                        "com.example.same", 2, "z-action"),
+                new ScanFinding(ScanFinding.Level.MEDIUM, "Same", "A-detail",
+                        "com.example.same", 2, "a-action")));
+
+        String details = report.details();
+        String[] blocks = details.split("\\n\\n");
+        assertEquals(2, blocks.length);
+        assertTrue(blocks[0].contains("A-detail"));
+        assertTrue(blocks[1].contains("z-detail"));
+    }
+
+    @Test public void informationalDetailsBreaksIdenticalTitleTiesByDetailAndAction() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.INFO, "Same", "z-detail",
+                        "com.example.same", 0, "z-action"),
+                new ScanFinding(ScanFinding.Level.INFO, "Same", "A-detail",
+                        "com.example.same", 0, "a-action")));
+
+        String details = report.informationalDetails();
+        String[] blocks = details.split("\\n\\n");
+        assertEquals(2, blocks.length);
+        assertTrue(blocks[0].contains("A-detail"));
+        assertTrue(blocks[1].contains("z-detail"));
+    }
+
 }
