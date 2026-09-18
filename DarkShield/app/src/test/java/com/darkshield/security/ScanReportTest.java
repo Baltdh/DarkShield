@@ -183,12 +183,12 @@ public class ScanReportTest {
         assertEquals(21, report.getScore());
     }
 
-    @Test public void rawPointsCanExceedDisplayScoreCap() {
+    @Test public void rawPointsCanExceedPackageScoreCap() {
         ScanReport report = new ScanReport(java.util.Arrays.asList(
                 finding(ScanFinding.Level.HIGH, 40)));
 
         assertEquals(40, report.getRawPoints());
-        assertEquals(100, report.getScore());
+        assertEquals(45, report.getScore());
     }
 
 
