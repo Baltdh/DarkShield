@@ -27,7 +27,8 @@ DarkShield é um auditor local de segurança para Android. O objetivo é reunir 
 - análise estática básica da estrutura ZIP de APKs instalados;
 - componentes Android exportados e proteção explícita por permissão, incluindo Activities, serviços, receivers e providers;
 - indicadores heurísticos associados a aplicativos de acesso remoto;
-- correlação entre sinais do mesmo pacote para destacar combinações que merecem revisão.
+- correlação entre sinais do mesmo pacote para destacar combinações que merecem revisão;
+- resumo por pacote com maior severidade, quantidade de achados e pontos brutos para facilitar a revisão.
 
 ## Limitações importantes
 
