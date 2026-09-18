@@ -13,7 +13,7 @@ public final class RiskCalculator {
 
         long points = 0;
         Map<String, Integer> packagePoints = new HashMap<>();
-        int globalPoints = 0;
+        long globalPoints = 0L;
 
         for (ScanFinding finding : findings) {
             if (finding == null) continue;
