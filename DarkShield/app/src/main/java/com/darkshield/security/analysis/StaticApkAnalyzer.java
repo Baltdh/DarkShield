@@ -66,6 +66,7 @@ public final class StaticApkAnalyzer {
         List<String> suspiciousResourceMarkers = new ArrayList<>();
         List<String> suspiciousContent = new ArrayList<>();
         long contentScanned = 0L;
+        boolean contentSampleReadFailure = false;
 
         try (ZipFile zip = new ZipFile(apk)) {
             java.util.Enumeration<? extends ZipEntry> e = zip.entries();
@@ -106,8 +107,12 @@ public final class StaticApkAnalyzer {
                             MAX_ENTRY_CONTENT_SCAN_BYTES,
                             MAX_TOTAL_CONTENT_SCAN_BYTES - contentScanned);
                     byte[] sample = readContentSample(zip, entry, budget);
-                    contentScanned += sample.length;
-                    collectContentMarkers(name, sample, suspiciousContent);
+                    if (sample == null) {
+                        contentSampleReadFailure = true;
+                    } else {
+                        contentScanned += sample.length;
+                        collectContentMarkers(name, sample, suspiciousContent);
+                    }
                 }
             }
 
@@ -164,6 +169,15 @@ public final class StaticApkAnalyzer {
                                 + ". Isso pode ser documentação, recurso empacotado ou outro conteúdo legítimo; não foi pontuado isoladamente.",
                         packageName, 0,
                         "Considere revisar somente se houver outros sinais relacionados"));
+            }
+
+            if (contentSampleReadFailure) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Amostra de conteúdo indisponível",
+                        "Pelo menos uma entrada de DEX/biblioteca não pôde ser lida para a amostragem estática; a ausência de marcador nessa entrada não deve ser interpretada como ausência de risco.",
+                        packageName, 0,
+                        "Repita a análise com um APK íntegro ou faça uma inspeção separada do arquivo"));
             }
 
             if (!suspiciousContent.isEmpty()) {
@@ -224,6 +238,7 @@ public final class StaticApkAnalyzer {
         int tailLimit = limit - headLimit;
         byte[] head = readRange(zip, entry, 0L, headLimit);
         byte[] tail = readTail(zip, entry, tailLimit);
+        if (head == null || tail == null) return null;
 
         ByteArrayOutputStream combined =
                 new ByteArrayOutputStream(head.length + tail.length);
@@ -249,7 +264,7 @@ public final class StaticApkAnalyzer {
             }
             return out.toByteArray();
         } catch (IOException | SecurityException e) {
-            return new byte[0];
+            return null;
         }
     }
 
