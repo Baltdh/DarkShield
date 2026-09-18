@@ -921,3 +921,23 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - Nenhuma alteração de produção; somente cobertura unitária.
+
+## 2026-09-18 — cobertura de marcadores estáticos em conteúdo
+
+### Estado observado
+- HEAD confirmado antes do teste: `7da465b8c2eb3fb293dc649538393c375f5c18dc`.
+- Actions #149 passou com sucesso no estado anterior, incluindo o novo teste de nomes de arquivo case-insensitive.
+- A nova execução #150 foi disparada pelo teste de conteúdo e está aguardando execução.
+
+### Concluído
+- Adicionado teste em `StaticApkAnalyzerTest.java` para confirmar que marcadores em conteúdo DEX também são tratados sem diferenciar maiúsculas/minúsculas.
+- O teste usa `FRIDA` no conteúdo e exige o finding LOW `classes.dex:frida`, protegendo a normalização existente do analisador.
+- Commit: `7c23256288118a9d1d9688fee01258dd8b77c7c7`.
+
+### Handoff
+- Aguardar Actions #150 antes de considerar esta cobertura validada.
+- Manter a frente concorrente de scanner/correlação intacta.
+
+### Riscos
+- Alteração somente de teste; nenhum comportamento de produção ou pontuação foi modificado.
+
