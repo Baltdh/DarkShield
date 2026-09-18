@@ -1075,3 +1075,24 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - O limite de 20 hits continua preservado; o teste verifica apenas determinismo e não aumenta o orçamento de análise.
+
+
+## 2026-09-18 — cobertura do score de exibição
+
+### Estado observado
+- HEAD observado após a sincronização: `ed8492ae90dd285c69332b4c5820f5fb31ecec21`.
+- O outro agente avançou a análise estática; os commits recentes incluem cobertura determinística de hits de conteúdo.
+
+### Concluído
+- Revisado `RiskCalculatorTest.java` como frente independente.
+- Adicionado teste explícito para o contrato de `scoreForDisplay()`, incluindo entrada normal e `null`.
+- Commit: `ce85b66e56430565eb9f7ac9aaae39b704f8e204`.
+
+### Validação
+- O commit foi incorporado ao `main`; a validação por Actions do novo estado deve ser acompanhada pelo endpoint de runs.
+
+### Próximo trabalho
+- Continuar sincronizando o `main` e procurar apenas lacunas independentes, preservando a frente de análise estática/correlação do outro agente.
+
+### Riscos
+- Alteração somente de teste; não muda pontuação nem comportamento de produção.
