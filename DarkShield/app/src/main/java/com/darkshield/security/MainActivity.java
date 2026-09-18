@@ -49,6 +49,7 @@ public class MainActivity extends android.app.Activity {
 
     private void startScan() {
         scan.setEnabled(false);
+        scan.setText("VERIFICANDO…");
         share.setEnabled(false);
         copy.setEnabled(false);
         progress.setVisibility(View.VISIBLE);
@@ -78,6 +79,9 @@ public class MainActivity extends android.app.Activity {
         String details = scanReport.details();
         String informational = scanReport.informationalDetails();
         score.setText(status + "  •  " + risk + "/100");
+        score.setTextColor(risk >= 70
+                ? 0xFFFF6B6B
+                : risk >= 40 ? 0xFFFFC857 : 0xFF66E3A4);
         String packageSummary = scanReport.packageSummary();
         String summaryText =
                 "Crítico: " + critical + "   Alto: " + high
@@ -102,6 +106,7 @@ public class MainActivity extends android.app.Activity {
         report.setText(renderReportDetails(details, informational));
 
         progress.setVisibility(View.GONE);
+        scan.setText("VERIFICAR NOVAMENTE");
         scan.setEnabled(true);
         share.setEnabled(true);
         copy.setEnabled(true);
@@ -138,6 +143,7 @@ public class MainActivity extends android.app.Activity {
     private void finishScanError(Exception e) {
         if (isFinishing() || isDestroyed()) return;
         progress.setVisibility(View.GONE);
+        scan.setText("TENTAR NOVAMENTE");
         scan.setEnabled(true);
         share.setEnabled(false);
         copy.setEnabled(false);
