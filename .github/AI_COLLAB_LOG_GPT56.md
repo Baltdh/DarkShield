@@ -557,3 +557,19 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 - Manter a proteção de overflow já validada pelo CI #123.
 - Quando a frente de relatório liberar o arquivo, adicionar regressão específica para `level == null` em `ScanReport` e ajustar o comportamento para ser consistente com o calculador de risco.
 - Não declarar o APK final validado até o CI correspondente ao último commit de produção terminar com sucesso.
+
+
+## 2026-09-18 — tratamento de findings com nível nulo no relatório
+
+### Concluído
+- `ScanReport` agora ignora findings com `level == null` em `packageSummaries()`, `countRequiringReview()` e `details()`.
+- Isso evita `NullPointerException` durante ordenação e impede que um finding malformado seja apresentado como risco.
+- Adicionado teste de regressão.
+- Commits: `75090f5ff2f8b70f805e51e4c17b87bb2ccede57` e `d6994d2f7864faa818bae70323b2a93bc5558f04`.
+
+### Validação
+- A execução anterior #123 ainda estava em andamento quando esta frente foi iniciada; novas alterações podem gerar uma execução mais recente e cancelar a anterior.
+- A alteração aguarda CI completo.
+
+### Handoff
+- Próximo passo: acompanhar o CI do HEAD atual e continuar a revisão de contratos entre findings, score e relatório.
