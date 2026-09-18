@@ -593,10 +593,20 @@ public final class SecurityScanner {
                 (AccessibilityManager) c.getSystemService(Context.ACCESSIBILITY_SERVICE);
         if (am == null) return;
 
-        List<AccessibilityServiceInfo> enabled =
-                am.getEnabledAccessibilityServiceList(AccessibilityServiceInfo.FEEDBACK_ALL_MASK);
+        List<AccessibilityServiceInfo> enabled;
+        try {
+            enabled = am.getEnabledAccessibilityServiceList(
+                    AccessibilityServiceInfo.FEEDBACK_ALL_MASK);
+        } catch (Exception e) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.LOW, "Serviços de acessibilidade ativos",
+                    "Não foi possível consultar os serviços ativos; o sistema restringiu ou recusou a consulta",
+                    null, 1,
+                    "Revise manualmente em Configurações > Acessibilidade"));
+            return;
+        }
 
-        if (enabled.isEmpty()) {
+        if (enabled == null || enabled.isEmpty()) {
             out.add(new ScanFinding(
                     ScanFinding.Level.INFO, "Serviços de acessibilidade ativos",
                     "Nenhum serviço retornado como ativo",
