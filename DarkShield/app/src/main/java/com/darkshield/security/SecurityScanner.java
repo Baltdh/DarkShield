@@ -20,6 +20,8 @@ import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.accessibility.AccessibilityManager;
 import java.security.MessageDigest;
+import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
 import java.util.*;
 import com.darkshield.security.analysis.StaticApkAnalyzer;
 import com.darkshield.security.analysis.ThreatCorrelationEngine;
@@ -701,6 +703,41 @@ public final class SecurityScanner {
                         ? "O sistema não informou a data do patch de segurança"
                         : patch,
                 null, 0, null));
+        addSecurityPatchAgeFinding(out, patch);
+    }
+
+    static int securityPatchAgeDays(String patch, LocalDate today) {
+        if (patch == null || patch.trim().isEmpty() || today == null) return -1;
+        try {
+            LocalDate patchDate = LocalDate.parse(patch.trim());
+            long days = java.time.temporal.ChronoUnit.DAYS.between(patchDate, today);
+            if (days < 0 || days > Integer.MAX_VALUE) return -1;
+            return (int) days;
+        } catch (DateTimeParseException e) {
+            return -1;
+        }
+    }
+
+    private void addSecurityPatchAgeFinding(List<ScanFinding> out, String patch) {
+        int age = securityPatchAgeDays(patch, LocalDate.now());
+        if (age < 0) return;
+        if (age >= 365) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.HIGH,
+                    "Patch de segurança muito antigo",
+                    "O patch informado pelo Android tem aproximadamente " + age
+                            + " dia(s). A ausência de atualizações recentes aumenta a exposição a vulnerabilidades conhecidas.",
+                    null, 6,
+                    "Procure atualizações do sistema e do fabricante"));
+        } else if (age >= 180) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.MEDIUM,
+                    "Patch de segurança desatualizado",
+                    "O patch informado pelo Android tem aproximadamente " + age
+                            + " dia(s). Verifique se há atualização disponível para o dispositivo.",
+                    null, 4,
+                    "Procure atualizações do sistema e do fabricante"));
+        }
     }
 
     static boolean isUnprotectedExportedProvider(android.content.pm.ProviderInfo provider) {
