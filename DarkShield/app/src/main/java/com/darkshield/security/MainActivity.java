@@ -55,22 +55,14 @@ public class MainActivity extends android.app.Activity {
     }
 
     private void finishScan(List<ScanFinding> findings) {
-        int critical = 0, high = 0, medium = 0, low = 0;
-        StringBuilder sb = new StringBuilder();
-
-        for (ScanFinding x : findings) {
-            if (x == null) continue;
-            if (x.level == ScanFinding.Level.CRITICAL) critical++;
-            else if (x.level == ScanFinding.Level.HIGH) high++;
-            else if (x.level == ScanFinding.Level.MEDIUM) medium++;
-            else if (x.level == ScanFinding.Level.LOW) low++;
-            if (x.level != ScanFinding.Level.INFO) {
-                sb.append(x.line()).append("\n\n");
-            }
-        }
-
-        int risk = RiskCalculator.score(findings);
-        String status = RiskCalculator.status(findings);
+        ScanReport scanReport = new ScanReport(findings);
+        int critical = scanReport.count(ScanFinding.Level.CRITICAL);
+        int high = scanReport.count(ScanFinding.Level.HIGH);
+        int medium = scanReport.count(ScanFinding.Level.MEDIUM);
+        int low = scanReport.count(ScanFinding.Level.LOW);
+        int risk = scanReport.getScore();
+        String status = scanReport.getStatus();
+        String details = scanReport.details();
         score.setText(status + "  •  " + risk + "/100");
         summary.setText(
                 "Crítico: " + critical + "   Alto: " + high
@@ -79,11 +71,11 @@ public class MainActivity extends android.app.Activity {
                         + "A pontuação é heurística: um achado não prova invasão ou malware."
         );
 
-        lastReport = buildShareReport(findings, status, risk, sb.toString());
+        lastReport = buildShareReport(scanReport, status, risk, details);
         report.setText(
-                sb.length() == 0
+                details.isEmpty()
                         ? "Nenhum indicador que exija revisão imediata foi encontrado."
-                        : sb.toString()
+                        : details
         );
 
         progress.setVisibility(View.GONE);
@@ -111,12 +103,12 @@ public class MainActivity extends android.app.Activity {
     }
 
     private String buildShareReport(
-            List<ScanFinding> findings, String status, int risk, String details) {
+            ScanReport report, String status, int risk, String details) {
         StringBuilder b = new StringBuilder();
         b.append("DarkShield — Relatório de segurança\n");
         b.append("Status: ").append(status).append("\n");
         b.append("Score heurístico: ").append(risk).append("/100\n");
-        b.append("Achados registrados: ").append(findings.size()).append("\n\n");
+        b.append("Achados registrados: ").append(report.getFindings().size()).append("\n\n");
         b.append(
                 details.isEmpty()
                         ? "Nenhum indicador exigindo revisão imediata.\n"
