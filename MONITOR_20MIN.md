@@ -1,6 +1,6 @@
 # DarkShield — Monitor de continuidade
 
-Atualizado: 2026-09-18 — etapa de auditoria contínua
+Atualizado: 2026-09-18 — auditoria contínua / correção de regressões
 
 ## Estado atual confirmado
 
@@ -40,6 +40,22 @@ Atualizado: 2026-09-18 — etapa de auditoria contínua
   - testes, lint, verificação do APK, SHA-256, `zipalign` e `apksigner`: ainda pendentes.
 - Um run intermediário (`35322572104`, run 188) foi cancelado pela concorrência quando o commit seguinte chegou; isso não é tratado como falha de código.
 - Portanto, **não declarar o APK atual como validado/verde ainda**.
+
+## Verificação do workflow mais recente
+
+- Run `35322604522` terminou com **FAILURE** no job `build`.
+- O build debug passou.
+- Os testes unitários falharam em 2 casos:
+  - `ScanReportTest.rawPointsCanExceedDisplayScoreCap`: a implementação atual aplica teto de 15 pontos por pacote antes da normalização; a expectativa antiga de 100 estava incompatível. O teste foi alinhado para esperar 45.
+  - `StaticApkAnalyzerTest.partialCompressedSampleReportsCoverageAndKeepsHeadDetection`: a implementação retornava `null` para a amostra inteira quando somente a cauda comprimida estava indisponível, descartando uma detecção válida no cabeçalho.
+- O log confirmou 91 testes e 2 falhas; lint e validação final do APK ficaram sem execução por causa da falha de testes.
+- Correções aplicadas:
+  1. `StaticApkAnalyzer.readContentSample()` preserva a amostra do cabeçalho quando a cauda não pode ser lida, mantendo o indicador de cobertura incompleta sem adicionar pontos.
+     - Commit: `1d53b1a0b6a466e77cd8acd4811e1dc376aac42b`.
+  2. `ScanReportTest` foi alinhado ao teto por pacote já implementado no `RiskCalculator`.
+     - Commit: `4b3f639151e7c92f5e311fc6d0bf0a324d01403e`.
+- O teto de score por pacote não foi revertido: ele é uma proteção deliberada contra inflação por múltiplos indicadores do mesmo pacote.
+- O próximo CI deve validar novamente build, testes, lint, APK, SHA-256, `zipalign` e `apksigner`.
 
 ## Artefato baseline verificado
 
