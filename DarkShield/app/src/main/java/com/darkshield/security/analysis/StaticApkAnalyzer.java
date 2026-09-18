@@ -92,11 +92,10 @@ public final class StaticApkAnalyzer {
 
                 if (containsSuspiciousMarker(lower)) {
                     if (isExecutableEntry(lower)) {
-                        if (suspicious.size() < MAX_SUSPICIOUS_NAMES) {
-                            suspicious.add(name);
-                        }
-                    } else if (suspiciousResourceMarkers.size() < MAX_SUSPICIOUS_NAMES) {
-                        suspiciousResourceMarkers.add(name);
+                        addCappedMarker(suspicious, name, MAX_SUSPICIOUS_NAMES);
+                    } else {
+                        addCappedMarker(
+                                suspiciousResourceMarkers, name, MAX_SUSPICIOUS_NAMES);
                     }
                 }
 
@@ -132,7 +131,7 @@ public final class StaticApkAnalyzer {
             }
 
             if (!suspicious.isEmpty()) {
-                suspicious.sort(String.CASE_INSENSITIVE_ORDER);
+                suspicious.sort(StaticApkAnalyzer::compareMarker);
                 StringBuilder detail = new StringBuilder();
                 int shown = Math.min(6, suspicious.size());
                 for (int i = 0; i < shown; i++) {
@@ -150,7 +149,7 @@ public final class StaticApkAnalyzer {
             }
 
             if (!suspiciousResourceMarkers.isEmpty()) {
-                suspiciousResourceMarkers.sort(String.CASE_INSENSITIVE_ORDER);
+                suspiciousResourceMarkers.sort(StaticApkAnalyzer::compareMarker);
                 StringBuilder detail = new StringBuilder();
                 int shown = Math.min(6, suspiciousResourceMarkers.size());
                 for (int i = 0; i < shown; i++) {
@@ -169,7 +168,7 @@ public final class StaticApkAnalyzer {
             }
 
             if (!suspiciousContent.isEmpty()) {
-                suspiciousContent.sort(String.CASE_INSENSITIVE_ORDER);
+                suspiciousContent.sort(StaticApkAnalyzer::compareMarker);
                 StringBuilder detail = new StringBuilder();
                 int shown = Math.min(6, suspiciousContent.size());
                 for (int i = 0; i < shown; i++) {
@@ -290,9 +289,33 @@ public final class StaticApkAnalyzer {
         String text = new String(prefix, StandardCharsets.ISO_8859_1)
                 .toLowerCase(Locale.ROOT);
         for (String marker : SUSPICIOUS_MARKERS) {
-            if (hits.size() >= MAX_SUSPICIOUS_CONTENT_HITS) return;
-            if (text.contains(marker)) hits.add(entryName + ":" + marker);
+            if (text.contains(marker)) {
+                addCappedMarker(
+                        hits, entryName + ":" + marker, MAX_SUSPICIOUS_CONTENT_HITS);
+            }
         }
+    }
+
+    private static void addCappedMarker(List<String> markers, String candidate, int cap) {
+        if (markers.size() < cap) {
+            markers.add(candidate);
+            return;
+        }
+
+        int worstIndex = 0;
+        for (int i = 1; i < markers.size(); i++) {
+            if (compareMarker(markers.get(i), markers.get(worstIndex)) > 0) {
+                worstIndex = i;
+            }
+        }
+        if (compareMarker(candidate, markers.get(worstIndex)) < 0) {
+            markers.set(worstIndex, candidate);
+        }
+    }
+
+    private static int compareMarker(String left, String right) {
+        int order = left.compareToIgnoreCase(right);
+        return order != 0 ? order : left.compareTo(right);
     }
 
     private static boolean isExecutableEntry(String name) {
