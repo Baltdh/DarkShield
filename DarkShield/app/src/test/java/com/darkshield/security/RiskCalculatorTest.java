@@ -74,4 +74,14 @@ public class RiskCalculatorTest {
                 finding(ScanFinding.Level.MEDIUM, 1)
         )));
     }
+
+    @Test public void scoreForDisplayDelegatesToScoreContract() {
+        assertEquals(RiskCalculator.score(Arrays.asList(
+                finding(ScanFinding.Level.HIGH, 40),
+                finding(ScanFinding.Level.LOW, 1))),
+                RiskCalculator.scoreForDisplay(Arrays.asList(
+                        finding(ScanFinding.Level.HIGH, 40),
+                        finding(ScanFinding.Level.LOW, 1))));
+        assertEquals(RiskCalculator.score(null), RiskCalculator.scoreForDisplay(null));
+    }
 }
