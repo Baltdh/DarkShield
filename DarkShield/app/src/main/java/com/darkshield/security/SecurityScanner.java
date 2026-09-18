@@ -95,7 +95,6 @@ public final class SecurityScanner {
 
         boolean system = isSystemApp(ai);
         boolean remoteMarker = containsRemoteControlMarker(lower);
-        boolean sideLoad = isOutsideUsualSystemArea(ai);
         boolean debuggable = (ai.flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
 
         if (isPermissionGranted("android.permission.SYSTEM_ALERT_WINDOW", p.packageName)) {
@@ -196,14 +195,15 @@ public final class SecurityScanner {
                     "Confirme se você instalou e reconhece este aplicativo"));
         }
 
-        if (sideLoad && !system) {
+        if (!system) {
             String installer = getInstaller(p.packageName);
-            out.add(new ScanFinding(
-                    ScanFinding.Level.LOW, "Aplicativo instalado em área de usuário",
-                    installer == null ? "Origem de instalação não identificada"
-                                      : "Instalador: " + installer,
-                    p.packageName, 1,
-                    "Verifique a origem do APK se você não reconhecer o app"));
+            if (installer == null || installer.trim().isEmpty()) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.LOW, "Origem de instalação não identificada",
+                        "O Android não informou um instalador conhecido para este aplicativo",
+                        p.packageName, 1,
+                        "Confirme a origem do APK se você não reconhecer o app"));
+            }
         }
 
         if (debuggable && !system) {
@@ -453,13 +453,6 @@ public final class SecurityScanner {
     private boolean isSystemApp(ApplicationInfo ai) {
         return (ai.flags & ApplicationInfo.FLAG_SYSTEM) != 0
                 || (ai.flags & ApplicationInfo.FLAG_UPDATED_SYSTEM_APP) != 0;
-    }
-
-    private boolean isOutsideUsualSystemArea(ApplicationInfo ai) {
-        String path = ai.sourceDir == null ? "" : ai.sourceDir;
-        return path.startsWith("/data/app/")
-                || path.startsWith("/mnt/expand/")
-                || path.startsWith("/data/user/");
     }
 
     private String safeLabel(ApplicationInfo ai) {
