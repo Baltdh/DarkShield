@@ -561,13 +561,42 @@ public final class SecurityScanner {
                 out.add(new ScanFinding(
                         ScanFinding.Level.INFO, "Acesso a notificações",
                         "Nenhum listener ativo", null, 0, null));
-            } else {
-                String[] entries = v.split(":");
+                return;
+            }
+
+            String[] entries = v.split(":");
+            int recognized = 0;
+            for (String entry : entries) {
+                if (TextUtils.isEmpty(entry)) continue;
+
+                ComponentName component = ComponentName.unflattenFromString(entry);
+                String pkg = component == null ? null : component.getPackageName();
+                if (pkg == null) continue;
+
+                recognized++;
+                boolean system = isSystemPackage(pkg);
                 out.add(new ScanFinding(
-                        ScanFinding.Level.MEDIUM, "Apps com acesso a notificações",
-                        entries.length + " componente(s) ativo(s): " + v,
-                        null, 3,
+                        system ? ScanFinding.Level.LOW : ScanFinding.Level.MEDIUM,
+                        "Acesso a notificações ativo",
+                        component.flattenToShortString(),
+                        pkg,
+                        system ? 1 : 3,
+                        "Confirme se este aplicativo precisa ler notificações do dispositivo"));
+            }
+
+            if (recognized == 0) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.LOW,
+                        "Acesso a notificações",
+                        "Há listeners registrados, mas nenhum componente pôde ser associado a um pacote",
+                        null, 1,
                         "Revise em Configurações > Acesso a notificações"));
+            } else {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Listeners de notificações analisados",
+                        recognized + " componente(s) associado(s) a pacotes",
+                        null, 0, null));
             }
         } catch (Exception e) {
             out.add(new ScanFinding(
