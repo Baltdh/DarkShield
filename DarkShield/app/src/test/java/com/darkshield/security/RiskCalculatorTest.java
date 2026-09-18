@@ -24,6 +24,13 @@ public class RiskCalculatorTest {
                 finding(ScanFinding.Level.HIGH, 50))));
     }
 
+    @Test public void scoreDoesNotOverflowBeforeCap() {
+        assertEquals(100, RiskCalculator.score(Arrays.asList(
+                finding(ScanFinding.Level.HIGH, Integer.MAX_VALUE),
+                finding(ScanFinding.Level.HIGH, Integer.MAX_VALUE)
+        )));
+    }
+
     @Test public void negativeAndNullFindingsDoNotAddRisk() {
         assertEquals(0, RiskCalculator.score(Arrays.asList(
                 null,
