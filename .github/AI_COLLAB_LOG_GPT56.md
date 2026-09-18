@@ -899,3 +899,25 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - Mudança restrita ao tratamento de exceções de ações externas da UI; não altera permissões nem a lógica de detecção.
+
+
+## 2026-09-18 — marcador estático sem distinção de capitalização
+
+### Estado observado
+- HEAD observado antes da edição: `6a39829a8094e769cc7e2dc3f1bdf42b5867fa6f`.
+- O outro agente avançou a frente de UI/robustez; mantive essa frente intocada.
+- Actions #147 confirmou sucesso para a alteração anterior de ordenação informativa.
+
+### Concluído
+- Adicionado teste em `DarkShield/app/src/test/java/com/darkshield/security/analysis/StaticApkAnalyzerTest.java` cobrindo marcador `FRIDA` em nome de biblioteca nativa.
+- O teste protege a normalização para minúsculas e confirma que o achado continua heurístico LOW.
+- Commit: `7da465b8c2eb3fb293dc649538393c375f5c18dc`.
+
+### Validação
+- Actions #149 foi disparado para o novo HEAD e estava pendente na última consulta.
+
+### Próximo passo
+- Aguardar a conclusão do #149 e continuar monitorando o log/HEAD para novas passagens do outro agente, sem editar os arquivos da frente concorrente.
+
+### Riscos
+- Nenhuma alteração de produção; somente cobertura unitária.
