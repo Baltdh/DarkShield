@@ -105,9 +105,17 @@ public final class ThreatCorrelationEngine {
             boolean a = accessibility.getOrDefault(p, false);
             boolean o = overlay.getOrDefault(p, false);
             boolean b = boot.getOrDefault(p, false);
+            boolean n = notification.getOrDefault(p, false);
             boolean r = remote.getOrDefault(p, false);
 
-            if (a && o && b && !r) {
+            if (a && n && b && !r && !o) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de acessibilidade, notificações e boot",
+                        "O mesmo pacote mantém serviço de acessibilidade ativo, acesso ativo às notificações e inicialização automática. Essa combinação merece revisão mesmo sem um marcador nominal de acesso remoto.",
+                        p, 7,
+                        "Confirme a origem do aplicativo e verifique se as três capacidades são realmente necessárias"));
+            } else if (a && o && b && !r) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.HIGH,
                         "Correlação de acessibilidade, sobreposição e boot",
@@ -115,13 +123,8 @@ public final class ThreatCorrelationEngine {
                         p, 7,
                         "Confirme a origem do aplicativo e verifique se as três capacidades são realmente necessárias"));
             }
-        }
 
-        for (String p : accessibility.keySet()) {
-            boolean a = accessibility.getOrDefault(p, false);
-            boolean n = notification.getOrDefault(p, false);
-
-            if (a && n) {
+            if (a && n && !r && !o && !b) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,
                         "Correlação de acessibilidade e notificações",
