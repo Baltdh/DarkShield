@@ -31,7 +31,10 @@ public final class ThreatCorrelationEngine {
             if (t.contains("administrador do dispositivo")) admin.put(p, true);
             if (t.contains("acesso a sms")
                     || t.contains("histórico de chamadas")
-                    || t.contains("microfone/câmera")) {
+                    || t.contains("microfone/câmera")
+                    || t.contains("acesso a contatos")
+                    || t.contains("acesso à localização")
+                    || t.contains("estado do telefone")) {
                 sensitive.put(p, sensitive.getOrDefault(p, 0) + 1);
             }
         }
