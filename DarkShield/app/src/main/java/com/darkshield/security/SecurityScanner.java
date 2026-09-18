@@ -62,7 +62,11 @@ public final class SecurityScanner {
     }
 
     private List<PackageInfo> getApps() {
-        int flags = PackageManager.GET_PERMISSIONS | PackageManager.GET_SERVICES;
+        int flags = PackageManager.GET_PERMISSIONS
+                | PackageManager.GET_SERVICES
+                | PackageManager.GET_RECEIVERS
+                | PackageManager.GET_PROVIDERS
+                | PackageManager.GET_ACTIVITIES;
         if (Build.VERSION.SDK_INT >= 28) flags |= PackageManager.GET_SIGNING_CERTIFICATES;
         else flags |= PackageManager.GET_SIGNATURES;
         try {
@@ -210,6 +214,10 @@ public final class SecurityScanner {
                     "Normal em apps de teste; confirme a origem se não for esperado"));
         }
 
+        if (!system) {
+            inspectExportedComponents(p, out);
+        }
+
         if (hasVpnService(p) && !system) {
             out.add(new ScanFinding(
                     ScanFinding.Level.MEDIUM, "Serviço VPN declarado",
@@ -335,6 +343,66 @@ public final class SecurityScanner {
             return proxy == null || proxy.getHost() == null ? "" : proxy.getHost();
         } catch (SecurityException e) {
             return "";
+        }
+    }
+
+    private void inspectExportedComponents(PackageInfo p, List<ScanFinding> out) {
+        int exportedServices = 0;
+        int exportedReceivers = 0;
+        int exportedProviders = 0;
+        int unprotectedServices = 0;
+        int unprotectedReceivers = 0;
+        int unprotectedProviders = 0;
+
+        if (p.services != null) {
+            for (ServiceInfo s : p.services) {
+                if (!s.exported) continue;
+                exportedServices++;
+                if (TextUtils.isEmpty(s.permission)) unprotectedServices++;
+            }
+        }
+
+        if (p.receivers != null) {
+            for (android.content.pm.ActivityInfo r : p.receivers) {
+                if (!r.exported) continue;
+                exportedReceivers++;
+                if (TextUtils.isEmpty(r.permission)) unprotectedReceivers++;
+            }
+        }
+
+        if (p.providers != null) {
+            for (android.content.pm.ProviderInfo provider : p.providers) {
+                if (!provider.exported) continue;
+                exportedProviders++;
+                if (TextUtils.isEmpty(provider.readPermission)
+                        && TextUtils.isEmpty(provider.writePermission)
+                        && TextUtils.isEmpty(provider.permission)) {
+                    unprotectedProviders++;
+                }
+            }
+        }
+
+        int unprotected = unprotectedServices + unprotectedReceivers + unprotectedProviders;
+        int total = exportedServices + exportedReceivers + exportedProviders;
+        if (total == 0) return;
+
+        if (unprotected > 0) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.LOW,
+                    "Componentes exportados sem permissão explícita",
+                    "Serviços: " + exportedServices + " (" + unprotectedServices + " sem proteção); "
+                            + "receivers: " + exportedReceivers + " (" + unprotectedReceivers + " sem proteção); "
+                            + "providers: " + exportedProviders + " (" + unprotectedProviders + " sem proteção). "
+                            + "Essa configuração pode ser legítima, mas amplia a superfície acessível por outros apps.",
+                    p.packageName, 1,
+                    "Revise os componentes exportados se o aplicativo não deveria expor funcionalidades a outros apps"));
+        } else {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Componentes exportados protegidos",
+                    "Serviços: " + exportedServices + "; receivers: "
+                            + exportedReceivers + "; providers: " + exportedProviders,
+                    p.packageName, 0, null));
         }
     }
 
