@@ -486,3 +486,23 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Handoff
 - Manter esta frente focada em robustez/testes independentes enquanto a outra frente ocupa scanner/correlação.
 - Próximo passo natural: validar a suíte completa via Actions quando uma execução ficar exposta e continuar procurando casos-limite determinísticos.
+
+## 2026-09-18 — correção do arquivo truncado detectado pelo CI
+
+### Estado observado
+- O Actions #119 (`db6a8523...`) falhou na compilação de `RiskCalculator.java`.
+- A causa foi confirmada nos logs: o arquivo havia sido reduzido acidentalmente ao corpo do método `score()` durante a atualização anterior.
+- O teste de nível nulo (#117) havia passado; não há indicação de regressão nesse teste.
+
+### Concluído
+- Restaurado o `RiskCalculator.java` completo sobre o SHA atual.
+- Mantidas as duas correções pretendidas: ignorar `level == null` e acumular pontos em `long` antes do teto de 100.
+- Commit de restauração: `74b7ee7b759a552f5ce93c1957d9487d80f1bcd5`.
+
+### Validação
+- Releitura confirmou o arquivo Java completo e o teste de overflow presente.
+- Actions #120, associado ao commit de restauração, estava `in_progress` na última consulta; portanto ainda não declarar build aprovado.
+
+### Handoff
+- Antes de qualquer nova edição em arquivos de produção, comparar novamente o conteúdo completo e o SHA após a escrita.
+- Preservar a frente concorrente e aguardar o resultado do #120 antes de novas alterações no RiskCalculator.
