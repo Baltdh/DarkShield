@@ -1,0 +1,64 @@
+package com.darkshield.security.analysis;
+
+import com.darkshield.security.ScanFinding;
+import org.junit.Test;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.List;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+public class StaticApkAnalyzerTest {
+
+    @Test public void analyzesApkStructureAndHash() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "resources.arsc", new byte[]{1});
+            add(zip, "classes.dex", new byte[]{1, 2, 3});
+            add(zip, "lib/arm64-v8a/libdemo.so", new byte[]{4});
+        }
+
+        List<ScanFinding> findings = StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+        assertTrue(findings.stream().anyMatch(x -> x.title.equals("Estrutura ZIP do APK")));
+        assertTrue(findings.stream().anyMatch(x -> x.title.equals("SHA-256 do APK")));
+        assertEquals(0, findings.stream().filter(x -> x.level == ScanFinding.Level.MEDIUM).count());
+
+        assertTrue(apk.delete());
+    }
+
+    @Test public void suspiciousNamesAreOnlyHeuristic() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "assets/frida-agent.bin", new byte[]{1});
+        }
+
+        List<ScanFinding> findings = StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+        ScanFinding hit = findings.stream()
+                .filter(x -> x.title.contains("instrumentação"))
+                .findFirst().orElse(null);
+
+        assertTrue(hit != null);
+        assertEquals(ScanFinding.Level.LOW, hit.level);
+        assertTrue(hit.detail.contains("não prova comportamento malicioso"));
+
+        assertTrue(apk.delete());
+    }
+
+    @Test public void unreadablePathProducesFinding() {
+        List<ScanFinding> findings = StaticApkAnalyzer.analyze("/definitely/missing/app.apk", "com.example.test");
+        assertEquals(1, findings.size());
+        assertEquals(ScanFinding.Level.LOW, findings.get(0).level);
+    }
+
+    private static void add(ZipOutputStream zip, String name, byte[] data) throws Exception {
+        zip.putNextEntry(new ZipEntry(name));
+        zip.write(data);
+        zip.closeEntry();
+    }
+}
