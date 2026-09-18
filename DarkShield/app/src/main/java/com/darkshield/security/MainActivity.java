@@ -67,7 +67,8 @@ public class MainActivity extends android.app.Activity {
         summary.setText(
                 "Crítico: " + critical + "   Alto: " + high
                         + "   Médio: " + medium + "   Baixo: " + low
-                        + "\n" + findings.size() + " achado(s) registrados.\n\n"
+                        + "\n" + scanReport.countRequiringReview()
+                        + " item(ns) exigem revisão; " + findings.size() + " registro(s) no total.\n\n"
                         + "A pontuação é heurística: um achado não prova invasão ou malware."
         );
 
@@ -108,7 +109,8 @@ public class MainActivity extends android.app.Activity {
         b.append("DarkShield — Relatório de segurança\n");
         b.append("Status: ").append(status).append("\n");
         b.append("Score heurístico: ").append(risk).append("/100\n");
-        b.append("Achados registrados: ").append(report.getFindings().size()).append("\n\n");
+        b.append("Itens para revisão: ").append(report.countRequiringReview()).append("\n");
+        b.append("Registros totais: ").append(report.getFindings().size()).append("\n\n");
         b.append(
                 details.isEmpty()
                         ? "Nenhum indicador exigindo revisão imediata.\n"
