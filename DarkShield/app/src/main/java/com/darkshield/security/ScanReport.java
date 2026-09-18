@@ -76,7 +76,10 @@ public final class ScanReport {
             if (severity != 0) return severity;
             int points = Integer.compare(right.points, left.points);
             if (points != 0) return points;
-            return left.packageName.compareToIgnoreCase(right.packageName);
+            int packageOrder = left.packageName.compareToIgnoreCase(right.packageName);
+            return packageOrder != 0
+                    ? packageOrder
+                    : left.packageName.compareTo(right.packageName);
         });
         return Collections.unmodifiableList(result);
     }
