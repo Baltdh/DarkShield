@@ -70,6 +70,23 @@ public class StaticApkAnalyzerTest {
         assertTrue(apk.delete());
     }
 
+    @Test public void genericTermsDoNotTriggerSuspiciousMarker() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "assets/inject-helper.bin", new byte[]{1});
+            add(zip, "assets/payload.json", new byte[]{2});
+        }
+
+        List<ScanFinding> findings =
+                StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+
+        assertTrue(findings.stream()
+                .noneMatch(x -> x.title.contains("instrumentação")));
+
+        assertTrue(apk.delete());
+    }
+
     @Test public void unreadablePathProducesFinding() {
         List<ScanFinding> findings = StaticApkAnalyzer.analyze("/definitely/missing/app.apk", "com.example.test");
         assertEquals(1, findings.size());
