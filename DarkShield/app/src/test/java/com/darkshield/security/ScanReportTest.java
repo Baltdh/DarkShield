@@ -99,6 +99,22 @@ public class ScanReportTest {
         assertEquals("com.example.b", summaries.get(1).packageName);
     }
 
+    @Test public void detailsBreaksCaseOnlyPackageAndTitleTiesDeterministically() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.LOW, "Same", "detail",
+                        "com.example.alpha", 1, null),
+                new ScanFinding(ScanFinding.Level.LOW, "Same", "detail",
+                        "com.example.Alpha", 1, null),
+                new ScanFinding(ScanFinding.Level.LOW, "same", "detail",
+                        "com.example.Alpha", 1, null)));
+
+        String details = report.details();
+
+        assertTrue(details.indexOf("com.example.Alpha") >= 0);
+        assertTrue(details.indexOf("com.example.alpha") > details.indexOf("com.example.Alpha"));
+        assertTrue(details.indexOf("[LOW] Same") < details.indexOf("[LOW] same"));
+    }
+
     @Test public void packageSummaryBreaksCaseOnlyPackageTiesDeterministically() {
         ScanReport report = new ScanReport(java.util.Arrays.asList(
                 new ScanFinding(ScanFinding.Level.LOW, "upper", "detail",
