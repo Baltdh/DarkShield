@@ -1335,3 +1335,24 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Próximo trabalho
 - Conferir o Actions e revisar outros pontos em que erros de leitura/hash podem ser convertidos silenciosamente em ausência de indicador.
+
+
+## 2026-09-18 — verificação adicional do artefato enviado e estado do CI
+
+### Estado observado
+- O main avançou com a correlação consolidada do outro agente e com a correção/teste da amostragem estática.
+- O Actions #168 passou com sucesso; o Actions #172 para o teste de amostragem estática está em andamento no momento desta passagem.
+
+### Verificação do artefato DarkShield-debug-apk.zip
+- Reinspecionado o arquivo anexado nesta conversa.
+- O ZIP externo contém exatamente 2 entradas: o `app-debug.apk` e seu arquivo `.sha256`.
+- O SHA-256 calculado do APK interno é `4cc164f9309ebab1b9bb1e577d140b1a535e628de40b43e7a359030743510da7`, coincidindo com o valor declarado no arquivo `.sha256`.
+- O APK interno contém 8 entradas, incluindo `AndroidManifest.xml`, `resources.arsc` e 3 DEX (`classes.dex`, `classes2.dex`, `classes3.dex`).
+- O registro anterior que dizia que o ZIP externo tinha 8 entradas estava impreciso; esta entrada corrige explicitamente o handoff.
+
+### Próximo trabalho
+- Acompanhar #172 e continuar a revisão de falhas silenciosas e cobertura do analisador estático.
+- Depois verificar se o artefato disponível corresponde ao último build bem-sucedido antes de tratá-lo como binário final.
+
+### Riscos
+- O artefato enviado é anterior às mudanças mais recentes do scanner e não deve ser considerado o APK final do HEAD atual.
