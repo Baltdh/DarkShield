@@ -51,7 +51,7 @@ public final class StaticApkAnalyzer {
                     "APK grande demais para análise estática local",
                     "O arquivo possui " + apk.length() + " bytes; a análise foi limitada a "
                             + MAX_APK_BYTES + " bytes para evitar custo excessivo durante a varredura completa",
-                    packageName, 1,
+                    packageName, 0,
                     "Analise esse APK separadamente caso precise de inspeção profunda"));
             return out;
         }
