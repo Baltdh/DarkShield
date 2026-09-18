@@ -238,7 +238,12 @@ public final class StaticApkAnalyzer {
         int tailLimit = limit - headLimit;
         byte[] head = readRange(zip, entry, 0L, headLimit);
         byte[] tail = readTail(zip, entry, tailLimit);
-        if (head == null || tail == null) return null;
+        if (head == null) return null;
+
+        // Preserve the readable head when only the tail is unavailable. The
+        // caller separately records that coverage is incomplete, so markers
+        // found in the head remain useful without implying full coverage.
+        if (tail == null) return head;
 
         ByteArrayOutputStream combined =
                 new ByteArrayOutputStream(head.length + tail.length);
