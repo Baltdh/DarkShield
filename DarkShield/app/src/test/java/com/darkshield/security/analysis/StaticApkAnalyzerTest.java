@@ -87,6 +87,8 @@ public class StaticApkAnalyzerTest {
         assertTrue(hit != null);
         assertEquals(ScanFinding.Level.LOW, hit.level);
         assertTrue(hit.detail.contains("classes.dex:frida"));
+        assertTrue(hit.detail.contains("amostra analisada de DEX/bibliotecas"));
+        assertTrue(!hit.detail.contains("prefixo analisado"));
 
         assertTrue(apk.delete());
     }
