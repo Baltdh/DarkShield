@@ -45,7 +45,8 @@ public final class ScanReport {
     public int countRequiringReview() {
         int total = 0;
         for (ScanFinding finding : findings) {
-            if (finding != null && finding.level != ScanFinding.Level.INFO) total++;
+            if (finding != null && finding.level != null
+                    && finding.level != ScanFinding.Level.INFO) total++;
         }
         return total;
     }
