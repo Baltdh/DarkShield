@@ -42,6 +42,59 @@ public final class ScanReport {
         return total;
     }
 
+    public List<PackageSummary> packageSummaries() {
+        java.util.Map<String, PackageSummary> byPackage = new java.util.HashMap<>();
+        for (ScanFinding finding : findings) {
+            if (finding == null || finding.level == ScanFinding.Level.INFO
+                    || finding.packageName == null || finding.packageName.trim().isEmpty()) {
+                continue;
+            }
+
+            PackageSummary current = byPackage.get(finding.packageName);
+            if (current == null) {
+                current = new PackageSummary(finding.packageName, finding.level, 1,
+                        Math.max(0, finding.points));
+            } else {
+                current = current.add(finding);
+            }
+            byPackage.put(finding.packageName, current);
+        }
+
+        List<PackageSummary> result = new ArrayList<>(byPackage.values());
+        result.sort((left, right) -> {
+            int severity = Integer.compare(right.level.ordinal(), left.level.ordinal());
+            if (severity != 0) return severity;
+            int points = Integer.compare(right.points, left.points);
+            if (points != 0) return points;
+            return left.packageName.compareToIgnoreCase(right.packageName);
+        });
+        return Collections.unmodifiableList(result);
+    }
+
+    public String packageSummary() {
+        List<PackageSummary> summaries = packageSummaries();
+        if (summaries.isEmpty()) return "";
+
+        StringBuilder out = new StringBuilder();
+        int shown = Math.min(5, summaries.size());
+        for (int i = 0; i < shown; i++) {
+            if (i > 0) out.append("\n");
+            PackageSummary summary = summaries.get(i);
+            out.append(summary.level)
+                    .append(" • ")
+                    .append(summary.packageName)
+                    .append(" • ")
+                    .append(summary.findings)
+                    .append(" achado(s), ")
+                    .append(summary.points)
+                    .append(" ponto(s)");
+        }
+        if (summaries.size() > shown) {
+            out.append("\n… e mais ").append(summaries.size() - shown).append(" pacote(s)");
+        }
+        return out.toString();
+    }
+
     public String details() {
         List<ScanFinding> review = new ArrayList<>();
         for (ScanFinding finding : findings) {
@@ -59,5 +112,30 @@ public final class ScanReport {
             out.append(finding.line());
         }
         return out.toString();
+    }
+
+    public static final class PackageSummary {
+        public final String packageName;
+        public final ScanFinding.Level level;
+        public final int findings;
+        public final int points;
+
+        private PackageSummary(
+                String packageName, ScanFinding.Level level, int findings, int points) {
+            this.packageName = packageName;
+            this.level = level;
+            this.findings = findings;
+            this.points = points;
+        }
+
+        private PackageSummary add(ScanFinding finding) {
+            ScanFinding.Level higher = finding.level.ordinal() > level.ordinal()
+                    ? finding.level : level;
+            return new PackageSummary(
+                    packageName,
+                    higher,
+                    findings + 1,
+                    points + Math.max(0, finding.points));
+        }
     }
 }
