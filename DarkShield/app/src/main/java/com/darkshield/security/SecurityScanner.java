@@ -181,6 +181,23 @@ public final class SecurityScanner {
                     "Verifique se a instalação de APKs faz parte da função esperada"));
         }
 
+        if (isPermissionGranted("android.permission.WRITE_SETTINGS", p.packageName)) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.MEDIUM, "Pode modificar configurações do sistema",
+                    "O aplicativo possui acesso especial para alterar determinadas configurações do Android",
+                    p.packageName, 3,
+                    "Revise em Configurações > Apps > Acesso especial > Modificar configurações do sistema"));
+        }
+
+        if (Build.VERSION.SDK_INT >= 30
+                && isPermissionGranted("android.permission.MANAGE_EXTERNAL_STORAGE", p.packageName)) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.MEDIUM, "Acesso amplo a arquivos",
+                    "O aplicativo possui o acesso especial de gerenciamento amplo do armazenamento",
+                    p.packageName, 4,
+                    "Confirme em Acesso especial > Gerenciar todos os arquivos se esse acesso é realmente necessário"));
+        }
+
         if (!system && ps.contains("android.permission.RECEIVE_BOOT_COMPLETED")) {
             out.add(new ScanFinding(
                     ScanFinding.Level.LOW,
