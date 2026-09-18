@@ -787,3 +787,20 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Handoff
 - O outro agente permanece na frente de correlação determinística.
 - Aguardar uma execução de CI não cancelada para validar o conjunto ampliado de testes.
+
+
+## 2026-09-18 — tolerância a falhas na consulta de acessibilidade
+
+### Concluído
+- Revisado `SecurityScanner.checkAccessibility()` para impedir que uma exceção da consulta do `AccessibilityManager` interrompa toda a auditoria.
+- Em caso de falha, o scanner agora registra um finding LOW informando que a consulta foi restringida/recusada e orienta revisão manual; também trata retorno nulo defensivamente.
+- Commit: `bc1b8b0e4a6930b2165455c39376365b28849ae6`.
+
+### Validação
+- O HEAD anterior `928e1829...` estava validado pelo Actions #143 com sucesso antes desta alteração.
+- Esta alteração dispara uma nova execução do CI para compilar e executar os testes no novo HEAD.
+- A lógica normal de descoberta de serviços não foi alterada; apenas o caminho de falha ficou explícito.
+
+### Handoff
+- Aguardar o novo CI.
+- Depois, revisar robustez de outras consultas de serviços do sistema sem alterar a semântica dos indicadores.
