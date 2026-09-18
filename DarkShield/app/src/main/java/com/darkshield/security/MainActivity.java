@@ -43,23 +43,17 @@ public class MainActivity extends android.app.Activity {
     }
 
     private void finishScan(List<ScanFinding> findings) {
-        int critical = 0, high = 0, medium = 0, low = 0, points = 0;
+        int critical = 0, high = 0, medium = 0, low = 0;
         StringBuilder sb = new StringBuilder();
         for (ScanFinding x : findings) {
-            points += x.points;
             if (x.level == ScanFinding.Level.CRITICAL) critical++;
             else if (x.level == ScanFinding.Level.HIGH) high++;
             else if (x.level == ScanFinding.Level.MEDIUM) medium++;
             else if (x.level == ScanFinding.Level.LOW) low++;
             if (x.level != ScanFinding.Level.INFO) sb.append(x.line()).append("\n\n");
         }
-        int risk = Math.min(100, points * 3);
-        String status;
-        if (critical > 0) status = "RISCO CRÍTICO";
-        else if (high > 0) status = "RISCO ALTO";
-        else if (medium > 0) status = "REVISÃO RECOMENDADA";
-        else if (low > 0) status = "POUCOS INDICADORES";
-        else status = "SEM INDICADORES FORTES";
+        int risk = RiskCalculator.score(findings);
+        String status = RiskCalculator.status(findings);
         score.setText(status + "  •  " + risk + "/100");
         summary.setText("Alto: " + high + "   Médio: " + medium + "   Baixo: " + low +
                 "\n" + findings.size() + " achado(s) registrados.\n\n" +
