@@ -54,6 +54,11 @@ Atualizado: 2026-09-18 — etapa de auditoria contínua
 - `0fb745da1a2441d82fb88e960a6462e11ca897ed`: testes de regressão do score.
 - O `RiskCalculator` atual usa teto de `15` pontos por pacote antes do multiplicador de exibição; o teste correspondente confirma que 10 achados de 4 pontos no mesmo pacote resultam em score 45, enquanto dois pacotes independentes de 10 pontos permanecem em 60.
 
+7. `DarkShield/app/src/test/java/com/darkshield/security/analysis/StaticApkAnalyzerTest.java`
+   - Adicionado teste de amostra comprimida parcial: marcador no trecho lido continua detectável e a cauda omitida gera aviso de cobertura sem pontuação.
+   - O teste de cauda muito distante também exige explicitamente `0` ponto no aviso de amostra indisponível.
+   - Commit: `f21c48da891b0afc45bf66f39eacaac956954a3c`.
+
 ## Estado de CI após os últimos commits
 
 O run `35322024413` é verde e serve como baseline verificado antes das alterações finais. Os commits posteriores alteraram código/testes/workflow e, portanto, devem ser considerados **pendentes de nova validação** até que um novo workflow seja confirmado com sucesso, incluindo a verificação por `apksigner`.
