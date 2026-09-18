@@ -121,6 +121,21 @@ public class ScanReportTest {
         assertTrue(details.contains("impacto heurístico: +3 ponto(s)"));
     }
 
+
+    @Test public void informationalDetailsIncludesInfoAndKeepsThemOutOfReviewDetails() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.INFO, "SHA-256 do APK", "ABC123",
+                        "com.example.test", 0, null),
+                new ScanFinding(ScanFinding.Level.MEDIUM, "review", "detail",
+                        "com.example.test", 2, null)));
+
+        String info = report.informationalDetails();
+        assertTrue(info.contains("[INFO] SHA-256 do APK"));
+        assertTrue(info.contains("ABC123"));
+        assertTrue(!report.details().contains("SHA-256 do APK"));
+        assertEquals(1, report.countRequiringReview());
+    }
+
     @Test public void nullLevelCountIsZero() {
         ScanReport report = new ScanReport(null);
         assertEquals(0, report.count(null));
