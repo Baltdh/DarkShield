@@ -14,8 +14,20 @@
         android:paddingEnd="20dp"
         android:paddingBottom="24dp">
 
-        <TextView
-            android:id="@+id/title"
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <ImageView
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:contentDescription="Ícone de proteção DarkShield"
+                android:src="@drawable/ic_shield" />
+
+            <TextView
+                android:id="@+id/title"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:contentDescription="DarkShield"
@@ -23,7 +35,9 @@
             android:textColor="#FFFFFF"
             android:textSize="30sp"
             android:textStyle="bold"
-            android:letterSpacing="0.02" />
+            android:letterSpacing="0.02"
+            android:layout_marginStart="12dp" />
+        </LinearLayout>
 
         <TextView
             android:layout_width="match_parent"
@@ -39,7 +53,7 @@
             android:layout_marginTop="20dp"
             android:orientation="vertical"
             android:padding="18dp"
-            android:background="#151922">
+            android:background="@drawable/bg_card">
 
             <TextView
                 android:layout_width="match_parent"
@@ -139,7 +153,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="8dp"
             android:padding="16dp"
-            android:background="#11151D"
+            android:background="@drawable/bg_report"
             android:textColor="#D9DDE7"
             android:textSize="14sp"
             android:lineSpacingExtra="3dp"
