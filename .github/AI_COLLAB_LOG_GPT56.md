@@ -687,3 +687,16 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Handoff
 - O estado integrado possui um CI verde após a regressão de ordenação determinística.
 - Evitar novas alterações em `MainActivity` sem um problema reproduzível.
+
+
+## 2026-09-18 — ordenação determinística também nos detalhes
+
+### Concluído
+- Após o CI #134 verde, foi identificado que `ScanReport.details()` ainda usava apenas `compareToIgnoreCase()` para pacote e título.
+- Adicionado desempate sensível a caixa para pacote e título.
+- Adicionado teste específico para os dois tipos de empate.
+- Commits: `591dc04470cfbb5dbfefc186898c11a23c08ca3f` e `cc1c1b6c5886de970b91d5ab4bcdf58de7921c9c`.
+
+### Handoff
+- Aguardar o CI do novo HEAD antes de considerar esta melhoria integrada.
+- Não alterar scanner/correlação/analisador estático nesta passagem.
