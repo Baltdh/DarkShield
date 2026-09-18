@@ -879,3 +879,23 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - O README é documentação e não altera o comportamento do aplicativo.
+
+
+## 2026-09-18 — robustez da UI de ações externas
+
+### Estado observado
+- HEAD confirmado antes do registro: `6a39829a8094e769cc7e2dc3f1bdf42b5867fa6f`.
+- Actions #147, no commit `53504646604e15e1716dd614cd96883f7d78a648`, concluiu com sucesso.
+- Actions #148 foi iniciado para validar a correção de UI no commit atual e estava `queued` na última conferência.
+
+### Concluído
+- `MainActivity.java` agora trata falhas ao abrir o seletor de compartilhamento, copiar para a área de transferência e abrir as configurações de segurança.
+- Em vez de deixar uma exceção escapar da ação do botão, a interface apresenta uma mensagem curta e preserva o aplicativo em execução.
+- Commit: `6a39829a8094e769cc7e2dc3f1bdf42b5867fa6f`.
+
+### Handoff
+- Aguardar o Actions #148 para validar build e testes no estado atual.
+- Não alterar `SecurityScanner.java`, `ThreatCorrelationEngine.java` ou a frente ativa de `ScanReport.java` sem nova sincronização.
+
+### Riscos
+- Mudança restrita ao tratamento de exceções de ações externas da UI; não altera permissões nem a lógica de detecção.
