@@ -14,8 +14,8 @@ DarkShield é um auditor local de segurança para Android. O objetivo é reunir 
 - acesso aos dados de uso de aplicativos;
 - declaração de inicialização automática após o boot;
 - solicitação de instalação de APK;
-- acesso especial para modificar determinadas configurações do sistema (`WRITE_SETTINGS`);
-- gerenciamento amplo do armazenamento em Android 11+ (`MANAGE_EXTERNAL_STORAGE`);
+- acesso especial efetivamente concedido para modificar determinadas configurações do sistema (`WRITE_SETTINGS`); uma declaração sem concessão é mantida como informação e não recebe pontuação;
+- acesso especial efetivamente concedido a todo o armazenamento em Android 11+ (`MANAGE_EXTERNAL_STORAGE`); uma declaração sem concessão é mantida como informação e não recebe pontuação;
 - serviços de acessibilidade declarados e ativos;
 - administradores do dispositivo;
 - listeners de notificações;
