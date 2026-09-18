@@ -136,6 +136,24 @@ public class ScanReportTest {
         assertEquals(1, report.countRequiringReview());
     }
 
+
+    @Test public void rawPointsMatchesScoreFormulaBeforeCap() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                finding(ScanFinding.Level.LOW, 2),
+                finding(ScanFinding.Level.MEDIUM, 5)));
+
+        assertEquals(7, report.getRawPoints());
+        assertEquals(21, report.getScore());
+    }
+
+    @Test public void rawPointsCanExceedDisplayScoreCap() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                finding(ScanFinding.Level.HIGH, 40)));
+
+        assertEquals(40, report.getRawPoints());
+        assertEquals(100, report.getScore());
+    }
+
     @Test public void nullLevelCountIsZero() {
         ScanReport report = new ScanReport(null);
         assertEquals(0, report.count(null));
