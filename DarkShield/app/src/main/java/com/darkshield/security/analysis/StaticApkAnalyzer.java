@@ -27,7 +27,7 @@ public final class StaticApkAnalyzer {
     private static final String[] SUSPICIOUS_MARKERS = {
             "frida", "xposed", "lsposed", "edxposed", "lspatch",
             "magisk", "zygisk", "substrate", "riru", "busybox",
-            "inject", "backdoor", "payload"
+            "backdoor"
     };
 
     private StaticApkAnalyzer() {}
