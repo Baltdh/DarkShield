@@ -23,6 +23,7 @@ import java.security.MessageDigest;
 import java.util.*;
 import com.darkshield.security.analysis.StaticApkAnalyzer;
 import com.darkshield.security.analysis.ThreatCorrelationEngine;
+import androidx.security.state.SecurityPatchState;
 
 public final class SecurityScanner {
     private static final String[] SENSITIVE_PERMISSIONS = {
@@ -701,6 +702,32 @@ public final class SecurityScanner {
                         ? "O sistema não informou a data do patch de segurança"
                         : patch,
                 null, 0, null));
+
+        checkSecurityState(out);
+    }
+
+    private void checkSecurityState(List<ScanFinding> out) {
+        try {
+            SecurityPatchState state = new SecurityPatchState(c);
+            String system = state.getDeviceSecurityPatchLevel(
+                    SecurityPatchState.COMPONENT_SYSTEM).toString();
+            String modules = state.getDeviceSecurityPatchLevel(
+                    SecurityPatchState.COMPONENT_SYSTEM_MODULES).toString();
+            String kernel = state.getDeviceSecurityPatchLevel(
+                    SecurityPatchState.COMPONENT_KERNEL).toString();
+
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Estado de segurança do sistema",
+                    "Sistema=" + system + " | Mainline=" + modules + " | Kernel=" + kernel,
+                    null, 0, null));
+        } catch (Exception e) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Estado de segurança do sistema",
+                    "Não foi possível consultar todos os componentes do estado de segurança neste dispositivo",
+                    null, 0, null));
+        }
     }
 
     static boolean isUnprotectedExportedProvider(android.content.pm.ProviderInfo provider) {
