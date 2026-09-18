@@ -111,6 +111,41 @@ public final class SecurityScanner {
                     p.packageName, 0, null));
         }
 
+        if (ps.contains("android.permission.WRITE_SETTINGS")) {
+            if (hasSpecialAccess("android.permission.WRITE_SETTINGS", p.packageName)) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Acesso especial para modificar configurações",
+                        "O aplicativo declarou WRITE_SETTINGS e possui a autorização especial para modificar configurações do sistema",
+                        p.packageName, 3,
+                        "Confirme se essa autorização é necessária e foi concedida conscientemente"));
+            } else {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Acesso especial para modificar configurações declarado",
+                        "WRITE_SETTINGS foi declarado, mas a autorização especial não consta como concedida",
+                        p.packageName, 0, null));
+            }
+        }
+
+        if (Build.VERSION.SDK_INT >= 30
+                && ps.contains("android.permission.MANAGE_EXTERNAL_STORAGE")) {
+            if (hasSpecialAccess("android.permission.MANAGE_EXTERNAL_STORAGE", p.packageName)) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Acesso a todos os arquivos concedido",
+                        "O aplicativo declarou MANAGE_EXTERNAL_STORAGE e possui Acesso a todos os arquivos",
+                        p.packageName, 3,
+                        "Confirme se o acesso amplo ao armazenamento é necessário e reconhecido"));
+            } else {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Acesso a todos os arquivos declarado",
+                        "MANAGE_EXTERNAL_STORAGE foi declarado, mas o acesso especial não consta como concedido",
+                        p.packageName, 0, null));
+            }
+        }
+
         int mediaCount = 0;
         if (isPermissionGranted("android.permission.RECORD_AUDIO", p.packageName)) mediaCount++;
         if (isPermissionGranted("android.permission.CAMERA", p.packageName)) mediaCount++;
