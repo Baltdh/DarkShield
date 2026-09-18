@@ -21,6 +21,14 @@ public final class ScanReport {
         return RiskCalculator.score(findings);
     }
 
+    public int getRawPoints() {
+        int points = 0;
+        for (ScanFinding finding : findings) {
+            if (finding != null) points += Math.max(0, finding.points);
+        }
+        return points;
+    }
+
     public String getStatus() {
         return RiskCalculator.status(findings);
     }
