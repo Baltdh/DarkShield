@@ -3,6 +3,10 @@ package com.darkshield.security;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
+import android.net.Uri;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.ClickableSpan;
 import android.view.View;
 import android.widget.Toast;
 import android.widget.Button;
@@ -34,6 +38,7 @@ public class MainActivity extends android.app.Activity {
         securitySettings.setOnClickListener(v -> openSecuritySettings());
         share.setOnClickListener(v -> shareReport());
         share.setEnabled(false);
+        summary.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
     }
 
     private void startScan() {
@@ -65,16 +70,22 @@ public class MainActivity extends android.app.Activity {
         String details = scanReport.details();
         score.setText(status + "  •  " + risk + "/100");
         String packageSummary = scanReport.packageSummary();
-        summary.setText(
+        String summaryText =
                 "Crítico: " + critical + "   Alto: " + high
                         + "   Médio: " + medium + "   Baixo: " + low
                         + "\n" + scanReport.countRequiringReview()
-                        + " item(ns) exigem revisão; " + findings.size() + " registro(s) no total.\n\n"
-                        + (packageSummary.isEmpty()
-                                ? ""
-                                : "Pacotes com sinais para revisão:\n" + packageSummary + "\n\n")
-                        + "A pontuação é heurística: um achado não prova invasão ou malware."
+                        + " item(ns) exigem revisão; " + findings.size() + " registro(s) no total.\n\n";
+        SpannableStringBuilder summaryBuilder = new SpannableStringBuilder(summaryText);
+        if (!packageSummary.isEmpty()) {
+            int packageStart = summaryBuilder.length();
+            summaryBuilder.append("Pacotes com sinais para revisão:\n").append(packageSummary);
+            summaryBuilder.append("\n\n");
+            addPackageLinks(summaryBuilder, packageStart, scanReport);
+        }
+        summaryBuilder.append(
+                "A pontuação é heurística: um achado não prova invasão ou malware."
         );
+        summary.setText(summaryBuilder, TextView.BufferType.SPANNABLE);
 
         lastReport = buildShareReport(scanReport, status, risk, details);
         report.setText(
@@ -86,6 +97,32 @@ public class MainActivity extends android.app.Activity {
         progress.setVisibility(View.GONE);
         scan.setEnabled(true);
         share.setEnabled(true);
+    }
+
+    private void addPackageLinks(
+            SpannableStringBuilder builder, int packageStart, ScanReport scanReport) {
+        int sectionEnd = builder.length();
+        String rendered = builder.toString();
+        for (ScanReport.PackageSummary item : scanReport.packageSummaries()) {
+            if (item.packageName == null || item.packageName.trim().isEmpty()) continue;
+            int from = rendered.indexOf(item.packageName, packageStart);
+            if (from < 0 || from >= sectionEnd) continue;
+            int to = from + item.packageName.length();
+            final String packageName = item.packageName;
+            builder.setSpan(new ClickableSpan() {
+                @Override public void onClick(View widget) {
+                    try {
+                        widget.getContext().startActivity(new Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.parse("package:" + packageName)));
+                    } catch (Exception ignored) {
+                        Toast.makeText(widget.getContext(),
+                                "Não foi possível abrir os detalhes deste aplicativo.",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                }
+            }, from, to, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+        }
     }
 
     private void finishScanError(Exception e) {
