@@ -52,7 +52,20 @@ public final class SecurityScanner {
         out.add(new ScanFinding(
                 ScanFinding.Level.INFO, "Aplicativos analisados",
                 apps.size() + " pacote(s) visíveis para o scanner", null, 0, null));
-        for (PackageInfo p : apps) inspectApp(p, out);
+        for (PackageInfo p : apps) {
+            if (p == null) continue;
+            try {
+                inspectApp(p, out);
+            } catch (Exception e) {
+                String packageName = p.packageName;
+                out.add(new ScanFinding(
+                        ScanFinding.Level.LOW,
+                        "Falha ao analisar aplicativo",
+                        "O scanner não conseguiu concluir a análise deste pacote; os demais aplicativos continuarão sendo analisados",
+                        packageName, 1,
+                        "Revise manualmente o aplicativo se você não o reconhecer"));
+            }
+        }
         checkAccessibility(out);
         checkNotificationListeners(out);
         checkDeviceAdmins(out);
