@@ -54,6 +54,39 @@ public class ScanReportTest {
         assertTrue(details.indexOf("[MEDIUM]") < details.indexOf("[LOW]"));
     }
 
+    @Test public void packageSummariesGroupAndSortFindings() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.LOW, "low", "detail",
+                        "com.example.b", 1, null),
+                new ScanFinding(ScanFinding.Level.HIGH, "high", "detail",
+                        "com.example.a", 3, null),
+                new ScanFinding(ScanFinding.Level.MEDIUM, "medium", "detail",
+                        "com.example.a", 2, null),
+                new ScanFinding(ScanFinding.Level.INFO, "info", "detail",
+                        "com.example.a", 0, null)));
+
+        List<ScanReport.PackageSummary> summaries = report.packageSummaries();
+        assertEquals(2, summaries.size());
+        assertEquals("com.example.a", summaries.get(0).packageName);
+        assertEquals(ScanFinding.Level.HIGH, summaries.get(0).level);
+        assertEquals(2, summaries.get(0).findings);
+        assertEquals(5, summaries.get(0).points);
+        assertEquals("com.example.b", summaries.get(1).packageName);
+    }
+
+    @Test public void packageSummaryShowsTopFiveAndCountsRemaining() {
+        java.util.List<ScanFinding> findings = new java.util.ArrayList<>();
+        for (int i = 0; i < 6; i++) {
+            findings.add(new ScanFinding(
+                    ScanFinding.Level.LOW, "finding", "detail",
+                    "com.example." + i, 1, null));
+        }
+
+        String summary = new ScanReport(findings).packageSummary();
+        assertTrue(summary.contains("com.example.0"));
+        assertTrue(summary.contains("… e mais 1 pacote(s)"));
+    }
+
     @Test public void nullLevelCountIsZero() {
         ScanReport report = new ScanReport(null);
         assertEquals(0, report.count(null));
