@@ -9,6 +9,13 @@ import java.util.Map;
 public final class ThreatCorrelationEngine {
     private ThreatCorrelationEngine() {}
 
+    private static int compareDeterministically(String left, String right) {
+        String leftValue = left == null ? "" : left;
+        String rightValue = right == null ? "" : right;
+        int order = leftValue.compareToIgnoreCase(rightValue);
+        return order != 0 ? order : leftValue.compareTo(rightValue);
+    }
+
     public static List<ScanFinding> correlate(List<ScanFinding> findings) {
         List<ScanFinding> derived = new ArrayList<>();
         if (findings == null || findings.isEmpty()) return derived;
@@ -144,6 +151,25 @@ public final class ThreatCorrelationEngine {
                         "Confirme que ambas as capacidades foram autorizadas conscientemente"));
             }
         }
+
+        derived.sort((left, right) -> {
+            int severity = Integer.compare(right.level.ordinal(), left.level.ordinal());
+            if (severity != 0) return severity;
+
+            int points = Integer.compare(Math.max(0, right.points), Math.max(0, left.points));
+            if (points != 0) return points;
+
+            int packageOrder = compareDeterministically(left.packageName, right.packageName);
+            if (packageOrder != 0) return packageOrder;
+
+            int titleOrder = compareDeterministically(left.title, right.title);
+            if (titleOrder != 0) return titleOrder;
+
+            int detailOrder = compareDeterministically(left.detail, right.detail);
+            if (detailOrder != 0) return detailOrder;
+
+            return compareDeterministically(left.action, right.action);
+        });
 
         return derived;
     }
