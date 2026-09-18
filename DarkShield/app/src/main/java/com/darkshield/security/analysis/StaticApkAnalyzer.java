@@ -3,7 +3,10 @@ package com.darkshield.security.analysis;
 import com.darkshield.security.ScanFinding;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,6 +18,9 @@ public final class StaticApkAnalyzer {
     private static final int MAX_ENTRIES = 10000;
     private static final long MAX_APK_BYTES = 200L * 1024L * 1024L;
     private static final int MAX_SUSPICIOUS_NAMES = 50;
+    private static final int MAX_SUSPICIOUS_CONTENT_HITS = 20;
+    private static final int MAX_ENTRY_CONTENT_SCAN_BYTES = 2 * 1024 * 1024;
+    private static final long MAX_TOTAL_CONTENT_SCAN_BYTES = 8L * 1024L * 1024L;
 
     // Keep distinctive markers here. Very short/generic terms such as "rat"
     // can match innocent filenames and create excessive false positives.
@@ -56,6 +62,8 @@ public final class StaticApkAnalyzer {
         boolean manifest = false;
         boolean resources = false;
         List<String> suspicious = new ArrayList<>();
+        List<String> suspiciousContent = new ArrayList<>();
+        long contentScanned = 0L;
 
         try (ZipFile zip = new ZipFile(apk)) {
             java.util.Enumeration<? extends ZipEntry> e = zip.entries();
@@ -82,6 +90,18 @@ public final class StaticApkAnalyzer {
 
                 if (containsSuspiciousMarker(lower) && suspicious.size() < MAX_SUSPICIOUS_NAMES) {
                     suspicious.add(name);
+                }
+
+                boolean binaryCode = lower.endsWith(".dex")
+                        || (lower.startsWith("lib/") && lower.endsWith(".so"));
+                if (binaryCode && contentScanned < MAX_TOTAL_CONTENT_SCAN_BYTES
+                        && suspiciousContent.size() < MAX_SUSPICIOUS_CONTENT_HITS) {
+                    int budget = (int) Math.min(
+                            MAX_ENTRY_CONTENT_SCAN_BYTES,
+                            MAX_TOTAL_CONTENT_SCAN_BYTES - contentScanned);
+                    byte[] prefix = readPrefix(zip, entry, budget);
+                    contentScanned += prefix.length;
+                    collectContentMarkers(name, prefix, suspiciousContent);
                 }
             }
 
@@ -120,6 +140,23 @@ public final class StaticApkAnalyzer {
                         "Revise o app e, quando necessário, compare com a origem oficial do APK"));
             }
 
+            if (!suspiciousContent.isEmpty()) {
+                StringBuilder detail = new StringBuilder();
+                int shown = Math.min(6, suspiciousContent.size());
+                for (int i = 0; i < shown; i++) {
+                    if (i > 0) detail.append(", ");
+                    detail.append(suspiciousContent.get(i));
+                }
+                if (suspiciousContent.size() > shown) detail.append(" …");
+                out.add(new ScanFinding(
+                        ScanFinding.Level.LOW,
+                        "Marcadores suspeitos no conteúdo de DEX/bibliotecas",
+                        "Foram encontrados textos associados a instrumentação dentro do prefixo analisado de DEX/bibliotecas: "
+                                + detail + ". Isso é um indicador heurístico e não prova comportamento malicioso.",
+                        packageName, 2,
+                        "Revise a origem do APK e compare o certificado/versão com a distribuição oficial"));
+            }
+
             if (dex == 0) {
                 out.add(new ScanFinding(
                         ScanFinding.Level.INFO,
@@ -148,6 +185,37 @@ public final class StaticApkAnalyzer {
                     packageName, 0, null));
         }
         return out;
+    }
+
+    private static byte[] readPrefix(ZipFile zip, ZipEntry entry, int limit) {
+        if (limit <= 0) return new byte[0];
+        try (InputStream in = zip.getInputStream(entry);
+             ByteArrayOutputStream out = new ByteArrayOutputStream(Math.min(limit, 64 * 1024))) {
+            byte[] buffer = new byte[64 * 1024];
+            int total = 0;
+            while (total < limit) {
+                int want = Math.min(buffer.length, limit - total);
+                int read = in.read(buffer, 0, want);
+                if (read < 0) break;
+                if (read == 0) continue;
+                out.write(buffer, 0, read);
+                total += read;
+            }
+            return out.toByteArray();
+        } catch (IOException | SecurityException e) {
+            return new byte[0];
+        }
+    }
+
+    private static void collectContentMarkers(
+            String entryName, byte[] prefix, List<String> hits) {
+        if (prefix.length == 0) return;
+        String text = new String(prefix, StandardCharsets.ISO_8859_1)
+                .toLowerCase(Locale.ROOT);
+        for (String marker : SUSPICIOUS_MARKERS) {
+            if (hits.size() >= MAX_SUSPICIOUS_CONTENT_HITS) return;
+            if (text.contains(marker)) hits.add(entryName + ":" + marker);
+        }
     }
 
     private static boolean containsSuspiciousMarker(String name) {
