@@ -347,12 +347,22 @@ public final class SecurityScanner {
     }
 
     private void inspectExportedComponents(PackageInfo p, List<ScanFinding> out) {
+        int exportedActivities = 0;
         int exportedServices = 0;
         int exportedReceivers = 0;
         int exportedProviders = 0;
+        int unprotectedActivities = 0;
         int unprotectedServices = 0;
         int unprotectedReceivers = 0;
         int unprotectedProviders = 0;
+
+        if (p.activities != null) {
+            for (android.content.pm.ActivityInfo activity : p.activities) {
+                if (!activity.exported) continue;
+                exportedActivities++;
+                if (TextUtils.isEmpty(activity.permission)) unprotectedActivities++;
+            }
+        }
 
         if (p.services != null) {
             for (ServiceInfo s : p.services) {
@@ -381,15 +391,17 @@ public final class SecurityScanner {
             }
         }
 
-        int unprotected = unprotectedServices + unprotectedReceivers + unprotectedProviders;
-        int total = exportedServices + exportedReceivers + exportedProviders;
+        int unprotected = unprotectedActivities + unprotectedServices
+                + unprotectedReceivers + unprotectedProviders;
+        int total = exportedActivities + exportedServices + exportedReceivers + exportedProviders;
         if (total == 0) return;
 
         if (unprotected > 0) {
             out.add(new ScanFinding(
                     ScanFinding.Level.LOW,
                     "Componentes exportados sem permissão explícita",
-                    "Serviços: " + exportedServices + " (" + unprotectedServices + " sem proteção); "
+                    "Activities: " + exportedActivities + " (" + unprotectedActivities + " sem proteção); "
+                            + "serviços: " + exportedServices + " (" + unprotectedServices + " sem proteção); "
                             + "receivers: " + exportedReceivers + " (" + unprotectedReceivers + " sem proteção); "
                             + "providers: " + exportedProviders + " (" + unprotectedProviders + " sem proteção). "
                             + "Essa configuração pode ser legítima, mas amplia a superfície acessível por outros apps.",
@@ -399,8 +411,8 @@ public final class SecurityScanner {
             out.add(new ScanFinding(
                     ScanFinding.Level.INFO,
                     "Componentes exportados protegidos",
-                    "Serviços: " + exportedServices + "; receivers: "
-                            + exportedReceivers + "; providers: " + exportedProviders,
+                    "Activities: " + exportedActivities + "; serviços: " + exportedServices
+                            + "; receivers: " + exportedReceivers + "; providers: " + exportedProviders,
                     p.packageName, 0, null));
         }
     }
