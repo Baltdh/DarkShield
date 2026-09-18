@@ -24,6 +24,7 @@ import java.util.concurrent.Executors;
 
 public class MainActivity extends android.app.Activity {
     private TextView score, summary, report, lastScan;
+    private TextView countCritical, countHigh, countMedium, countLow;
     private ProgressBar progress;
     private Button scan, securitySettings, share, copy;
     private String lastReport = "";
@@ -36,6 +37,10 @@ public class MainActivity extends android.app.Activity {
         summary = findViewById(R.id.summary);
         report = findViewById(R.id.report);
         lastScan = findViewById(R.id.last_scan);
+        countCritical = findViewById(R.id.count_critical);
+        countHigh = findViewById(R.id.count_high);
+        countMedium = findViewById(R.id.count_medium);
+        countLow = findViewById(R.id.count_low);
         progress = findViewById(R.id.progress);
         scan = findViewById(R.id.scan);
         securitySettings = findViewById(R.id.settings);
@@ -80,6 +85,10 @@ public class MainActivity extends android.app.Activity {
         int medium = scanReport.count(ScanFinding.Level.MEDIUM);
         int low = scanReport.count(ScanFinding.Level.LOW);
         int risk = scanReport.getScore();
+        countCritical.setText("CRÍTICO\\n" + critical);
+        countHigh.setText("ALTO\\n" + high);
+        countMedium.setText("MÉDIO\\n" + medium);
+        countLow.setText("BAIXO\\n" + low);
         String status = scanReport.getStatus();
         String details = scanReport.details();
         String informational = scanReport.informationalDetails();
