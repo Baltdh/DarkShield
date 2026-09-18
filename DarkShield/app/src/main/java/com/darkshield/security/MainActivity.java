@@ -68,6 +68,7 @@ public class MainActivity extends android.app.Activity {
         int risk = scanReport.getScore();
         String status = scanReport.getStatus();
         String details = scanReport.details();
+        String informational = scanReport.informationalDetails();
         score.setText(status + "  •  " + risk + "/100");
         String packageSummary = scanReport.packageSummary();
         String summaryText =
@@ -87,7 +88,7 @@ public class MainActivity extends android.app.Activity {
         );
         summary.setText(summaryBuilder, TextView.BufferType.SPANNABLE);
 
-        lastReport = buildShareReport(scanReport, status, risk, details);
+        lastReport = buildShareReport(scanReport, status, risk, details, informational);
         report.setText(
                 details.isEmpty()
                         ? "Nenhum indicador que exija revisão imediata foi encontrado."
