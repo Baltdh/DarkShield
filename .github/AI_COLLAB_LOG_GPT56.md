@@ -731,3 +731,16 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Handoff
 - Não alterar scanner, correlação ou analisador estático nesta passagem enquanto o novo CI valida a correção.
+
+
+## 2026-09-18 — modernização das Actions do CI
+
+### Concluído
+- O CI #136 registrou avisos de migração forçada de Node 20 nas Actions do workflow Android.
+- Atualizado `.github/workflows/android-apk.yml` para `actions/checkout@v7`, `actions/setup-java@v6`, `gradle/actions/setup-gradle@v6` e `actions/upload-artifact@v6`.
+- As versões atuais documentadas pelos respectivos projetos usam runtime Node 24 para evitar a transição legada de Node 20. 
+- Commit: `3cd63179da12ec6278f3d4a274702192f4c33517`.
+
+### Handoff
+- Conferir o novo Actions e manter o workflow separado das frentes de scanner/correlação/análise estática.
+- Se o build voltar a falhar, tratar primeiro como regressão do workflow, não do código de segurança.
