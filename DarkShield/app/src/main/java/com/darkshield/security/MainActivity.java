@@ -68,6 +68,10 @@ public class MainActivity extends android.app.Activity {
         lastScan.setText("VERIFICAÇÃO EM ANDAMENTO");
         nextAction.setText("Aguarde enquanto o DarkShield analisa o dispositivo.");
         report.setText("");
+        countCritical.setText("CRÍTICO\n0");
+        countHigh.setText("ALTO\n0");
+        countMedium.setText("MÉDIO\n0");
+        countLow.setText("BAIXO\n0");
 
         exec.submit(() -> {
             try {
@@ -87,10 +91,10 @@ public class MainActivity extends android.app.Activity {
         int medium = scanReport.count(ScanFinding.Level.MEDIUM);
         int low = scanReport.count(ScanFinding.Level.LOW);
         int risk = scanReport.getScore();
-        countCritical.setText("CRÍTICO\\n" + critical);
-        countHigh.setText("ALTO\\n" + high);
-        countMedium.setText("MÉDIO\\n" + medium);
-        countLow.setText("BAIXO\\n" + low);
+        countCritical.setText("CRÍTICO\n" + critical);
+        countHigh.setText("ALTO\n" + high);
+        countMedium.setText("MÉDIO\n" + medium);
+        countLow.setText("BAIXO\n" + low);
         String status = scanReport.getStatus();
         String details = scanReport.details();
         String informational = scanReport.informationalDetails();
