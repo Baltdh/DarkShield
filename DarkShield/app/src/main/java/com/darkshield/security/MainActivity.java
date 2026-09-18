@@ -204,7 +204,13 @@ public class MainActivity extends android.app.Activity {
         send.setType("text/plain");
         send.putExtra(Intent.EXTRA_SUBJECT, "DarkShield — Relatório de segurança");
         send.putExtra(Intent.EXTRA_TEXT, lastReport);
-        startActivity(Intent.createChooser(send, "Compartilhar relatório"));
+        try {
+            startActivity(Intent.createChooser(send, "Compartilhar relatório"));
+        } catch (Exception e) {
+            Toast.makeText(this,
+                    "Não foi possível abrir um aplicativo para compartilhar o relatório.",
+                    Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void copyReport() {
@@ -221,16 +227,27 @@ public class MainActivity extends android.app.Activity {
             return;
         }
 
-        clipboard.setPrimaryClip(
-                ClipData.newPlainText("Relatório DarkShield", lastReport));
-        Toast.makeText(this, "Relatório copiado.", Toast.LENGTH_SHORT).show();
+        try {
+            clipboard.setPrimaryClip(
+                    ClipData.newPlainText("Relatório DarkShield", lastReport));
+            Toast.makeText(this, "Relatório copiado.", Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(this, "Não foi possível copiar o relatório.",
+                    Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void openSecuritySettings() {
         try {
             startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
         } catch (Exception e) {
-            startActivity(new Intent(Settings.ACTION_SETTINGS));
+            try {
+                startActivity(new Intent(Settings.ACTION_SETTINGS));
+            } catch (Exception ignored) {
+                Toast.makeText(this,
+                        "Não foi possível abrir as configurações de segurança.",
+                        Toast.LENGTH_SHORT).show();
+            }
         }
     }
 
