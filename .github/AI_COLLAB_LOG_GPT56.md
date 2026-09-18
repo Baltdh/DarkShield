@@ -757,3 +757,20 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Handoff
 - Aguardar o novo CI para confirmar os testes unitários.
 - O workflow já está usando as Actions modernizadas; manter essa frente separada da lógica do scanner.
+
+
+## 2026-09-18 — ordem determinística na correlação de ameaças
+
+### Concluído
+- Identificado que `ThreatCorrelationEngine` gerava findings percorrendo `HashMap.keySet()`, deixando a ordem dos resultados dependente da iteração das tabelas.
+- Adicionada ordenação final determinística dos findings derivados por severidade, pontos, pacote e campos textuais.
+- Adicionado teste com pacotes Java de hash igual (`com.example.FB` e `com.example.Ea`) e entradas em ordem invertida, verificando que o resultado permanece estável.
+- Commits: `88f002bf91e9e71dde35f4004ddac6620df691b2` e `a6f0be86657e6e8d574c5f2b7621997e7f4fae02`.
+
+### Validação
+- O CI #139 falhou anteriormente em um teste de `ScanReport` executado antes de `f83810c`; não representa o código corrigido atual.
+- A mudança de correlação disparou uma nova execução do workflow para validar o estado integrado.
+
+### Handoff
+- Aguardar o CI do novo HEAD.
+- Depois, revisar possíveis casos-limite de correlação sem modificar as regras de severidade existentes.
