@@ -95,6 +95,34 @@ public final class ScanReport {
         return out.toString();
     }
 
+
+    public String informationalDetails() {
+        List<ScanFinding> info = new ArrayList<>();
+        for (ScanFinding finding : findings) {
+            if (finding != null && finding.level == ScanFinding.Level.INFO) {
+                info.add(finding);
+            }
+        }
+
+        info.sort((left, right) -> {
+            String leftPackage = left.packageName == null ? "" : left.packageName;
+            String rightPackage = right.packageName == null ? "" : right.packageName;
+            int packageOrder = leftPackage.compareToIgnoreCase(rightPackage);
+            if (packageOrder != 0) return packageOrder;
+
+            String leftTitle = left.title == null ? "" : left.title;
+            String rightTitle = right.title == null ? "" : right.title;
+            return leftTitle.compareToIgnoreCase(rightTitle);
+        });
+
+        StringBuilder out = new StringBuilder();
+        for (ScanFinding finding : info) {
+            if (out.length() > 0) out.append("\n\n");
+            out.append(finding.line());
+        }
+        return out.toString();
+    }
+
     public String details() {
         List<ScanFinding> review = new ArrayList<>();
         for (ScanFinding finding : findings) {
