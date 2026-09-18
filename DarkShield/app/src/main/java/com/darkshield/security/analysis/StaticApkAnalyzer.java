@@ -13,9 +13,15 @@ import java.util.zip.ZipFile;
 
 public final class StaticApkAnalyzer {
     private static final int MAX_ENTRIES = 10000;
+    private static final long MAX_APK_BYTES = 200L * 1024L * 1024L;
+    private static final int MAX_SUSPICIOUS_NAMES = 50;
+
+    // Keep distinctive markers here. Very short/generic terms such as "rat"
+    // can match innocent filenames and create excessive false positives.
     private static final String[] SUSPICIOUS_MARKERS = {
-            "frida", "xposed", "magisk", "zygisk", "substrate",
-            "busybox", "inject", "payload", "backdoor", "rat"
+            "frida", "xposed", "lsposed", "edxposed", "lspatch",
+            "magisk", "zygisk", "substrate", "riru", "busybox",
+            "inject", "backdoor", "payload"
     };
 
     private StaticApkAnalyzer() {}
@@ -30,6 +36,17 @@ public final class StaticApkAnalyzer {
         File apk = new File(apkPath);
         if (!apk.isFile() || !apk.canRead()) {
             out.add(error("APK não encontrado ou sem acesso de leitura", packageName));
+            return out;
+        }
+
+        if (apk.length() > MAX_APK_BYTES) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.LOW,
+                    "APK grande demais para análise estática local",
+                    "O arquivo possui " + apk.length() + " bytes; a análise foi limitada a "
+                            + MAX_APK_BYTES + " bytes para evitar custo excessivo durante a varredura completa",
+                    packageName, 1,
+                    "Analise esse APK separadamente caso precise de inspeção profunda"));
             return out;
         }
 
@@ -48,7 +65,8 @@ public final class StaticApkAnalyzer {
                     out.add(new ScanFinding(
                             ScanFinding.Level.LOW,
                             "APK com muitas entradas",
-                            "A análise foi limitada após " + MAX_ENTRIES + " entradas para manter o custo previsível",
+                            "A análise foi limitada após " + MAX_ENTRIES
+                                    + " entradas para manter o custo previsível",
                             packageName, 1,
                             "Considere uma análise ADB/forense separada para esse APK"));
                     break;
@@ -62,19 +80,18 @@ public final class StaticApkAnalyzer {
                 if (lower.endsWith(".dex")) dex++;
                 if (lower.startsWith("lib/") && lower.endsWith(".so")) nativeLibs++;
 
-                for (String marker : SUSPICIOUS_MARKERS) {
-                    if (lower.contains(marker)) {
-                        suspicious.add(name);
-                        break;
-                    }
+                if (containsSuspiciousMarker(lower) && suspicious.size() < MAX_SUSPICIOUS_NAMES) {
+                    suspicious.add(name);
                 }
             }
 
             out.add(new ScanFinding(
                     ScanFinding.Level.INFO,
                     "Estrutura ZIP do APK",
-                    "Entradas: " + entries + "; DEX: " + dex + "; bibliotecas nativas: " + nativeLibs
-                            + "; AndroidManifest.xml: " + manifest + "; resources.arsc: " + resources,
+                    "Entradas: " + entries + "; DEX: " + dex
+                            + "; bibliotecas nativas: " + nativeLibs
+                            + "; AndroidManifest.xml: " + manifest
+                            + "; resources.arsc: " + resources,
                     packageName, 0, null));
 
             if (!manifest) {
@@ -117,7 +134,7 @@ public final class StaticApkAnalyzer {
                         packageName, 1,
                         "Quantidade elevada pode ser legítima; revise apenas junto de outros indicadores"));
             }
-        } catch (IOException ex) {
+        } catch (IOException | SecurityException ex) {
             out.add(error("Não foi possível ler a estrutura ZIP do APK", packageName));
             return out;
         }
@@ -131,6 +148,13 @@ public final class StaticApkAnalyzer {
                     packageName, 0, null));
         }
         return out;
+    }
+
+    private static boolean containsSuspiciousMarker(String name) {
+        for (String marker : SUSPICIOUS_MARKERS) {
+            if (name.contains(marker)) return true;
+        }
+        return false;
     }
 
     private static ScanFinding error(String detail, String packageName) {

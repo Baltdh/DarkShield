@@ -1,21 +1,24 @@
 package com.darkshield.security;
 
 import org.junit.Test;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 
 public class SystemIntegrityCheckerTest {
-    @Test public void rootBinaryCheckDoesNotThrow() {
-        assertFalse("The test only verifies a safe result on the CI host",
-                SystemIntegrityChecker.hasRootBinary() && false);
+    @Test public void rootBinaryCheckReturnsBooleanWithoutThrowing() {
+        boolean result = SystemIntegrityChecker.hasRootBinary();
+        assertNotNull(Boolean.valueOf(result));
     }
 
-    @Test public void testKeyCheckDoesNotThrow() {
-        SystemIntegrityChecker.hasTestKeys();
-        SystemIntegrityChecker.hasDebuggableBuild();
-        SystemIntegrityChecker.hasRootManagementMarker();
+    @Test public void buildChecksReturnBooleanWithoutThrowing() {
+        boolean testKeys = SystemIntegrityChecker.hasTestKeys();
+        boolean debuggable = SystemIntegrityChecker.hasDebuggableBuild();
+        boolean rootMarker = SystemIntegrityChecker.hasRootManagementMarker();
+        assertNotNull(Boolean.valueOf(testKeys));
+        assertNotNull(Boolean.valueOf(debuggable));
+        assertNotNull(Boolean.valueOf(rootMarker));
     }
 
-    @Test public void proxyHostDoesNotThrow() {
-        SystemIntegrityChecker.getProxyHost();
+    @Test public void proxyHostIsNeverNull() {
+        assertNotNull(SystemIntegrityChecker.getProxyHost());
     }
 }

@@ -24,6 +24,14 @@ public class RiskCalculatorTest {
                 finding(ScanFinding.Level.HIGH, 50))));
     }
 
+    @Test public void negativeAndNullFindingsDoNotAddRisk() {
+        assertEquals(0, RiskCalculator.score(Arrays.asList(
+                null,
+                finding(ScanFinding.Level.LOW, -10),
+                finding(ScanFinding.Level.INFO, 0)
+        )));
+    }
+
     @Test public void highestSeverityControlsStatus() {
         assertEquals("RISCO ALTO", RiskCalculator.status(Arrays.asList(
                 finding(ScanFinding.Level.LOW, 1),
@@ -36,5 +44,12 @@ public class RiskCalculatorTest {
     @Test public void infoDoesNotRaiseStatus() {
         assertEquals("SEM INDICADORES FORTES", RiskCalculator.status(Arrays.asList(
                 finding(ScanFinding.Level.INFO, 0))));
+    }
+
+    @Test public void nullFindingsDoNotAffectStatus() {
+        assertEquals("REVISÃO RECOMENDADA", RiskCalculator.status(Arrays.asList(
+                null,
+                finding(ScanFinding.Level.MEDIUM, 1)
+        )));
     }
 }
