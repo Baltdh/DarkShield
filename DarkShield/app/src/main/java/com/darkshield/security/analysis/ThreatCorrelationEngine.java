@@ -117,6 +117,20 @@ public final class ThreatCorrelationEngine {
             }
         }
 
+        for (String p : accessibility.keySet()) {
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean n = notification.getOrDefault(p, false);
+
+            if (a && n) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de acessibilidade e notificações",
+                        "O mesmo pacote possui serviço de acessibilidade ativo e acesso ativo às notificações.",
+                        p, 4,
+                        "Confirme que o aplicativo é reconhecido e que ambos os acessos são necessários"));
+            }
+        }
+
         for (String p : admin.keySet()) {
             if (accessibility.getOrDefault(p, false)) {
                 derived.add(new ScanFinding(
