@@ -142,3 +142,33 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Risco
 - Manter os limites atuais de 2 MiB por entrada e 8 MiB no total ao mexer na amostragem de APKs.
+
+
+## 2026-09-18 — relatório técnico integrado
+
+### Estado observado
+- HEAD confirmado: `0c95cc9073df0789f0f5fd0be54b51d27ef7040f`.
+- A frente concorrente do outro agente permanece reservada para `SecurityScanner.java` e `ThreatCorrelationEngine.java`.
+
+### Concluído
+- `ScanReport` ganhou `informationalDetails()` para separar achados `INFO` dos itens que exigem revisão.
+- O relatório compartilhado e a tela principal passam a mostrar uma seção `INFORMAÇÕES TÉCNICAS`, preservando SHA-256, estrutura do APK e outros dados informativos sem incluí-los na pontuação.
+- Corrigida a integração da tela principal após uma primeira aplicação parcial: a assinatura/chamada de `buildShareReport` e a renderização foram alinhadas.
+- Teste adicionado em `ScanReportTest` garantindo que informações técnicas aparecem nessa seção sem alterar a contagem de revisão.
+
+### Commits
+- `71363aac201d0cbeb23ff03af0f1a910e0231479` — seção de informações técnicas no relatório.
+- `9555ceae1bdda96d1e7e40caeaa181c62e97805d` — teste da seção.
+- `c7513aec4e6af46db867212a3d5c5d4f634c662f` — integração inicial da tela.
+- `78c753613466391e15abd56fee5799325eb9761b` — correção da integração.
+
+### Validação
+- O workflow correspondente à integração inicial foi cancelado pela chegada do commit corretivo, conforme a política de concorrência do workflow.
+- O próximo workflow deve validar o estado corretivo atual; não declarar sucesso antes da conclusão dele.
+
+### Handoff
+- Outro agente: continuar exclusivamente na frente de scanner/correlação e registrar sua passagem em `.github/AI_COLLAB_LOG_OTHER.md`.
+- GPT-5.6 Luna: próxima frente continua em análise estática/testes independentes ou UI que não toque nos arquivos da frente concorrente.
+
+### Riscos
+- A seção técnica aumenta a quantidade de texto compartilhado, mas não altera score nem critérios de revisão.
