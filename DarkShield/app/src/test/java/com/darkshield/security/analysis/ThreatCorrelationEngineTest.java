@@ -144,4 +144,36 @@ public class ThreatCorrelationEngineTest {
 
         assertTrue(ThreatCorrelationEngine.correlate(Arrays.asList(remote, access)).isEmpty());
     }
+
+    @Test public void correlationOrderIsDeterministicForHashCollidingPackages() {
+        List<ScanFinding> firstInput = Arrays.asList(
+                new ScanFinding(ScanFinding.Level.LOW,
+                        "Indicador heurístico de acesso remoto", "detail",
+                        "com.example.FB", 1, null),
+                new ScanFinding(ScanFinding.Level.MEDIUM,
+                        "Acesso a notificações ativo", "detail",
+                        "com.example.FB", 1, null),
+                new ScanFinding(ScanFinding.Level.LOW,
+                        "Indicador heurístico de acesso remoto", "detail",
+                        "com.example.Ea", 1, null),
+                new ScanFinding(ScanFinding.Level.MEDIUM,
+                        "Acesso a notificações ativo", "detail",
+                        "com.example.Ea", 1, null));
+
+        List<ScanFinding> secondInput = Arrays.asList(
+                firstInput.get(2), firstInput.get(3),
+                firstInput.get(0), firstInput.get(1));
+
+        List<ScanFinding> first = ThreatCorrelationEngine.correlate(firstInput);
+        List<ScanFinding> second = ThreatCorrelationEngine.correlate(secondInput);
+
+        assertEquals(2, first.size());
+        assertEquals(2, second.size());
+        assertEquals("com.example.Ea", first.get(0).packageName);
+        assertEquals("com.example.FB", first.get(1).packageName);
+        assertEquals(first.get(0).packageName, second.get(0).packageName);
+        assertEquals(first.get(1).packageName, second.get(1).packageName);
+        assertEquals(first.get(0).title, second.get(0).title);
+        assertEquals(first.get(1).title, second.get(1).title);
+    }
 }
