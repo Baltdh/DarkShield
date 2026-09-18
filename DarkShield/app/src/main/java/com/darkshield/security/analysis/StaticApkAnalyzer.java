@@ -132,6 +132,7 @@ public final class StaticApkAnalyzer {
             }
 
             if (!suspicious.isEmpty()) {
+                suspicious.sort(String.CASE_INSENSITIVE_ORDER);
                 StringBuilder detail = new StringBuilder();
                 int shown = Math.min(6, suspicious.size());
                 for (int i = 0; i < shown; i++) {
@@ -149,6 +150,7 @@ public final class StaticApkAnalyzer {
             }
 
             if (!suspiciousResourceMarkers.isEmpty()) {
+                suspiciousResourceMarkers.sort(String.CASE_INSENSITIVE_ORDER);
                 StringBuilder detail = new StringBuilder();
                 int shown = Math.min(6, suspiciousResourceMarkers.size());
                 for (int i = 0; i < shown; i++) {
@@ -167,6 +169,7 @@ public final class StaticApkAnalyzer {
             }
 
             if (!suspiciousContent.isEmpty()) {
+                suspiciousContent.sort(String.CASE_INSENSITIVE_ORDER);
                 StringBuilder detail = new StringBuilder();
                 int shown = Math.min(6, suspiciousContent.size());
                 for (int i = 0; i < shown; i++) {
