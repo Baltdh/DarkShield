@@ -63,9 +63,25 @@ public final class SystemIntegrityChecker {
     }
 
     static boolean hasRootManagerEnvironmentMarker(String path) {
-        if (path == null) return false;
-        String value = path.toLowerCase(Locale.ROOT);
-        return value.contains("magisk") || value.contains("ksu");
+        if (path == null || path.trim().isEmpty()) return false;
+
+        String[] entries = path.split(java.util.regex.Pattern.quote(File.pathSeparator));
+        for (String entry : entries) {
+            if (entry == null) continue;
+            String normalized = entry.trim().toLowerCase(Locale.ROOT);
+            if (normalized.isEmpty()) continue;
+
+            String[] segments = normalized.split("[/\\\\]+");
+            for (String segment : segments) {
+                if ("magisk".equals(segment)
+                        || ".magisk".equals(segment)
+                        || "ksu".equals(segment)
+                        || ".ksu".equals(segment)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static boolean existsAny(String[] paths) {
