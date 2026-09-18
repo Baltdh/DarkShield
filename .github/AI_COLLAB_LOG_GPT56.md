@@ -1273,3 +1273,21 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - A documentação descreve comportamento heurístico e limitações; não transforma sinais em prova de malware.
+
+
+## 2026-09-18 — cobertura do último desempate determinístico
+
+### Concluído
+- Revalidado `ScanReport.details()`: o comparador já usa `action` como último desempate após severidade, pontos, pacote, título e detalhe.
+- Adicionado teste específico em `ScanReportTest.java` para dois achados com todos os campos anteriores idênticos e ações diferentes, garantindo que a saída permaneça determinística.
+- Commit: `652b393e0f3656a0a1263b91266494153a749445`.
+
+### Validação
+- Teste aplicado sobre o SHA atual do arquivo, sem alterar produção.
+- O workflow deve validar a suíte automaticamente porque o arquivo está sob `DarkShield/**`.
+
+### Próximo trabalho
+- Conferir o Actions deste commit e, se passar, continuar a auditoria em uma frente independente de testes/robustez.
+
+### Riscos
+- Alteração somente de teste; não muda score nem comportamento de produção.
