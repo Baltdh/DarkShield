@@ -14,7 +14,8 @@
     <ProgressBar android:id="@+id/progress" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="12dp" android:visibility="gone"/>
     <Button android:id="@+id/scan" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="18dp" android:text="VERIFICAÇÃO COMPLETA"/>
     <Button android:id="@+id/settings" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="CONFIGURAÇÕES DE SEGURANÇA"/>
-    <Button android:id="@+id/share" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="COMPARTILHAR RELATÓRIO"/>\n    <Button android:id="@+id/copy" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="COPIAR RELATÓRIO" android:contentDescription="Copiar relatório de segurança"/>
+    <Button android:id="@+id/share" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="COMPARTILHAR RELATÓRIO"/>
+    <Button android:id="@+id/copy" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="8dp" android:text="COPIAR RELATÓRIO" android:contentDescription="Copiar relatório de segurança"/>
     <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:layout_marginTop="18dp">
         <TextView android:id="@+id/report" android:layout_width="match_parent" android:layout_height="wrap_content"
             android:textColor="#D9DDE7" android:textSize="14sp" android:lineSpacingExtra="2dp" android:fontFamily="monospace"/>
