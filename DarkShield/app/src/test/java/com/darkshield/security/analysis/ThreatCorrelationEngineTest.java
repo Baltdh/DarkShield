@@ -42,6 +42,17 @@ public class ThreatCorrelationEngineTest {
         assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
     }
 
+    @Test public void correlatesRemoteAccessWithAdministrator() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
+                f("Administrador do dispositivo ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertTrue(out.get(0).title.contains("administrador"));
+    }
+
+
     @Test public void correlatesRemoteAccessWithLocation() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
