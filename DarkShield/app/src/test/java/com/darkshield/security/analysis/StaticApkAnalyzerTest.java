@@ -178,6 +178,30 @@ public class StaticApkAnalyzerTest {
         assertTrue(apk.delete());
     }
 
+    @Test public void multipleDexFilesAreInformationalOnly() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            for (int i = 1; i <= 5; i++) {
+                add(zip, i == 1 ? "classes.dex" : "classes" + i + ".dex",
+                        new byte[]{(byte) i});
+            }
+        }
+
+        List<ScanFinding> findings =
+                StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+        ScanFinding hit = findings.stream()
+                .filter(x -> x.title.equals("Múltiplos arquivos DEX"))
+                .findFirst().orElse(null);
+
+        assertTrue(hit != null);
+        assertEquals(ScanFinding.Level.INFO, hit.level);
+        assertEquals(0, hit.points);
+        assertTrue(hit.detail.contains("5 arquivos DEX"));
+
+        assertTrue(apk.delete());
+    }
+
     @Test public void missingManifestProducesMediumFinding() throws Exception {
         File apk = File.createTempFile("darkshield-test", ".apk");
         try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
