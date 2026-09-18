@@ -442,3 +442,27 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - Mudança simples de ciclo de vida; não modifica pontuação ou detecção.
+
+## 2026-09-18 — robustez do RiskCalculator
+
+### Estado observado
+- HEAD atual observado: `2ffd4c88509689bbc7f8bbbd0081fefcf66f1dd5`.
+- A outra frente avançou independentemente na proteção do ciclo de vida da Activity (`c46e12de...`) e registrou seu handoff; essa mudança foi preservada.
+- O log do outro agente continua sem entrada própria preenchida.
+
+### Concluído
+- Corrigido um caso-limite em `RiskCalculator.status()`: uma `ScanFinding` com `level == null` agora é ignorada em vez de causar `NullPointerException`.
+- Commit de produção: `146b208049781aa95e949413e9bc5556100429ec`.
+- Adicionados testes para uma lista com nível nulo + nível válido e para uma lista contendo apenas nível nulo.
+- Commit de testes: `2ffd4c88509689bbc7f8bbbd0081fefcf66f1dd5`.
+
+### Validação
+- Releitura final confirmou o guard e os testes no `main`.
+- O endpoint de Actions por commit retornou lista vazia para o commit de teste; não declarar build aprovado.
+
+### Handoff
+- Próxima frente pode permanecer em testes independentes/UI, sem editar scanner/correlação.
+- O próximo ganho de qualidade deve priorizar validação de CI e, caso o workflow seja exposto, analisar qualquer falha do conjunto completo.
+
+### Riscos
+- A alteração só amplia tolerância a dados incompletos; não muda o score para níveis válidos.
