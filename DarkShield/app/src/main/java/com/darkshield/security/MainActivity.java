@@ -174,6 +174,10 @@ public class MainActivity extends android.app.Activity {
         b.append("Status: ").append(status).append("\n");
         b.append("Score heurístico: ").append(risk).append("/100\n");
         b.append("Pontos heurísticos brutos: ").append(report.getRawPoints()).append("\n");
+        b.append("Crítico: ").append(report.count(ScanFinding.Level.CRITICAL))
+                .append(" | Alto: ").append(report.count(ScanFinding.Level.HIGH))
+                .append(" | Médio: ").append(report.count(ScanFinding.Level.MEDIUM))
+                .append(" | Baixo: ").append(report.count(ScanFinding.Level.LOW)).append("\n");
         b.append("Itens para revisão: ").append(report.countRequiringReview()).append("\n");
         b.append("Registros totais: ").append(report.getFindings().size()).append("\n");
         String packageSummary = report.packageSummary();
