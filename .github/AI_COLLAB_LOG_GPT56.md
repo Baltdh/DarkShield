@@ -1402,3 +1402,20 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Próxima verificação
 - Conferir o próximo CI e corrigir problemas de lint reais, sem mascarar warnings/erros.
 - Continuar a auditoria de falsos positivos, cobertura estática e falhas silenciosas sem sobrescrever trabalho concorrente.
+
+
+## 2026-09-18 — hardening de amostragem ZIP
+
+### Alteração desta frente
+- O analisador estático `StaticApkAnalyzer` agora trata uma entrada ZIP de tamanho conhecido que termina antes da quantidade de bytes esperada como **amostra indisponível**, em vez de aceitar a amostra parcial como se fosse completa.
+- Commit: `6883a2d148123a9ea6f5a2ffb26a05308cb7219e`.
+- A correção preserva a política atual: amostras incompletas não recebem pontos positivos/negativos e não são apresentadas como prova de ausência de risco.
+
+### Motivo
+- A auditoria anterior encontrou que corrupção de CRC em uma entrada STORED não era observável quando a leitura parava antes do EOF.
+- O novo check cobre especificamente truncamento físico/stream curto quando o tamanho declarado permite determinar o número esperado de bytes.
+- Corrupção de CRC sem truncamento continua não sendo inferida como malware; para validar esse caminho é necessário um fixture determinístico que force a leitura até EOF.
+
+### Próxima verificação
+- O CI deve validar o novo código e o lint adicionado no workflow.
+- Continuar procurando caminhos em que erro de leitura, permissão restrita ou amostragem parcial possam parecer ausência de indicador.
