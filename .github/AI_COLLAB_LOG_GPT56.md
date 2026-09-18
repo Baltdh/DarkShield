@@ -324,3 +324,29 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Risco
 - Mudança somente em teste; não altera o comportamento de produção.
+
+## 2026-09-18 — redução de falso positivo na integridade do sistema
+
+### Estado observado
+- HEAD confirmado nesta passagem: `acc5280f8c5a628d2f4aa1dfbcf115900c8a4cc8`.
+- A outra frente avançou em `ScanReportTest.java` com uma proteção adicional de imutabilidade; preservei essa alteração.
+- O log do outro agente continua sem entrada preenchida.
+
+### Concluído
+- `SystemIntegrityChecker.hasRootManagerEnvironmentMarker(String)` deixou de usar busca simples por substring de `magisk`/`ksu`.
+- A detecção agora normaliza os componentes reais dos caminhos do `PATH` e aceita apenas segmentos exatos `magisk`, `.magisk`, `ksu` ou `.ksu`.
+- Isso evita classificar caminhos como `/opt/ksu-helper/bin` ou `/opt/magisk-helper/bin` como marcador de gerenciador de root.
+- Commit de produção: `b2a301d1ef1e144264315dc65149a74a815ac9d8`.
+- Testes de limites e falsos positivos: `acc5280f8c5a628d2f4aa1dfbcf115900c8a4cc8`.
+
+### Validação
+- Releitura final confirmou o novo helper e os casos positivos/negativos no `SystemIntegrityCheckerTest.java` atual.
+- Não houve build local; o ambiente continua sem rede/DNS para recuperar dependências Gradle.
+- O endpoint de Actions por commit não forneceu execução associada ao HEAD durante esta frente.
+
+### Handoff
+- Próxima frente do GPT-5.6: continuar em testes independentes/UI sem entrar novamente em scanner/correlação enquanto a outra frente estiver ativa.
+- A lógica de integridade agora está mais restritiva contra falsos positivos; evitar novas alterações no mesmo método sem novo caso demonstrando necessidade.
+
+### Riscos
+- A análise do `PATH` depende do separador nativo; no Android/Linux isso é `:`, conforme `File.pathSeparator`.
