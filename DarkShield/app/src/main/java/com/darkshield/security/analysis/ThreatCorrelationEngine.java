@@ -29,6 +29,7 @@ public final class ThreatCorrelationEngine {
             if (t.contains("acessibilidade")) accessibility.put(p, true);
             if (t.contains("sobreposição")) overlay.put(p, true);
             if (t.contains("administrador do dispositivo")) admin.put(p, true);
+            if (t.contains("acesso a notificações ativo")) notification.put(p, true);
             if (t.contains("acesso a sms")
                     || t.contains("histórico de chamadas")
                     || t.contains("microfone/câmera")
@@ -42,6 +43,7 @@ public final class ThreatCorrelationEngine {
         for (String p : remote.keySet()) {
             boolean a = accessibility.getOrDefault(p, false);
             boolean o = overlay.getOrDefault(p, false);
+            boolean n = notification.getOrDefault(p, false);
             int s = sensitive.getOrDefault(p, 0);
 
             if (a && o) {
@@ -58,6 +60,13 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote apresenta indicador de acesso remoto combinado com um mecanismo adicional de interação privilegiada.",
                         p, 4,
                         "Confirme se o aplicativo é reconhecido e se esses acessos são esperados"));
+            } else if (n) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Acesso remoto combinado com notificações",
+                        "O mesmo pacote apresenta indicador de acesso remoto e acesso ativo às notificações.",
+                        p, 4,
+                        "Confirme se o aplicativo é reconhecido e se a leitura de notificações é necessária"));
             } else if (s > 0) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,
