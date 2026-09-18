@@ -265,6 +265,21 @@ public class ScanReportTest {
         assertTrue(info.indexOf("Alpha") < info.indexOf("Zeta"));
     }
 
+    @Test public void informationalDetailsBreaksCaseOnlyTitleTiesDeterministically() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.INFO, "same", "detail",
+                        "com.example.same", 0, null),
+                new ScanFinding(ScanFinding.Level.INFO, "Same", "detail",
+                        "com.example.same", 0, null)));
+
+        String info = report.informationalDetails();
+        String[] blocks = info.split("\\n\\n");
+
+        assertEquals(2, blocks.length);
+        assertTrue(blocks[0].contains("[INFO] Same"));
+        assertTrue(blocks[1].contains("[INFO] same"));
+    }
+
     @Test public void nullLevelFindingsAreIgnoredByReportDetails() {
         ScanReport report = new ScanReport(java.util.Arrays.asList(
                 new ScanFinding(null, "null-level", "detail", "com.example.null", 9, null),
