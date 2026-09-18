@@ -195,3 +195,30 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - A cobertura de cauda em ZIP comprimido pode exigir decompression/skip proporcional ao deslocamento; não ampliar orçamento ou custo sem necessidade.
+
+
+## 2026-09-18 — ação de cópia do relatório
+
+### Estado observado
+- HEAD confirmado: `001e9d128cef90b470e72bc127d9828e7cc195e4`.
+- `.github/AI_COLLAB_LOG_OTHER.md` continua sem entrada preenchida; portanto, não atribuo ao outro agente trabalho que não esteja verificável no histórico/código.
+
+### Concluído
+- Adicionado botão **COPIAR RELATÓRIO** à tela principal.
+- O botão permanece desabilitado antes de uma verificação e durante uma nova varredura.
+- Após uma verificação concluída, copia o mesmo relatório completo usado no compartilhamento para a área de transferência.
+- Falhas/ausência de área de transferência são tratadas sem interromper o aplicativo.
+- Arquivos: `MainActivity.java` e `activity_main.xml`.
+- Commit da funcionalidade: `47ca858019b52b1e4a733c67d860a53dbbee641f`.
+- Correção do XML: `001e9d128cef90b470e72bc127d9828e7cc195e4e`.
+
+### Validação
+- O workflow do commit corretivo está pendente no momento da passagem.
+- A execução deve validar compilação Android, testes unitários e geração do APK.
+
+### Handoff
+- Outro agente continua reservado para `SecurityScanner.java` / `ThreatCorrelationEngine.java`.
+- GPT-5.6 Luna pode continuar em UI/relatório/análise estática, mas deve reler HEAD e SHA antes de cada alteração.
+
+### Risco
+- A funcionalidade usa apenas a área de transferência do Android e não adiciona novas permissões ao aplicativo.
