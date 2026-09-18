@@ -62,6 +62,44 @@ public class StaticApkAnalyzerTest {
         assertTrue(second.delete());
     }
 
+    @Test public void cappedSuspiciousNamesAreDeterministicAcrossZipOrder() throws Exception {
+        File first = File.createTempFile("darkshield-test", ".apk");
+        File second = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(first))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            for (int i = 60; i >= 1; i--) {
+                add(zip, String.format("lib/arm64-v8a/libfrida-%02d.so", i), new byte[]{1});
+            }
+        }
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(second))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            for (int i = 1; i <= 60; i++) {
+                add(zip, String.format("lib/arm64-v8a/libfrida-%02d.so", i), new byte[]{1});
+            }
+        }
+
+        ScanFinding firstHit = StaticApkAnalyzer.analyze(
+                first.getAbsolutePath(), "com.example.test").stream()
+                .filter(x -> x.title.equals(
+                        "Nomes de arquivos associados a ferramentas de instrumentação"))
+                .findFirst().orElse(null);
+        ScanFinding secondHit = StaticApkAnalyzer.analyze(
+                second.getAbsolutePath(), "com.example.test").stream()
+                .filter(x -> x.title.equals(
+                        "Nomes de arquivos associados a ferramentas de instrumentação"))
+                .findFirst().orElse(null);
+
+        assertTrue(firstHit != null);
+        assertTrue(secondHit != null);
+        assertEquals(firstHit.detail, secondHit.detail);
+        assertTrue(firstHit.detail.contains("libfrida-01.so"));
+        assertTrue(firstHit.detail.contains("libfrida-06.so"));
+        assertTrue(!firstHit.detail.contains("libfrida-60.so"));
+
+        assertTrue(first.delete());
+        assertTrue(second.delete());
+    }
+
     @Test public void suspiciousNamesAreOnlyHeuristic() throws Exception {
         File apk = File.createTempFile("darkshield-test", ".apk");
         try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
