@@ -1,6 +1,6 @@
 # DarkShield
 
-**Versão atual: 0.6.2**
+**Versão atual: 0.6.3**
 
 DarkShield é um auditor local de segurança para Android. O objetivo é reunir indicadores observáveis no próprio dispositivo para ajudar o usuário a revisar configurações, permissões e componentes potencialmente sensíveis.
 
