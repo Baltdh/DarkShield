@@ -110,9 +110,15 @@ public class ScanReportTest {
 
         String details = report.details();
 
-        assertTrue(details.indexOf("com.example.Alpha") >= 0);
-        assertTrue(details.indexOf("com.example.alpha") > details.indexOf("com.example.Alpha"));
-        assertTrue(details.indexOf("[LOW] Same") < details.indexOf("[LOW] same"));
+        String[] blocks = details.split("\\n\\n");
+
+        assertEquals(3, blocks.length);
+        assertTrue(blocks[0].contains("[LOW] Same"));
+        assertTrue(blocks[0].contains("pacote: com.example.Alpha"));
+        assertTrue(blocks[1].contains("[LOW] Same"));
+        assertTrue(blocks[1].contains("pacote: com.example.Alpha"));
+        assertTrue(blocks[2].contains("[LOW] same"));
+        assertTrue(blocks[2].contains("pacote: com.example.alpha"));
     }
 
     @Test public void packageSummaryBreaksCaseOnlyPackageTiesDeterministically() {
