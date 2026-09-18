@@ -122,6 +122,7 @@
 
             <TextView
                 android:id="@+id/count_critical"
+                android:contentDescription="Quantidade de achados críticos"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -135,6 +136,7 @@
 
             <TextView
                 android:id="@+id/count_high"
+                android:contentDescription="Quantidade de achados de alta severidade"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -149,6 +151,7 @@
 
             <TextView
                 android:id="@+id/count_medium"
+                android:contentDescription="Quantidade de achados de severidade média"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
@@ -163,6 +166,7 @@
 
             <TextView
                 android:id="@+id/count_low"
+                android:contentDescription="Quantidade de achados de baixa severidade"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
