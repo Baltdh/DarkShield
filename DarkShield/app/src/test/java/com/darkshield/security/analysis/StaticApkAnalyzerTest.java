@@ -355,6 +355,37 @@ public class StaticApkAnalyzerTest {
         assertTrue(apk.delete());
     }
 
+    @Test public void partialCompressedSampleReportsCoverageAndKeepsHeadDetection() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        byte[] data = new byte[(4 * 1024 * 1024) + 256];
+        byte[] headMarker = "head-frida-marker".getBytes("ISO-8859-1");
+        byte[] tailMarker = "tail-xposed-marker".getBytes("ISO-8859-1");
+        System.arraycopy(headMarker, 0, data, 1024, headMarker.length);
+        System.arraycopy(tailMarker, 0, data, data.length - tailMarker.length, tailMarker.length);
+
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "classes.dex", data);
+        }
+
+        List<ScanFinding> findings =
+                StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+
+        ScanFinding contentHit = findings.stream()
+                .filter(x -> x.title.contains("conteúdo de DEX"))
+                .findFirst().orElse(null);
+        ScanFinding unavailable = findings.stream()
+                .filter(x -> x.title.equals("Amostra de conteúdo indisponível"))
+                .findFirst().orElse(null);
+
+        assertTrue(contentHit != null);
+        assertTrue(contentHit.detail.contains("classes.dex:frida"));
+        assertTrue(unavailable != null);
+        assertEquals(0, unavailable.points);
+
+        assertTrue(apk.delete());
+    }
+
     @Test public void suspiciousContentNearNativeLibraryTailIsDetected() throws Exception {
         File apk = File.createTempFile("darkshield-test", ".apk");
         byte[] data = new byte[(2 * 1024 * 1024) + 256];
