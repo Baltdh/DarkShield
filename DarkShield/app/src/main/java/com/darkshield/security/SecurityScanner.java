@@ -165,6 +165,14 @@ public final class SecurityScanner {
                     "Confirme se essa permissão é necessária para a função esperada"));
         }
 
+        if (isPermissionGranted("android.permission.PACKAGE_USAGE_STATS", p.packageName)) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.MEDIUM, "Acesso aos dados de uso",
+                    "O aplicativo possui acesso operacional às estatísticas de uso de outros aplicativos e do dispositivo",
+                    p.packageName, 3,
+                    "Revise o acesso em Configurações > Acesso especial > Acesso aos dados de uso"));
+        }
+
         if (isPermissionGranted("android.permission.REQUEST_INSTALL_PACKAGES", p.packageName)) {
             out.add(new ScanFinding(
                     ScanFinding.Level.MEDIUM, "Pode solicitar instalação de APKs",
