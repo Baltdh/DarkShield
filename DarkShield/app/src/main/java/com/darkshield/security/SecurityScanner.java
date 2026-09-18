@@ -495,12 +495,11 @@ public final class SecurityScanner {
         } catch (Exception ignored) {}
 
         out.add(new ScanFinding(
-                dev == 1 ? ScanFinding.Level.INFO : ScanFinding.Level.LOW,
+                ScanFinding.Level.INFO,
                 "Opções do desenvolvedor",
                 dev == 1 ? "Ativadas" : "Desativadas",
-                null, dev == 1 ? 0 : 1,
-                dev == 1 ? null
-                         : "Opcional; o modo desenvolvedor não é, por si só, uma invasão"));
+                null, 0,
+                null));
 
         out.add(new ScanFinding(
                 adb == 1 ? ScanFinding.Level.MEDIUM : ScanFinding.Level.INFO,
