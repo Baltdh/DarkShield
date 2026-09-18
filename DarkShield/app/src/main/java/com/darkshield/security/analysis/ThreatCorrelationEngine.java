@@ -98,6 +98,22 @@ public final class ThreatCorrelationEngine {
             }
         }
 
+        for (String p : accessibility.keySet()) {
+            boolean a = true;
+            boolean o = overlay.getOrDefault(p, false);
+            boolean b = boot.getOrDefault(p, false);
+            boolean r = remote.getOrDefault(p, false);
+
+            if (a && o && b && !r) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de acessibilidade, sobreposição e boot",
+                        "O mesmo pacote declara/expõe um serviço de acessibilidade, acesso de sobreposição e inicialização automática. Essa combinação merece revisão mesmo sem um marcador nominal de acesso remoto.",
+                        p, 7,
+                        "Confirme a origem do aplicativo e verifique se as três capacidades são realmente necessárias"));
+            }
+        }
+
         for (String p : admin.keySet()) {
             if (accessibility.getOrDefault(p, false)) {
                 derived.add(new ScanFinding(
