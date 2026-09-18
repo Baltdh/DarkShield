@@ -35,7 +35,8 @@ public final class ThreatCorrelationEngine {
                     || t.contains("microfone/câmera")
                     || t.contains("acesso a contatos")
                     || t.contains("acesso à localização")
-                    || t.contains("estado do telefone")) {
+                    || t.contains("estado do telefone")
+                    || t.contains("dados de uso")) {
                 sensitive.put(p, sensitive.getOrDefault(p, 0) + 1);
             }
         }
