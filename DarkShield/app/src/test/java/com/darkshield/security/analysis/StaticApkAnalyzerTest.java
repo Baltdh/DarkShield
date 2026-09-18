@@ -140,6 +140,46 @@ public class StaticApkAnalyzerTest {
         assertTrue(apk.delete());
     }
 
+    @Test public void cappedContentMarkersAreDeterministicAcrossZipOrder() throws Exception {
+        File first = File.createTempFile("darkshield-test", ".apk");
+        File second = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(first))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            for (int i = 21; i >= 1; i--) {
+                add(zip, String.format("classes%02d.dex", i),
+                        ("marker-frida-" + i).getBytes("ISO-8859-1"));
+            }
+        }
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(second))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            for (int i = 1; i <= 21; i++) {
+                add(zip, String.format("classes%02d.dex", i),
+                        ("marker-frida-" + i).getBytes("ISO-8859-1"));
+            }
+        }
+
+        ScanFinding firstHit = StaticApkAnalyzer.analyze(
+                first.getAbsolutePath(), "com.example.test").stream()
+                .filter(x -> x.title.equals(
+                        "Marcadores suspeitos no conteúdo de DEX/bibliotecas"))
+                .findFirst().orElse(null);
+        ScanFinding secondHit = StaticApkAnalyzer.analyze(
+                second.getAbsolutePath(), "com.example.test").stream()
+                .filter(x -> x.title.equals(
+                        "Marcadores suspeitos no conteúdo de DEX/bibliotecas"))
+                .findFirst().orElse(null);
+
+        assertTrue(firstHit != null);
+        assertTrue(secondHit != null);
+        assertEquals(firstHit.detail, secondHit.detail);
+        assertTrue(firstHit.detail.contains("classes01.dex:frida"));
+        assertTrue(firstHit.detail.contains("classes06.dex:frida"));
+        assertTrue(!firstHit.detail.contains("classes21.dex:frida"));
+
+        assertTrue(first.delete());
+        assertTrue(second.delete());
+    }
+
     @Test public void suspiciousContentMarkersAreCaseInsensitive() throws Exception {
         File apk = File.createTempFile("darkshield-test", ".apk");
         try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
