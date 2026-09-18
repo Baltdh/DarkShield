@@ -5,6 +5,7 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.content.SharedPreferences;
 import android.provider.Settings;
 import android.net.Uri;
 import android.text.SpannableStringBuilder;
@@ -28,6 +29,8 @@ public class MainActivity extends android.app.Activity {
     private ProgressBar progress;
     private Button scan, securitySettings, share, copy;
     private String lastReport = "";
+    private static final String PREFS = "darkshield_ui";
+    private static final String KEY_LAST_SCAN_MILLIS = "last_scan_millis";
     private final ExecutorService exec = Executors.newSingleThreadExecutor();
 
     @Override public void onCreate(Bundle b) {
@@ -52,6 +55,7 @@ public class MainActivity extends android.app.Activity {
         securitySettings.setOnClickListener(v -> openSecuritySettings());
         share.setOnClickListener(v -> shareReport());
         copy.setOnClickListener(v -> copyReport());
+        restoreLastScanTimestamp();
         share.setEnabled(false);
         copy.setEnabled(false);
         summary.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
@@ -130,6 +134,8 @@ public class MainActivity extends android.app.Activity {
         report.setText(renderReportDetails(details, informational));
         String timestamp = new SimpleDateFormat("dd/MM/yyyy • HH:mm", Locale.getDefault())
                 .format(new Date());
+        long completedAt = System.currentTimeMillis();
+        saveLastScanTimestamp(completedAt);
         lastScan.setText("Última verificação: " + timestamp);
         nextAction.setText(risk >= 70
                 ? "Próximo passo: revise primeiro os itens críticos e altos abaixo."
@@ -142,6 +148,31 @@ public class MainActivity extends android.app.Activity {
         scan.setEnabled(true);
         share.setEnabled(true);
         copy.setEnabled(true);
+    }
+
+    private void saveLastScanTimestamp(long timestamp) {
+        try {
+            getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                    .edit()
+                    .putLong(KEY_LAST_SCAN_MILLIS, timestamp)
+                    .apply();
+        } catch (Exception ignored) {
+            // A interface continua funcionando mesmo se a persistência local falhar.
+        }
+    }
+
+    private void restoreLastScanTimestamp() {
+        try {
+            long timestamp = getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                    .getLong(KEY_LAST_SCAN_MILLIS, 0L);
+            if (timestamp <= 0L) return;
+            String formatted = new SimpleDateFormat("dd/MM/yyyy • HH:mm", Locale.getDefault())
+                    .format(new Date(timestamp));
+            lastScan.setText("Última verificação salva: " + formatted);
+            nextAction.setText("Próximo passo: execute uma nova verificação para atualizar o estado do dispositivo.");
+        } catch (Exception ignored) {
+            // Não bloquear a tela inicial por falha de leitura das preferências.
+        }
     }
 
     private void updateSeverityAccessibility(TextView view, String severity, int count) {
