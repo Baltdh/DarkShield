@@ -24,7 +24,11 @@ public class SystemIntegrityCheckerTest {
     @Test public void rootManagerPathDetectionIsDeterministic() {
         assertTrue(SystemIntegrityChecker.hasRootManagerEnvironmentMarker("/system/bin:/data/adb/magisk"));
         assertTrue(SystemIntegrityChecker.hasRootManagerEnvironmentMarker("/vendor/bin:/opt/KSU/bin"));
+        assertTrue(SystemIntegrityChecker.hasRootManagerEnvironmentMarker("/vendor/bin:/sbin/.magisk/bin"));
+        assertTrue(SystemIntegrityChecker.hasRootManagerEnvironmentMarker("/vendor/bin:/data/adb/.ksu/bin"));
         assertFalse(SystemIntegrityChecker.hasRootManagerEnvironmentMarker("/system/bin:/vendor/bin"));
+        assertFalse(SystemIntegrityChecker.hasRootManagerEnvironmentMarker("/system/bin:/opt/ksu-helper/bin"));
+        assertFalse(SystemIntegrityChecker.hasRootManagerEnvironmentMarker("/system/bin:/opt/magisk-helper/bin"));
         assertFalse(SystemIntegrityChecker.hasRootManagerEnvironmentMarker(null));
     }
 
