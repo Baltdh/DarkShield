@@ -54,6 +54,31 @@ public class ScanReportTest {
         assertTrue(details.indexOf("[MEDIUM]") < details.indexOf("[LOW]"));
     }
 
+    @Test public void detailsBreaksSeverityTiesDeterministically() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.MEDIUM, "B", "detail",
+                        "com.example.z", 1, null),
+                new ScanFinding(ScanFinding.Level.MEDIUM, "A", "detail",
+                        "com.example.a", 3, null),
+                new ScanFinding(ScanFinding.Level.MEDIUM, "C", "detail",
+                        "com.example.b", 3, null)));
+
+        String details = report.details();
+        assertTrue(details.indexOf("com.example.a") < details.indexOf("com.example.b"));
+        assertTrue(details.indexOf("com.example.b") < details.indexOf("com.example.z"));
+    }
+
+    @Test public void detailsUsesTitleAsFinalTieBreaker() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.LOW, "Zeta", "detail",
+                        "com.example.same", 1, null),
+                new ScanFinding(ScanFinding.Level.LOW, "Alpha", "detail",
+                        "com.example.same", 1, null)));
+
+        String details = report.details();
+        assertTrue(details.indexOf("Alpha") < details.indexOf("Zeta"));
+    }
+
     @Test public void packageSummariesGroupAndSortFindings() {
         ScanReport report = new ScanReport(java.util.Arrays.asList(
                 new ScanFinding(ScanFinding.Level.LOW, "low", "detail",
