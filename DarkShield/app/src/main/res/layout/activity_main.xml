@@ -3,6 +3,7 @@
     android:layout_width="match_parent" android:layout_height="match_parent"
     android:orientation="vertical" android:padding="20dp" android:background="#090B10">
     <TextView android:id="@+id/title" android:layout_width="match_parent" android:layout_height="wrap_content"
+        android:contentDescription="DarkShield"
         android:text="DarkShield" android:textColor="#FFFFFF" android:textSize="30sp" android:textStyle="bold"/>
     <TextView android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="4dp"
         android:text="Auditoria local de segurança do Android" android:textColor="#AEB4C2" android:textSize="15sp"/>
