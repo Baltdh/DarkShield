@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - "DarkShield_backup_v0.6.0.zip"
+      - "DarkShield/**"
       - ".github/workflows/android-apk.yml"
+      - "DarkShield_backup_v0.6.0.zip"
 
 permissions:
   contents: read
@@ -29,45 +30,46 @@ jobs:
         with:
           gradle-version: "8.11.1"
 
-      - name: Validate backup
+      - name: Validate Android project
+        working-directory: DarkShield
         run: |
           set -euo pipefail
-          test -s DarkShield_backup_v0.6.0.zip
-          unzip -t DarkShield_backup_v0.6.0.zip
-
-      - name: Extract Android project
-        run: |
-          set -euo pipefail
-          rm -rf build-project
-          mkdir build-project
-          unzip -q DarkShield_backup_v0.6.0.zip -d build-project
-
-          PROJECT_DIR="$(find build-project -type f -name settings.gradle -o -name settings.gradle.kts | head -n 1 | xargs -r dirname)"
-          test -n "$PROJECT_DIR"
-          test -f "$PROJECT_DIR/app/build.gradle" || test -f "$PROJECT_DIR/app/build.gradle.kts"
-
-          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
-          echo "Project: $PROJECT_DIR"
-          find "$PROJECT_DIR" -maxdepth 3 -type f | sort | head -n 100
+          test -f settings.gradle
+          test -f build.gradle
+          test -f app/build.gradle
+          test -f app/src/main/AndroidManifest.xml
 
       - name: Build debug APK
+        working-directory: DarkShield
         run: |
           set -euo pipefail
-          cd "$PROJECT_DIR"
-
           if [ -x "./gradlew" ]; then
             ./gradlew --no-daemon --stacktrace assembleDebug
           else
             gradle --no-daemon --stacktrace assembleDebug
           fi
 
-      - name: Locate and verify APK
+      - name: Run unit tests when present
+        working-directory: DarkShield
         run: |
           set -euo pipefail
-          APK="$(find "$PROJECT_DIR/app/build/outputs" -type f -name '*.apk' | head -n 1)"
+          if find app/src/test -type f \( -name '*.java' -o -name '*.kt' \) 2>/dev/null | grep -q .; then
+            if [ -x "./gradlew" ]; then
+              ./gradlew --no-daemon test
+            else
+              gradle --no-daemon test
+            fi
+          else
+            echo "No unit tests yet; build validation continues."
+          fi
+
+      - name: Locate and verify APK
+        working-directory: DarkShield
+        run: |
+          set -euo pipefail
+          APK="$(find app/build/outputs -type f -name '*.apk' | head -n 1)"
           test -n "$APK"
           test -s "$APK"
-          echo "APK=$APK" >> "$GITHUB_ENV"
           sha256sum "$APK" | tee "$APK.sha256"
           ls -lh "$APK" "$APK.sha256"
 
@@ -76,6 +78,6 @@ jobs:
         with:
           name: DarkShield-debug-apk
           path: |
-            ${{ env.APK }}
-            ${{ env.APK }}.sha256
+            DarkShield/app/build/outputs/**/*.apk
+            DarkShield/app/build/outputs/**/*.apk.sha256
           if-no-files-found: error
