@@ -103,8 +103,23 @@ public final class ScanReport {
             }
         }
 
-        review.sort((left, right) ->
-                Integer.compare(right.level.ordinal(), left.level.ordinal()));
+        review.sort((left, right) -> {
+            int severity = Integer.compare(right.level.ordinal(), left.level.ordinal());
+            if (severity != 0) return severity;
+
+            int points = Integer.compare(
+                    Math.max(0, right.points), Math.max(0, left.points));
+            if (points != 0) return points;
+
+            String leftPackage = left.packageName == null ? "" : left.packageName;
+            String rightPackage = right.packageName == null ? "" : right.packageName;
+            int packageOrder = leftPackage.compareToIgnoreCase(rightPackage);
+            if (packageOrder != 0) return packageOrder;
+
+            String leftTitle = left.title == null ? "" : left.title;
+            String rightTitle = right.title == null ? "" : right.title;
+            return leftTitle.compareToIgnoreCase(rightTitle);
+        });
 
         StringBuilder out = new StringBuilder();
         for (ScanFinding finding : review) {
