@@ -39,10 +39,13 @@ public final class SecurityScanner {
     ));
     private final Context c;
     private final PackageManager pm;
+    private final AppOpsManager appOps;
+    private final Map<String, ApplicationInfo> appInfoCache = new HashMap<>();
 
     public SecurityScanner(Context c) {
         this.c = c.getApplicationContext();
         this.pm = c.getPackageManager();
+        this.appOps = (AppOpsManager) this.c.getSystemService(Context.APP_OPS_SERVICE);
     }
 
     public List<ScanFinding> scan() {
@@ -97,6 +100,7 @@ public final class SecurityScanner {
         ApplicationInfo ai = p.applicationInfo;
         if (ai == null || c.getPackageName().equals(p.packageName)) return;
 
+        appInfoCache.put(p.packageName, ai);
         String label = safeLabel(ai);
         String lower = (label + " " + p.packageName).toLowerCase(Locale.ROOT);
         Set<String> ps = new HashSet<>();
@@ -278,6 +282,38 @@ public final class SecurityScanner {
                     label + " está marcado como debuggable",
                     p.packageName, 1,
                     "Normal em apps de teste; confirme a origem se não for esperado"));
+        }
+
+        if (!system && ai.targetSdkVersion > 0 && ai.targetSdkVersion < 23) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.LOW, "Aplicativo com target SDK muito antigo",
+                    label + " declara target SDK " + ai.targetSdkVersion
+                            + "; versões muito antigas ficam fora de várias proteções modernas do Android",
+                    p.packageName, 2,
+                    "Confirme a origem e mantenha o aplicativo atualizado quando houver versão compatível"));
+        } else if (!system && ai.targetSdkVersion > 0 && ai.targetSdkVersion < 26) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.LOW, "Aplicativo com target SDK antigo",
+                    label + " declara target SDK " + ai.targetSdkVersion,
+                    p.packageName, 1,
+                    "Confirme a origem e prefira uma versão atualizada quando disponível"));
+        }
+
+        if (!system && (ai.flags & ApplicationInfo.FLAG_TEST_ONLY) != 0) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.LOW, "Aplicativo marcado como testOnly",
+                    label + " está marcado como testOnly",
+                    p.packageName, 1,
+                    "Normal em builds de desenvolvimento; confirme a origem se você não esperava um app de teste"));
+        }
+
+        if (!system && Build.VERSION.SDK_INT >= 23
+                && (ai.flags & ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC) != 0) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO, "Aplicativo permite tráfego sem criptografia",
+                    label + " pode usar tráfego cleartext, como HTTP; isso não prova comportamento malicioso",
+                    p.packageName, 0,
+                    "Revise essa configuração se o aplicativo manipular dados sensíveis"));
         }
 
         if (!system) {
@@ -493,9 +529,11 @@ public final class SecurityScanner {
 
     private boolean hasSpecialAccess(String permission, String packageName) {
         try {
-            ApplicationInfo ai = pm.getApplicationInfo(packageName, 0);
-            AppOpsManager appOps =
-                    (AppOpsManager) c.getSystemService(Context.APP_OPS_SERVICE);
+            ApplicationInfo ai = appInfoCache.get(packageName);
+            if (ai == null) {
+                ai = pm.getApplicationInfo(packageName, 0);
+                appInfoCache.put(packageName, ai);
+            }
             if (appOps == null) return false;
 
             String op = AppOpsManager.permissionToOp(permission);
@@ -516,10 +554,12 @@ public final class SecurityScanner {
     private boolean isPermissionGranted(String permission, String packageName) {
         try {
             String op = AppOpsManager.permissionToOp(permission);
-            if (op != null) {
-                ApplicationInfo ai = pm.getApplicationInfo(packageName, 0);
-                AppOpsManager appOps =
-                        (AppOpsManager) c.getSystemService(Context.APP_OPS_SERVICE);
+            if (op != null && appOps != null) {
+                ApplicationInfo ai = appInfoCache.get(packageName);
+                if (ai == null) {
+                    ai = pm.getApplicationInfo(packageName, 0);
+                    appInfoCache.put(packageName, ai);
+                }
                 if (appOps != null) {
                     int mode = appOps.checkOpNoThrow(op, ai.uid, packageName);
                     if (mode == AppOpsManager.MODE_ALLOWED) return true;
@@ -766,20 +806,33 @@ public final class SecurityScanner {
 
     private String signingSha256(PackageInfo p) {
         try {
-            byte[] certBytes;
+            android.content.pm.Signature[] sigs;
             if (Build.VERSION.SDK_INT >= 28) {
                 if (p.signingInfo == null) return null;
-                android.content.pm.Signature[] sigs =
-                        p.signingInfo.hasMultipleSigners()
-                                ? p.signingInfo.getApkContentsSigners()
-                                : p.signingInfo.getSigningCertificateHistory();
-                if (sigs == null || sigs.length == 0) return null;
-                certBytes = sigs[0].toByteArray();
+                sigs = p.signingInfo.hasMultipleSigners()
+                        ? p.signingInfo.getApkContentsSigners()
+                        : p.signingInfo.getSigningCertificateHistory();
             } else {
-                if (p.signatures == null || p.signatures.length == 0) return null;
-                certBytes = p.signatures[0].toByteArray();
+                sigs = p.signatures;
             }
-            return sha256(certBytes);
+            if (sigs == null || sigs.length == 0) return null;
+
+            List<String> hashes = new ArrayList<>(sigs.length);
+            if (Build.VERSION.SDK_INT >= 28
+                    && !p.signingInfo.hasMultipleSigners()) {
+                // Signing certificate history is ordered from original to current.
+                hashes.add(sha256(sigs[sigs.length - 1].toByteArray()));
+            } else {
+                // Multiple signers have set semantics; sort for deterministic reporting.
+                for (android.content.pm.Signature sig : sigs) {
+                    if (sig == null) continue;
+                    String hash = sha256(sig.toByteArray());
+                    if (hash != null) hashes.add(hash);
+                }
+                Collections.sort(hashes);
+            }
+            if (hashes.isEmpty()) return null;
+            return String.join(", ", hashes);
         } catch (Exception e) {
             return null;
         }
