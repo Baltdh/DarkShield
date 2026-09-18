@@ -43,9 +43,18 @@ public final class ScanReport {
     }
 
     public String details() {
-        StringBuilder out = new StringBuilder();
+        List<ScanFinding> review = new ArrayList<>();
         for (ScanFinding finding : findings) {
-            if (finding == null || finding.level == ScanFinding.Level.INFO) continue;
+            if (finding != null && finding.level != ScanFinding.Level.INFO) {
+                review.add(finding);
+            }
+        }
+
+        review.sort((left, right) ->
+                Integer.compare(right.level.ordinal(), left.level.ordinal()));
+
+        StringBuilder out = new StringBuilder();
+        for (ScanFinding finding : review) {
             if (out.length() > 0) out.append("\n\n");
             out.append(finding.line());
         }
