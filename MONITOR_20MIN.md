@@ -6,7 +6,7 @@ Atualizado: 2026-09-18 — auditoria contínua / preparação para fechamento
 
 - Repositório: `Baltdh/DarkShield`
 - Branch: `main`
-- Último commit de código/testes: `589681589b888915540e585d86cc1d71df737a25`
+- Último commit de código/testes: `1eaeedf1ca558df0ee5ad002368f51aa1283834b`
 - Última execução de CI relevante: run `35323922374` (run 211), associada ao commit acima.
 - No momento desta atualização, run 211 está **PENDING**, enquanto o run 210 ainda aparece **IN_PROGRESS** no GitHub Actions; não há resultado final do run 211.
 - A atualização deste arquivo não dispara o workflow atual, pois `MONITOR_20MIN.md` não está incluído nos `paths` do gatilho `push`.
@@ -38,7 +38,9 @@ Atualizado: 2026-09-18 — auditoria contínua / preparação para fechamento
 
 ## CI atual
 
-- Run 211: `35323922374`
+- Run 214: `35324680484` (commit `1eaeedf1ca558df0ee5ad002368f51aa1283834b`) — pendente no momento da última consulta.
+- Run 212: `35324487511` — **SUCCESS**, validando o helper de provider JVM-safe.
+- Run 213: `35324667064` — cancelado pela concurrency após o commit seguinte.
 - Commit: `589681589b888915540e585d86cc1d71df737a25`
 - Estado observado: **PENDING**
 - Run 210: `35323919335` no commit `32552137ef77f1fae0217bbb41d491b2c6243863`, ainda reportado pelo GitHub como **IN_PROGRESS**.
@@ -74,6 +76,13 @@ O DarkShield já verifica, sem exigir root:
 - análise estática do APK com limites de tamanho/entradas/amostragem;
 - marcadores em DEX, bibliotecas e payloads executáveis disfarçados;
 - correlação de sinais sem tratar heurística como prova automática de malware.
+
+## Nova etapa — AndroidX Security State
+
+- Adicionado `androidx.security:security-state:1.1.0`.
+- O scanner agora consulta, sem rede, os níveis atuais de Sistema, módulos Mainline e Kernel.
+- A biblioteca fornece estado de patch granular; isso complementa o `Build.VERSION.SECURITY_PATCH` anterior. citeturn3search0turn3search1
+- Não foi adicionada pontuação automática ao SPL: ausência/atraso de patch é contexto de postura, não prova de malware.
 
 ## Próxima etapa
 
