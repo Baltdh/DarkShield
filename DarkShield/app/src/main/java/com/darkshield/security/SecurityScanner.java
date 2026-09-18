@@ -704,9 +704,18 @@ public final class SecurityScanner {
     }
 
     static boolean isUnprotectedExportedProvider(android.content.pm.ProviderInfo provider) {
-        if (provider == null || !provider.exported) return false;
-        return TextUtils.isEmpty(provider.readPermission)
-                && TextUtils.isEmpty(provider.writePermission);
+        if (provider == null) return false;
+        return isUnprotectedExportedProvider(
+                provider.exported,
+                provider.readPermission,
+                provider.writePermission);
+    }
+
+    static boolean isUnprotectedExportedProvider(
+            boolean exported, String readPermission, String writePermission) {
+        return exported
+                && TextUtils.isEmpty(readPermission)
+                && TextUtils.isEmpty(writePermission);
     }
 
     private void checkAccessibility(List<ScanFinding> out) {
