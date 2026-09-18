@@ -641,3 +641,24 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Handoff
 - Não editar o `StaticApkAnalyzer` enquanto a outra frente estiver trabalhando nele.
 - Próximo passo: acompanhar o CI do HEAD atual e, depois, adicionar cobertura testável para os contratos do scanner quando houver uma superfície de teste adequada.
+
+
+## 2026-09-18 — remoção de duplicação nos acessos especiais
+
+### Estado observado
+- HEAD antes desta correção: `934d51e2630b7664536457e2cda0f2d6fb6502e9`.
+- O outro agente havia adicionado a detecção efetiva por AppOps de `WRITE_SETTINGS` e `MANAGE_EXTERNAL_STORAGE`.
+
+### Concluído
+- `SecurityScanner.java` continha os novos achados de acesso especial e, mais abaixo, os blocos antigos que criavam um segundo achado para os mesmos acessos.
+- Removidos somente os dois blocos antigos duplicados; a lógica nova por AppOps foi preservada integralmente.
+- Isso evita dupla contagem/dupla pontuação para cada acesso especial concedido.
+- Commit: `0025ca74c7d80593b220b507a5d1dce17960c485`.
+
+### Validação
+- Releitura do arquivo após a escrita confirmou que permanece um único caminho de geração de findings para cada acesso especial.
+- O Actions deve validar o estado final; a execução anterior pode ser cancelada pela concorrência.
+
+### Handoff
+- Não fazer novas alterações em `SecurityScanner.java` ou `ThreatCorrelationEngine.java` nesta passagem.
+- Próximo foco: somente testes/validação ou uma frente que não conflite com scanner/correlação/StaticApkAnalyzer.
