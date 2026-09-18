@@ -63,3 +63,14 @@ A cadência de uma checagem a cada 20 segundos durante 20 minutos não é suport
 ## Regra de continuidade
 
 Nunca declarar sucesso com base apenas em compilação. Exigir CI verde completo e verificar os artefatos/resultados concretos.
+
+## Verificação independente do artefato CI verde anterior
+
+- O artefato DarkShield-debug-apk do run 35322024413 foi baixado e inspecionado localmente.
+- Tamanho do arquivo APK: 48.285 bytes.
+- SHA-256 calculado: 8616611ad08b9e4d650f852da14fc365f550372ce2b2da8075c2b51286a013d5.
+- O arquivo .sha256 publicado no artefato contém exatamente o mesmo digest.
+- `unzip -t` confirmou a integridade do pacote de artefatos.
+- O APK contém AndroidManifest.xml, 3 entradas DEX e nenhum .so nativo no artefato desse run.
+- A busca direta por marcadores heurísticos conhecidos não encontrou ocorrências no APK desse run.
+- Esse artefato corresponde ao commit 49e9b35b8f42a150a1b13ae99ea4b352a7a4a528, antes das alterações desta continuação; ele valida a cadeia anterior, não substitui a validação do novo workflow.
