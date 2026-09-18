@@ -92,6 +92,27 @@ public class StaticApkAnalyzerTest {
         assertTrue(apk.delete());
     }
 
+    @Test public void suspiciousResourceMarkersAreCaseInsensitive() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "assets/FRIDA-agent.bin", new byte[]{1});
+        }
+
+        List<ScanFinding> findings =
+                StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+        ScanFinding hit = findings.stream()
+                .filter(x -> x.title.contains("recurso não executável"))
+                .findFirst().orElse(null);
+
+        assertTrue(hit != null);
+        assertEquals(ScanFinding.Level.INFO, hit.level);
+        assertEquals(0, hit.points);
+        assertTrue(hit.detail.contains("assets/FRIDA-agent.bin"));
+
+        assertTrue(apk.delete());
+    }
+
     @Test public void suspiciousResourceMarkersAreInformationalOnly() throws Exception {
         File apk = File.createTempFile("darkshield-test", ".apk");
         try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
