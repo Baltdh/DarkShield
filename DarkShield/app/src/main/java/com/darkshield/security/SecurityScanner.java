@@ -497,11 +497,36 @@ public final class SecurityScanner {
                 for (ComponentName n : admins) {
                     String pkg = n.getPackageName();
                     boolean system = isSystemPackage(pkg);
+                    boolean deviceOwner = false;
+                    boolean profileOwner = false;
+                    try {
+                        deviceOwner = dpm.isDeviceOwnerApp(pkg);
+                        profileOwner = dpm.isProfileOwnerApp(pkg);
+                    } catch (SecurityException ignored) {
+                        // Keep the regular active-admin finding when ownership state is restricted.
+                    }
+
                     out.add(new ScanFinding(
                             system ? ScanFinding.Level.LOW : ScanFinding.Level.HIGH,
                             "Administrador do dispositivo ativo",
                             n.flattenToShortString(), pkg, system ? 1 : 8,
                             "Revise em Configurações > Segurança/Administradores do dispositivo"));
+
+                    if (deviceOwner || profileOwner) {
+                        out.add(new ScanFinding(
+                                system ? ScanFinding.Level.LOW : ScanFinding.Level.MEDIUM,
+                                deviceOwner && profileOwner
+                                        ? "App é administrador do dispositivo e do perfil"
+                                        : deviceOwner
+                                                ? "App é proprietário do dispositivo"
+                                                : "App é proprietário do perfil",
+                                deviceOwner && profileOwner
+                                        ? "O pacote está registrado como Device Owner e Profile Owner"
+                                        : deviceOwner
+                                                ? "O pacote está registrado como Device Owner"
+                                                : "O pacote está registrado como Profile Owner",
+                                pkg, system ? 0 : 4,
+                                "Confirme se este gerenciamento corporativo ou de perfil foi autorizado por você"));
                 }
             }
         } catch (SecurityException e) {
