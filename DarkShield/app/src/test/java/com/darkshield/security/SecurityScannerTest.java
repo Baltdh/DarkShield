@@ -4,6 +4,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class SecurityScannerTest {
@@ -31,8 +32,10 @@ public class SecurityScannerTest {
     }
 
     @Test public void invalidDefaultInputMethodReturnsNull() {
-        assertEquals(null, SecurityScanner.defaultInputMethodPackage("invalid"));
-        assertEquals(null, SecurityScanner.defaultInputMethodPackage(null));
+        assertNull(SecurityScanner.defaultInputMethodPackage("invalid"));
+        assertNull(SecurityScanner.defaultInputMethodPackage(null));
+        assertNull(SecurityScanner.defaultInputMethodPackage("/.KeyboardService"));
+        assertNull(SecurityScanner.defaultInputMethodPackage("com.example.keyboard/"));
     }
 
     @Test public void nonExportedProviderIsNeverReportedAsUnprotected() {
