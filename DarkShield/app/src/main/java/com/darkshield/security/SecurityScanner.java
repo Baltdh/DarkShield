@@ -99,9 +99,9 @@ public final class SecurityScanner {
 
         if (isPermissionGranted("android.permission.SYSTEM_ALERT_WINDOW", p.packageName)) {
             out.add(new ScanFinding(
-                    sideLoad ? ScanFinding.Level.MEDIUM : ScanFinding.Level.LOW,
+                    ScanFinding.Level.LOW,
                     "Permissão de sobreposição concedida",
-                    label, p.packageName, sideLoad ? 4 : 2,
+                    label, p.packageName, 2,
                     "Revisar em Configurações > Apps > Acesso especial"));
         } else if (ps.contains("android.permission.SYSTEM_ALERT_WINDOW")) {
             out.add(new ScanFinding(
