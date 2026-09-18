@@ -662,3 +662,16 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Handoff
 - Não fazer novas alterações em `SecurityScanner.java` ou `ThreatCorrelationEngine.java` nesta passagem.
 - Próximo foco: somente testes/validação ou uma frente que não conflite com scanner/correlação/StaticApkAnalyzer.
+
+
+## 2026-09-18 — desempate determinístico de nomes de pacote
+
+### Concluído
+- Identificado que `compareToIgnoreCase()` sozinho pode retornar empate para nomes de pacote que diferem somente em maiúsculas/minúsculas.
+- O desempate de `packageSummaries()` agora usa `compareTo()` quando o comparador sem distinção de caixa empata.
+- Adicionado teste cobrindo `com.example.Alpha` versus `com.example.alpha`.
+- Commits: `d5b58b4dacdabf1cb33a1271b411b7e4a1e34f60` e `21d2caf74b225af68ec9e03f13c3fd75cb16f404`.
+
+### Handoff
+- Aguardar CI do HEAD atual.
+- A frente de scanner continua usando a checagem efetiva de acesso especial; a frente de APK continua protegendo custo de descompressão.
