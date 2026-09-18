@@ -527,6 +527,7 @@ public final class SecurityScanner {
                                                 : "O pacote está registrado como Profile Owner",
                                 pkg, system ? 0 : 4,
                                 "Confirme se este gerenciamento corporativo ou de perfil foi autorizado por você"));
+                    }
                 }
             }
         } catch (SecurityException e) {
