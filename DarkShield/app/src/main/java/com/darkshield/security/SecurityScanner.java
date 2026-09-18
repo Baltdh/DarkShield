@@ -513,17 +513,27 @@ public final class SecurityScanner {
         int total = exportedActivities + exportedServices + exportedReceivers + exportedProviders;
         if (total == 0) return;
 
-        if (unprotected > 0) {
+        if (unprotectedProviders > 0) {
             out.add(new ScanFinding(
                     ScanFinding.Level.LOW,
-                    "Componentes exportados sem permissão explícita",
-                    "Activities: " + exportedActivities + " (" + unprotectedActivities + " sem proteção); "
-                            + "serviços: " + exportedServices + " (" + unprotectedServices + " sem proteção); "
-                            + "receivers: " + exportedReceivers + " (" + unprotectedReceivers + " sem proteção); "
-                            + "providers: " + exportedProviders + " (" + unprotectedProviders + " sem proteção). "
-                            + "Essa configuração pode ser legítima, mas amplia a superfície acessível por outros apps.",
-                    p.packageName, 1,
-                    "Revise os componentes exportados se o aplicativo não deveria expor funcionalidades a outros apps"));
+                    "Content provider exportado sem proteção",
+                    "Há " + unprotectedProviders
+                            + " provider(s) exportado(s) sem readPermission/writePermission explícitas. "
+                            + "Providers podem expor dados a outros aplicativos e merecem revisão.",
+                    p.packageName, 2,
+                    "Revise o provider e use permissões adequadas ou exported=false quando ele não precisar ser público"));
+        } else if (unprotected > 0) {
+            // Exported activities/receivers/services without a permission can be
+            // legitimate public entry points. Report them without scoring to
+            // avoid treating common launcher/API components as malware evidence.
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Componentes exportados revisados",
+                    "Activities: " + exportedActivities + " (" + unprotectedActivities + " sem permissão explícita); "
+                            + "serviços: " + exportedServices + " (" + unprotectedServices + " sem permissão explícita); "
+                            + "receivers: " + exportedReceivers + " (" + unprotectedReceivers + " sem permissão explícita); "
+                            + "providers: " + exportedProviders + ". Componentes públicos podem ser legítimos.",
+                    p.packageName, 0, null));
         } else {
             out.add(new ScanFinding(
                     ScanFinding.Level.INFO,
