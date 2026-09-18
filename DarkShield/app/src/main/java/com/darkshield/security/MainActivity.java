@@ -75,7 +75,9 @@ public class MainActivity extends android.app.Activity {
                 "Crítico: " + critical + "   Alto: " + high
                         + "   Médio: " + medium + "   Baixo: " + low
                         + "\n" + scanReport.countRequiringReview()
-                        + " item(ns) exigem revisão; " + findings.size() + " registro(s) no total.\n\n";
+                        + " item(ns) exigem revisão; " + findings.size() + " registro(s) no total.\n"
+                        + "Pontos heurísticos: " + scanReport.getRawPoints()
+                        + " → score exibido: " + risk + "/100.\n\n";
         SpannableStringBuilder summaryBuilder = new SpannableStringBuilder(summaryText);
         if (!packageSummary.isEmpty()) {
             int packageStart = summaryBuilder.length();
@@ -162,6 +164,7 @@ public class MainActivity extends android.app.Activity {
         b.append("DarkShield — Relatório de segurança\n");
         b.append("Status: ").append(status).append("\n");
         b.append("Score heurístico: ").append(risk).append("/100\n");
+        b.append("Pontos heurísticos brutos: ").append(report.getRawPoints()).append("\n");
         b.append("Itens para revisão: ").append(report.countRequiringReview()).append("\n");
         b.append("Registros totais: ").append(report.getFindings().size()).append("\n");
         String packageSummary = report.packageSummary();
