@@ -200,6 +200,27 @@ public class ScanReportTest {
         assertEquals(Integer.MAX_VALUE, report.getRawPoints());
     }
 
+    @Test public void rawPointsIgnoresNegativeAndNullFindings() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                finding(ScanFinding.Level.LOW, -10),
+                null,
+                finding(ScanFinding.Level.MEDIUM, 4)));
+
+        assertEquals(4, report.getRawPoints());
+    }
+
+    @Test public void packageSummariesIgnoreBlankPackageNames() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.HIGH, "blank", "detail", "   ", 5, null),
+                new ScanFinding(ScanFinding.Level.MEDIUM, "valid", "detail",
+                        "com.example.valid", 2, null)));
+
+        java.util.List<ScanReport.PackageSummary> summaries = report.packageSummaries();
+
+        assertEquals(1, summaries.size());
+        assertEquals("com.example.valid", summaries.get(0).packageName);
+    }
+
     @Test public void packageSummaryPointsSaturate() {
         java.util.List<ScanFinding> findings = java.util.Arrays.asList(
                 finding(ScanFinding.Level.HIGH, Integer.MAX_VALUE),
