@@ -48,6 +48,10 @@ Atualizado: 2026-09-18 — etapa de auditoria contínua
    - Mantidos os novos testes de contenção por pacote e de independência entre pacotes, além de um teste explícito para achados globais sem pacote.
    - Commit: `0fa4722d6cd856e394b17dd6e0caded003745f5a`.
 
+8. `.github/workflows/android-apk.yml`
+   - O CI também passou a verificar alinhamento do APK com `zipalign -c -v 4` antes do `apksigner verify`.
+   - Commit observado: `9abf066a26f9598d44a527188a4b57a2cc5a2838`.
+
 ## Trabalho paralelo observado
 
 - `35f66f16c678bb46cae58ce71012fa6940608344`: contenção da pontuação heurística por pacote.
@@ -58,6 +62,10 @@ Atualizado: 2026-09-18 — etapa de auditoria contínua
    - Adicionado teste de amostra comprimida parcial: marcador no trecho lido continua detectável e a cauda omitida gera aviso de cobertura sem pontuação.
    - O teste de cauda muito distante também exige explicitamente `0` ponto no aviso de amostra indisponível.
    - Commit: `f21c48da891b0afc45bf66f39eacaac956954a3c`.
+
+9. `DarkShield/app/src/test/java/com/darkshield/security/RiskCalculatorTest.java`
+   - A cobertura restaurada foi preservada e os novos testes de teto por pacote continuam presentes.
+   - Commit: `0fa4722d6cd856e394b17dd6e0caded003745f5a`.
 
 ## Estado de CI após os últimos commits
 
