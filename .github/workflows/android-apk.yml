@@ -44,6 +44,7 @@ jobs:
           test -f app/src/main/AndroidManifest.xml
 
       - name: Build debug APK
+        id: build_apk
         working-directory: DarkShield
         run: |
           set -euo pipefail
@@ -68,6 +69,7 @@ jobs:
           fi
 
       - name: Run Android lint
+        if: ${{ always() && steps.build_apk.outcome == 'success' }}
         working-directory: DarkShield
         run: |
           set -euo pipefail
@@ -78,6 +80,7 @@ jobs:
           fi
 
       - name: Locate and verify APK
+        if: ${{ always() && steps.build_apk.outcome == 'success' }}
         working-directory: DarkShield
         run: |
           set -euo pipefail
