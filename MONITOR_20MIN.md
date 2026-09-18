@@ -33,6 +33,11 @@ Atualizado: 2026-09-18 — etapa de auditoria contínua
    - O SHA-256 e o teste de arquivo não vazio continuam obrigatórios.
    - Commit: `0897663eb68b4165cad90338498e08110c6c18d1`.
 
+4. `README.md`
+   - Documentada a verificação de assinatura do APK no CI.
+   - Comandos locais foram alinhados ao Gradle Wrapper (`./gradlew`) e incluem `lintDebug`.
+   - Commit: `2d07c43415f6e391f780f0bf41e33a45cf868a0b`.
+
 ## Trabalho paralelo observado
 
 - `35f66f16c678bb46cae58ce71012fa6940608344`: contenção da pontuação heurística por pacote.
