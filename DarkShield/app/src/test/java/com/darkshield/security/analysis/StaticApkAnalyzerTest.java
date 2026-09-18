@@ -434,6 +434,37 @@ public class StaticApkAnalyzerTest {
         assertTrue(apk.delete());
     }
 
+    @Test public void disguisedElfPayloadIsScannedByMagicSignature() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        byte[] data = new byte[128];
+        data[0] = 0x7F;
+        data[1] = 'E';
+        data[2] = 'L';
+        data[3] = 'F';
+        byte[] marker = "frida-loader".getBytes("ISO-8859-1");
+        System.arraycopy(marker, 0, data, 16, marker.length);
+
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "assets/payload.bin", data);
+        }
+
+        List<ScanFinding> findings =
+                StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+
+        ScanFinding hit = findings.stream()
+                .filter(x -> x.title.equals(
+                        "Marcadores suspeitos no conteúdo de DEX/bibliotecas"))
+                .findFirst().orElse(null);
+
+        assertTrue(hit != null);
+        assertEquals(ScanFinding.Level.LOW, hit.level);
+        assertEquals(2, hit.points);
+        assertTrue(hit.detail.contains("assets/payload.bin:frida"));
+
+        assertTrue(apk.delete());
+    }
+
     @Test public void genericTermsDoNotTriggerSuspiciousMarker() throws Exception {
         File apk = File.createTempFile("darkshield-test", ".apk");
         try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
