@@ -311,6 +311,41 @@ public class StaticApkAnalyzerTest {
         }
     }
 
+
+    @Test public void tooManyZipEntriesAreCapped() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try {
+            try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+                add(zip, "AndroidManifest.xml", new byte[]{1});
+                for (int i = 0; i < 10000; i++) {
+                    add(zip, "assets/entry" + i + ".bin", new byte[]{1});
+                }
+            }
+
+            List<ScanFinding> findings =
+                    StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+
+            ScanFinding limit = findings.stream()
+                    .filter(x -> x.title.equals("APK com muitas entradas"))
+                    .findFirst().orElse(null);
+            assertTrue(limit != null);
+            assertEquals(ScanFinding.Level.INFO, limit.level);
+            assertEquals(0, limit.points);
+            assertTrue(limit.detail.contains("10000 entradas"));
+
+            ScanFinding structure = findings.stream()
+                    .filter(x -> x.title.equals("Estrutura ZIP do APK"))
+                    .findFirst().orElse(null);
+            assertTrue(structure != null);
+            assertTrue(structure.detail.contains("Entradas: 10001"));
+
+            assertTrue(apk.delete());
+        } catch (Throwable t) {
+            apk.delete();
+            throw t;
+        }
+    }
+
     @Test public void unreadablePathProducesFinding() {
         List<ScanFinding> findings = StaticApkAnalyzer.analyze("/definitely/missing/app.apk", "com.example.test");
         assertEquals(1, findings.size());
