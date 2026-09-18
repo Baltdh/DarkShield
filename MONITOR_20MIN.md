@@ -37,6 +37,15 @@ Atualizado: 2026-09-18 — auditoria contínua / correção de regressões
    - Commit: `1d5b647f513d04a7dcc3d92521745374f41f6c3c`.
    - Upload continua condicionado ao fluxo normal para não publicar artefato de uma cadeia incompleta.
 
+## Nova revisão de correlação
+
+8. `ThreatCorrelationEngine`: adicionado cenário explícito de correlação entre indicador heurístico de acesso remoto e administrador do dispositivo ativo, gerando achado HIGH de revisão contextual sem afirmar malware automaticamente.
+   - Commit: `a2b8d2b51c79996d5ba2f62854f6e707b5566002`.
+
+9. `ThreatCorrelationEngineTest`: adicionada regressão cobrindo remoto + administrador, exigindo uma única correlação HIGH.
+   - Commit: `5bf4c38907394e4a7eee0e518d87193b5a4c11b1`.
+
+
 ## Próxima verificação obrigatória
 
 - O próximo run disparado pelos commits acima precisa ser confirmado no GitHub.
@@ -50,7 +59,7 @@ Atualizado: 2026-09-18 — auditoria contínua / correção de regressões
   - `zipalign -c -v 4`;
   - `apksigner verify --verbose`.
 - O conector GitHub disponível nesta sessão não expõe uma listagem geral dos runs de push; a consulta por commit atualmente retorna somente runs de pull request. Por isso, não registrar "SUCCESS" sem obter o run e seus passos diretamente.
-- O último run conhecido continua sendo `35322604522` = **FAILURE** até que um run posterior seja comprovado.
+- O último run conhecido continua sendo `35322604522` = **FAILURE** até que um run posterior seja comprovado. Os commits posteriores ainda precisam de execução CI direta antes de qualquer declaração de sucesso.
 
 ## Continuidade da auditoria
 
