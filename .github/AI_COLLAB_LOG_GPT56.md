@@ -1192,3 +1192,18 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - target SDK antigo, `testOnly` e cleartext são sinais contextuais; não devem ser tratados como prova de malware. Cleartext foi mantido sem pontuação justamente para evitar falso positivo.
+
+
+## 2026-09-18 — falha de inventário sem falso "limpo"
+
+### Concluído
+- Corrigido `SecurityScanner.getApps()`: falha na consulta de pacotes não é mais convertida silenciosamente em lista vazia.
+- A varredura agora registra `Inventário de aplicativos incompleto` com nível MEDIUM e continua as verificações sistêmicas/rede/acessibilidade disponíveis, evitando apresentar um dispositivo como limpo quando a análise por pacote não ocorreu.
+- Commit: `3082ad2addb755a0477fbafafd9c867c0e713809`.
+
+### Validação
+- A alteração foi aplicada sobre o SHA atual de `SecurityScanner.java`, preservando a mudança concorrente anterior.
+- Novo Actions será acompanhado na próxima passagem.
+
+### Próximo trabalho
+- Procurar outros caminhos que possam transformar falha de coleta em ausência de indicador, além de revisar limites de desempenho da varredura completa.
