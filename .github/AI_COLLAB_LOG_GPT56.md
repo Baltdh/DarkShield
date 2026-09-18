@@ -1142,3 +1142,29 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - O teste confirma somente determinismo da seleção limitada de recursos; não altera o limite de 50 nem amplia o orçamento de análise.
+
+
+## 2026-09-18 — desempate completo do relatório
+
+### Estado observado
+- HEAD confirmado antes do encerramento da frente: `0191c12c6cc90824deeed1dedca3e61d4ae10d63`.
+- Entre a passagem anterior e esta, o `main` recebeu a correção do limite de hits de conteúdo do analisador estático (`f01aaa4bfa05693379eedd4c031878d1104f246c`) e seu registro; preservei esses commits.
+- O log do outro agente continua sem entrada preenchida.
+
+### Concluído
+- Identificado um caso de não determinismo em `ScanReport`: duas ocorrências com mesma severidade, pontos, pacote e título, mas detalhes diferentes, permaneciam na ordem de entrada.
+- Corrigidos os dois ordenadores do relatório, `details()` e `informationalDetails()`, para desempatar por detalhe e depois por ação, cada um com comparação case-insensitive e desempate case-sensitive.
+- Isso torna o texto do relatório estável mesmo quando achados com cabeçalho idêntico chegam em ordens diferentes.
+- Produção: `0535d05b7f2397e959e0423526df75323e4acf39`.
+- Adicionados dois testes correspondentes em `ScanReportTest.java`.
+- Testes: `0191c12c6cc90824deeed1dedca3e61d4ae10d63`.
+
+### Validação
+- Diffs dos dois commits revisados após a escrita.
+- Status combinado do novo HEAD retornou `statuses: []`; não há confirmação exposta de CI para esse commit e, portanto, não declaro build aprovado.
+
+### Próximo trabalho
+- Continuar pela integração do relatório/UI e procurar apenas inconsistências concretas, mantendo a análise estática e a correlação determinísticas.
+
+### Riscos
+- A mudança afeta somente ordenação textual; nenhuma pontuação, severidade ou conteúdo dos achados foi alterado.
