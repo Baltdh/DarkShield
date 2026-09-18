@@ -113,6 +113,29 @@ public class ThreatCorrelationEngineTest {
         assertTrue(out.get(0).title.contains("acessibilidade"));
     }
 
+    @Test public void correlatesAccessibilityNotificationsAndBootWithoutRemoteMarker() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),
+                f("Acesso a notificações ativo", ScanFinding.Level.MEDIUM),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertTrue(out.get(0).title.contains("notificações"));
+    }
+
+    @Test public void strongAccessibilityCorrelationAvoidsDuplicateNotificationFinding() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),
+                f("Acesso a notificações ativo", ScanFinding.Level.MEDIUM),
+                f("Permissão de sobreposição concedida", ScanFinding.Level.LOW),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertTrue(out.get(0).title.contains("sobreposição"));
+    }
+
     @Test public void doesNotCorrelateAcrossPackages() {
         ScanFinding remote = new ScanFinding(ScanFinding.Level.LOW,
                 "Indicador heurístico de acesso remoto", "detail", "com.example.remote", 1, null);
