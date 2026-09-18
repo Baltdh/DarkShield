@@ -1,5 +1,8 @@
 package com.darkshield.security;
 
+import android.content.ClipData;
+import android.content.ClipboardManager;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.provider.Settings;
@@ -19,7 +22,7 @@ import java.util.concurrent.Executors;
 public class MainActivity extends android.app.Activity {
     private TextView score, summary, report;
     private ProgressBar progress;
-    private Button scan, securitySettings, share;
+    private Button scan, securitySettings, share, copy;
     private String lastReport = "";
     private final ExecutorService exec = Executors.newSingleThreadExecutor();
 
@@ -33,17 +36,21 @@ public class MainActivity extends android.app.Activity {
         scan = findViewById(R.id.scan);
         securitySettings = findViewById(R.id.settings);
         share = findViewById(R.id.share);
+        copy = findViewById(R.id.copy);
 
         scan.setOnClickListener(v -> startScan());
         securitySettings.setOnClickListener(v -> openSecuritySettings());
         share.setOnClickListener(v -> shareReport());
+        copy.setOnClickListener(v -> copyReport());
         share.setEnabled(false);
+        copy.setEnabled(false);
         summary.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
     }
 
     private void startScan() {
         scan.setEnabled(false);
         share.setEnabled(false);
+        copy.setEnabled(false);
         progress.setVisibility(View.VISIBLE);
         score.setText("Verificando…");
         summary.setText("Analisando indicadores locais do Android");
@@ -96,6 +103,7 @@ public class MainActivity extends android.app.Activity {
         progress.setVisibility(View.GONE);
         scan.setEnabled(true);
         share.setEnabled(true);
+        copy.setEnabled(true);
     }
 
     private void addPackageLinks(
@@ -130,6 +138,7 @@ public class MainActivity extends android.app.Activity {
         progress.setVisibility(View.GONE);
         scan.setEnabled(true);
         share.setEnabled(false);
+        copy.setEnabled(false);
         lastReport = "";
         score.setText("VERIFICAÇÃO NÃO CONCLUÍDA");
         summary.setText(
@@ -190,6 +199,25 @@ public class MainActivity extends android.app.Activity {
         send.putExtra(Intent.EXTRA_SUBJECT, "DarkShield — Relatório de segurança");
         send.putExtra(Intent.EXTRA_TEXT, lastReport);
         startActivity(Intent.createChooser(send, "Compartilhar relatório"));
+    }
+
+    private void copyReport() {
+        if (lastReport.isEmpty()) {
+            Toast.makeText(this, "Execute uma verificação primeiro.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        ClipboardManager clipboard =
+                (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboard == null) {
+            Toast.makeText(this, "Não foi possível acessar a área de transferência.",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        clipboard.setPrimaryClip(
+                ClipData.newPlainText("Relatório DarkShield", lastReport));
+        Toast.makeText(this, "Relatório copiado.", Toast.LENGTH_SHORT).show();
     }
 
     private void openSecuritySettings() {
