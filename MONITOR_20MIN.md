@@ -40,9 +40,15 @@ Atualizado: 2026-09-18 — auditoria contínua / correção de regressões
 - Estado no momento da checagem: **IN_PROGRESS**.
 - Job: `105530148705`.
 - Confirmado: checkout = SUCCESS; JDK 17 = SUCCESS.
-- Em execução: setup do Gradle 8.11.1.
+- Setup do Gradle 8.11.1 concluiu SUCCESS; o build debug estava em execução.
 - Ainda não confirmado: validação do projeto, build debug, testes unitários, lint, APK não vazio, SHA-256, `zipalign`, `apksigner` e upload.
 - Não declarar sucesso até que todos esses passos tenham resultado concreto no mesmo run.
+
+## Atualização desta checagem
+
+- Nova consulta direta ao job `105530148705`: `Validate Android project` = SUCCESS; `Build debug APK` = IN_PROGRESS; testes/lint/verificação/upload ainda pendentes.
+- Tentativa de obter o log ao vivo do job retornou `404 BlobNotFound`; isso não foi interpretado como falha do build. O estado do job continua sendo a evidência válida disponível.
+- Nenhuma nova alteração de código foi feita enquanto o build estava em andamento, evitando introduzir outra execução concorrente desnecessária.
 
 ## Próximo passo obrigatório
 
