@@ -34,6 +34,14 @@ public final class ScanReport {
         return total;
     }
 
+    public int countRequiringReview() {
+        int total = 0;
+        for (ScanFinding finding : findings) {
+            if (finding != null && finding.level != ScanFinding.Level.INFO) total++;
+        }
+        return total;
+    }
+
     public String details() {
         StringBuilder out = new StringBuilder();
         for (ScanFinding finding : findings) {
