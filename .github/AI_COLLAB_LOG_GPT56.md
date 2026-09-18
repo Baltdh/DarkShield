@@ -804,3 +804,20 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Handoff
 - Aguardar o novo CI.
 - Depois, revisar robustez de outras consultas de serviços do sistema sem alterar a semântica dos indicadores.
+
+
+## 2026-09-18 — isolamento de falha por aplicativo
+
+### Concluído
+- `SecurityScanner.scan()` agora protege a análise individual de cada `PackageInfo` contra exceções inesperadas.
+- Se um aplicativo causar falha durante sua inspeção, o scanner registra um finding LOW específico para aquele pacote e continua analisando os demais.
+- Isso evita que um único APK/manifesto problemático interrompa a auditoria completa.
+- Commit: `75d1c512894621349f17116e20af0b8ce8f5c43b`.
+
+### Validação
+- Actions #144 passou com sucesso no estado anterior (`bc1b8b0e...`).
+- Esta alteração é posterior ao CI verde e acionou nova execução para validar o novo HEAD.
+
+### Handoff
+- Aguardar o novo CI.
+- Se continuar verde, revisar somente casos de falha de consulta sistêmica que ainda possam interromper `scan()`.
