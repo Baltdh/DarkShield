@@ -15,12 +15,15 @@ import android.widget.Toast;
 import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends android.app.Activity {
-    private TextView score, summary, report;
+    private TextView score, summary, report, lastScan;
     private ProgressBar progress;
     private Button scan, securitySettings, share, copy;
     private String lastReport = "";
@@ -32,6 +35,7 @@ public class MainActivity extends android.app.Activity {
         score = findViewById(R.id.score);
         summary = findViewById(R.id.summary);
         report = findViewById(R.id.report);
+        lastScan = findViewById(R.id.last_scan);
         progress = findViewById(R.id.progress);
         scan = findViewById(R.id.scan);
         securitySettings = findViewById(R.id.settings);
@@ -55,6 +59,7 @@ public class MainActivity extends android.app.Activity {
         progress.setVisibility(View.VISIBLE);
         score.setText("Verificando…");
         summary.setText("Analisando indicadores locais do Android");
+        lastScan.setText("VERIFICAÇÃO EM ANDAMENTO");
         report.setText("");
 
         exec.submit(() -> {
@@ -104,6 +109,9 @@ public class MainActivity extends android.app.Activity {
 
         lastReport = buildShareReport(scanReport, status, risk, details, informational);
         report.setText(renderReportDetails(details, informational));
+        String timestamp = new SimpleDateFormat("dd/MM/yyyy • HH:mm", Locale.getDefault())
+                .format(new Date());
+        lastScan.setText("Última verificação: " + timestamp);
 
         progress.setVisibility(View.GONE);
         scan.setText("VERIFICAR NOVAMENTE");
@@ -149,6 +157,7 @@ public class MainActivity extends android.app.Activity {
         copy.setEnabled(false);
         lastReport = "";
         score.setText("VERIFICAÇÃO NÃO CONCLUÍDA");
+        lastScan.setText("Última verificação: falhou");
         summary.setText(
                 "O scanner encontrou um erro durante a análise. "
                         + "Isso não significa que o dispositivo esteja comprometido."
