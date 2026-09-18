@@ -1228,3 +1228,19 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - Sem o inventário de pacotes, a auditoria por aplicativo não pode ser considerada completa; o novo finding explicita essa limitação e aplica impacto heurístico moderado.
+
+
+## 2026-09-18 — redução de falso positivo em componentes exportados
+
+### Concluído
+- Corrigida uma fonte importante de inflação do score em `SecurityScanner.inspectExportedComponents()`: activities, receivers e services exportados sem permissão explícita podem ser pontos de entrada públicos legítimos e não são mais pontuados isoladamente.
+- Providers exportados sem `readPermission`/ `writePermission` continuam gerando LOW +2 por representarem uma superfície de exposição de dados mais direta.
+- Os demais componentes continuam visíveis no relatório como INFO, preservando a informação sem transformar configuração pública legítima em evidência de malware.
+- Commit: `6b4ab39c90636b4e3fd9e36665780bdd446b960b`.
+
+### Motivo
+- A regra anterior podia adicionar LOW a praticamente qualquer aplicativo com uma activity pública (por exemplo, uma tela de entrada), prejudicando precisão e confiança do score.
+- A documentação de segurança do Android trata componentes exportados conforme sua finalidade e recomenda proteção especialmente para ContentProviders que não precisam ser públicos.
+
+### Próximo trabalho
+- Validar o novo Actions e continuar procurando fontes de falso positivo/negativo e caminhos de falha que silenciem resultados.
