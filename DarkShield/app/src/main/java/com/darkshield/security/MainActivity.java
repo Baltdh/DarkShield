@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends android.app.Activity {
-    private TextView score, summary, report, lastScan, nextAction;
+    private TextView score, summary, report, lastScan, nextAction, coverageHint;
     private TextView countCritical, countHigh, countMedium, countLow;
     private ProgressBar progress;
     private Button scan, securitySettings, share, copy;
@@ -40,6 +40,7 @@ public class MainActivity extends android.app.Activity {
         report = findViewById(R.id.report);
         lastScan = findViewById(R.id.last_scan);
         nextAction = findViewById(R.id.next_action);
+        coverageHint = findViewById(R.id.coverage_hint);
         countCritical = findViewById(R.id.count_critical);
         countHigh = findViewById(R.id.count_high);
         countMedium = findViewById(R.id.count_medium);
@@ -103,6 +104,10 @@ public class MainActivity extends android.app.Activity {
         updateSeverityAccessibility(countMedium, "médio", medium);
         updateSeverityAccessibility(countLow, "baixo", low);
         String status = scanReport.getStatus();
+        coverageHint.setText("Cobertura desta verificação: " + findings.size()
+                + " registro(s) técnico(s) • " + scanReport.countRequiringReview()
+                + " item(ns) para revisão • " + scanReport.packageSummaries().size()
+                + " pacote(s) com sinais.");
         String details = scanReport.details();
         String informational = scanReport.informationalDetails();
         score.setText(status + "  •  " + risk + "/100");
