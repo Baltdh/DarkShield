@@ -961,3 +961,22 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - Nenhuma mudança de produção; somente cobertura de teste. A interpretação dos marcadores continua heurística.
+
+
+## 2026-09-18 — cobertura do status de baixo risco
+
+### Estado observado
+- HEAD antes desta alteração: `79e18a12cf37ca9c01dca2f007f5f3426af95cd5`.
+- Actions #151 passou com sucesso no commit `994153a98dedbc533e87584e12584aa608d5f464`, validando a cobertura case-insensitive de recursos.
+
+### Concluído
+- Revisado `RiskCalculator.java` e sua suíte independente, sem entrar nas frentes concorrentes de scanner/correlação/análise estática.
+- Identificada ausência de cobertura explícita para o contrato `LOW -> "POUCOS INDICADORES"`.
+- Adicionado teste `lowSeverityProducesLowIndicatorStatus` em `RiskCalculatorTest.java`.
+- Commit: `0da94ef8ebbf925a307f80517a84dc9c3384a516`.
+
+### Próximo passo
+- Validar o novo HEAD no Actions e continuar a sincronização em intervalos de 5 segundos, preservando qualquer avanço concorrente.
+
+### Riscos
+- Alteração somente de teste; nenhuma mudança na pontuação ou no comportamento de produção.
