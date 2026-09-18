@@ -95,6 +95,10 @@ public class MainActivity extends android.app.Activity {
         countHigh.setText("ALTO\n" + high);
         countMedium.setText("MÉDIO\n" + medium);
         countLow.setText("BAIXO\n" + low);
+        updateSeverityAccessibility(countCritical, "crítico", critical);
+        updateSeverityAccessibility(countHigh, "alto", high);
+        updateSeverityAccessibility(countMedium, "médio", medium);
+        updateSeverityAccessibility(countLow, "baixo", low);
         String status = scanReport.getStatus();
         String details = scanReport.details();
         String informational = scanReport.informationalDetails();
@@ -140,7 +144,7 @@ public class MainActivity extends android.app.Activity {
         copy.setEnabled(true);
     }
 
-    private void addPackageLinks(
+    private void updateSeverityAccessibility(TextView view, String severity, int count) {\n        view.setContentDescription("Quantidade de achados " + severity + ": " + count);\n    }\n\n    private void addPackageLinks(
             SpannableStringBuilder builder, int packageStart, ScanReport scanReport) {
         int sectionEnd = builder.length();
         String rendered = builder.toString();
