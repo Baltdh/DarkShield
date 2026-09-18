@@ -840,3 +840,22 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - Nenhuma alteração de produção, pontuação ou detecção; apenas cobertura unitária.
+
+
+## 2026-09-18 — ordenação determinística das informações técnicas
+
+### Estado observado
+- HEAD confirmado antes da alteração: `b2b07dc3154df8d9014dd0d374f915b89b718b7b`.
+- O Actions #146 para o teste anterior concluiu com sucesso.
+- O outro agente permanece em `SecurityScanner.java`, com isolamento de falhas por aplicativo e de falhas na leitura de acessibilidade.
+
+### Concluído
+- Adicionado teste em `DarkShield/app/src/test/java/com/darkshield/security/ScanReportTest.java` para garantir que títulos iguais apenas por capitalização em `informationalDetails()` mantenham ordenação determinística.
+- Commit: `53504646604e15e1716dd614cd96883f7d78a648`.
+- Não houve alteração de produção.
+
+### Próximo passo
+- Aguardar a validação do Actions para o novo HEAD e manter a separação das frentes.
+
+### Riscos
+- Cobertura exclusivamente unitária; nenhum impacto em pontuação, detecção ou permissões.
