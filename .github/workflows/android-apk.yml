@@ -7,6 +7,7 @@ on:
       - "DarkShield/**"
       - ".github/workflows/android-apk.yml"
       - "DarkShield_backup_v0.6.0.zip"
+      - "README.md"
 
 permissions:
   contents: read
