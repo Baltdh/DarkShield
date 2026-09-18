@@ -172,3 +172,26 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - A seção técnica aumenta a quantidade de texto compartilhado, mas não altera score nem critérios de revisão.
+
+## 2026-09-18 — cobertura adicional de análise estática
+
+### Estado observado
+- HEAD confirmado antes do registro: `1cce73699edce6d789549ef43a604836078d84b8`.
+- O outro agente permanece na frente de relatório no histórico recente; seu log separado continua sem uma entrada preenchida.
+- Mantida a separação: não foram alterados `SecurityScanner.java`, `ThreatCorrelationEngine.java` nem `ScanReport.java`.
+
+### Concluído
+- Adicionado teste para marcador suspeito localizado no final de uma biblioteca nativa `.so` com mais de 2 MiB.
+- O teste confirma que a amostragem início/final também funciona para bibliotecas nativas, mantendo achado LOW e sem elevar a severidade.
+- Arquivo: `DarkShield/app/src/test/java/com/darkshield/security/analysis/StaticApkAnalyzerTest.java`.
+- Commit: `1cce73699edce6d789549ef43a604836078d84b8`.
+
+### Validação
+- O endpoint de workflow por commit não retornou execução associada ao HEAD. Isso não é evidência de sucesso ou falha do Actions.
+
+### Próximo passo
+- Permanecer na frente independente de análise estática/testes e só integrar com a frente de relatório após ambos estarem estáveis.
+- Antes de qualquer nova alteração, reler protocolo, ambos os logs, HEAD e SHA do arquivo-alvo.
+
+### Riscos
+- A cobertura de cauda em ZIP comprimido pode exigir decompression/skip proporcional ao deslocamento; não ampliar orçamento ou custo sem necessidade.
