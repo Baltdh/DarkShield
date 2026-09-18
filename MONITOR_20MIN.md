@@ -1,62 +1,91 @@
 # DarkShield — Monitor de continuidade
 
-Atualizado: 2026-09-18 — auditoria contínua / correção de regressões
+Atualizado: 2026-09-18 — auditoria contínua / preparação para fechamento
 
 ## Estado atual
 
 - Repositório: `Baltdh/DarkShield`
-- Branch `main` aponta atualmente para `baf13bd9c94cde41e551a0e8942bc42e3217cc12` (`Fix administrator correlation compilation`).
-- O CI mais recente observado para a `main` é o run `35323196746` (run 200), no commit `baf13bd9c94cde41e551a0e8942bc42e3217cc12`. No momento desta checagem ele estava **IN_PROGRESS**; portanto ainda não há resultado final.
-- No run 200, o job `build` (`105530148705`) já concluiu checkout e JDK 17; Gradle 8.11.1 ainda estava em execução e os demais passos estavam pendentes.
+- Branch: `main`
+- Último commit de código/testes: `589681589b888915540e585d86cc1d71df737a25`
+- Última execução de CI relevante: run `35323922374` (run 211), associada ao commit acima.
+- No momento desta atualização, run 211 está **PENDING**, enquanto o run 210 ainda aparece **IN_PROGRESS** no GitHub Actions; não há resultado final do run 211.
+- A atualização deste arquivo não dispara o workflow atual, pois `MONITOR_20MIN.md` não está incluído nos `paths` do gatilho `push`.
 
-## Evidência de falha anterior e correção
+## Correções recentes
 
-- O run `35323101354` (run 199), no commit `5bf4c38907394e4a7eee0e518d87193b5a4c11b1`, terminou **FAILURE** durante `Build debug APK`.
-- O log concreto mostrou erro de compilação em `ThreatCorrelationEngine.java`, a partir da inserção da correlação de remoto + administrador: `illegal start of type` na região do loop `for (ScanFinding candidate : derived)` (10 erros reportados).
-- O build, portanto, nem chegou aos testes/lint/verificações do APK nesse run.
-- A `main` posteriormente avançou para `baf13bd9c94cde41e551a0e8942bc42e3217cc12`, com a mensagem `Fix administrator correlation compilation`. Esse commit é o que está sendo validado pelo run 200.
+1. `7d04b8cf3cd40c4df11abb23e6ff6f31ffe0f9c4` — o analisador estático passou a reconhecer payloads executáveis por assinatura, além da extensão/caminho.
+   - DEX: `dex\\n`
+   - ODEX: `dey\\n`
+   - VDEX: `vdex`
+   - ELF: `0x7F ELF`
+   - Isso permite amostrar, dentro dos limites já existentes, payloads disfarçados como `.bin`/`.dat`.
+2. `8a84328531c303558329a83c82229e7f3288fa1a` — regressão determinística para o desempate da correlação de ameaças.
+3. `181fc45f4f689116ec813af815cfa53c165fdc3e` — teste do payload ELF disfarçado contendo marcador `frida`.
+4. `91230eea853602cb433cad94e8e51f24f98a1406` — análise de postura local:
+   - bloqueio de tela seguro;
+   - nível do patch de segurança do sistema;
+   - refinamento da detecção de Content Provider exportado sem proteção.
+5. `a723dfbcf377e537059d8838a6baf1f404894288` + `32552137ef77f1fae0217bbb41d491b2c6243863` + `589681589b888915540e585d86cc1d71df737a25` — testes do provider e correção para deixar a regra independente das classes do framework nos testes JVM.
+   - O erro de compilação em `ProviderInfo.permission` foi identificado pelo log do CI e removido.
+   - Os testes que instanciavam `ProviderInfo` foram simplificados para a regra pura `exported/readPermission/writePermission`, evitando `RuntimeException` de stubs Android no teste local.
 
-## Alterações de segurança e robustez já mantidas
+## Evidência dos ciclos anteriores
 
-1. `RiskCalculator`: `globalPoints` usa `long` para evitar overflow na soma de achados globais.
-   - Commit: `5cd0a631d5b1424f2e360ec27c93091f8a71a274`.
-2. `RiskCalculatorTest`: regressão para múltiplos achados globais com `Integer.MAX_VALUE`.
-   - Commit: `c8a5b30572ebd4a556a964d62183f877ea8c1c61`.
-3. CI: lint e validação do APK foram condicionados ao sucesso do build usando `always()`, para que falhas de testes não escondam verificações independentes quando o APK foi produzido.
-   - Commit: `1d5b647f513d04a7dcc3d92521745374f41f6c3c`.
-4. `ThreatCorrelationEngine`: correlação contextual de remoto + administrador do dispositivo, sem classificar automaticamente como malware.
-   - Commit original: `a2b8d2b51c79996d5ba2f62854f6e707b5566002`; correção de compilação posteriormente aplicada na `main`.
-5. `ThreatCorrelationEngineTest`: regressão para remoto + administrador.
-   - Commit: `5bf4c38907394e4a7eee0e518d87193b5a4c11b1`.
-6. `StaticApkAnalyzer`: preservação de amostra útil quando a cauda comprimida não pode ser lida, com cobertura parcial explicitada.
-   - Commits: `1d53b1a0b6a466e77cd8acd4811e1dc376aac42b` e `4d4c9056a8e31b486fa069ac3f2ff710c95fd83d`.
-7. Análise de payloads executáveis em `assets/` (`.dex`, `.so`, `.odex`) e testes correspondentes já registrados na continuidade.
-   - Commits: `801e34320acdc1a58a840c6f28c473f96fe9612c` e `01232de9d9180866807d049d1b99f00882084d17`.
+- Run `35323196746` (run 200): build debug e verificações do APK passaram, mas houve 1 teste falhando em `ThreatCorrelationEngineTest`; posteriormente corrigido.
+- Run `35323697715` (run 207): falhou na compilação por referência inexistente a `ProviderInfo.permission`; build e demais etapas foram impedidos. A causa foi corrigida.
+- Run `35323791856` (run 209): build passou e 100 testes foram executados; 3 testes falharam porque os novos testes JVM dependiam de `ProviderInfo` do framework. A regra foi redesenhada para testes puros.
+- Runs 204–208 foram cancelados pela política de concorrência após novas alterações no `main`; não usar esses runs como evidência final de estado verde.
 
-## Verificação atual — run 200
+## CI atual
 
-- Run: `35323196746`.
-- Commit: `baf13bd9c94cde41e551a0e8942bc42e3217cc12`.
-- Estado no momento da checagem: **IN_PROGRESS**.
-- Job: `105530148705`.
-- Confirmado: checkout = SUCCESS; JDK 17 = SUCCESS.
-- Setup do Gradle 8.11.1 concluiu SUCCESS; o build debug estava em execução.
-- Ainda não confirmado: validação do projeto, build debug, testes unitários, lint, APK não vazio, SHA-256, `zipalign`, `apksigner` e upload.
-- Não declarar sucesso até que todos esses passos tenham resultado concreto no mesmo run.
+- Run 211: `35323922374`
+- Commit: `589681589b888915540e585d86cc1d71df737a25`
+- Estado observado: **PENDING**
+- Run 210: `35323919335` no commit `32552137ef77f1fae0217bbb41d491b2c6243863`, ainda reportado pelo GitHub como **IN_PROGRESS**.
+- Não declarar o projeto verde até o run 211 terminar e confirmar:
+  - build debug;
+  - testes unitários;
+  - lint;
+  - APK não vazio;
+  - SHA-256;
+  - `zipalign`;
+  - `apksigner verify`;
+  - upload do APK e do hash.
 
-## Atualização desta checagem
+## Auditoria técnica atual
 
-- Nova consulta direta ao job `105530148705`: `Validate Android project` = SUCCESS; `Build debug APK` = IN_PROGRESS; testes/lint/verificação/upload ainda pendentes.
-- Tentativa de obter o log ao vivo do job retornou `404 BlobNotFound`; isso não foi interpretado como falha do build. O estado do job continua sendo a evidência válida disponível.
-- Nenhuma nova alteração de código foi feita enquanto o build estava em andamento, evitando introduzir outra execução concorrente desnecessária.
+O DarkShield já verifica, sem exigir root:
+- inventário de pacotes;
+- permissões/AppOps sensíveis;
+- overlay, WRITE_SETTINGS e MANAGE_EXTERNAL_STORAGE;
+- microfone/câmera, SMS, chamadas, contatos/localização/estado de telefonia;
+- uso de apps;
+- solicitação de instalação de APK;
+- boot persistence;
+- serviços de acessibilidade declarados e ativos;
+- listeners de notificações;
+- administradores/device owner/profile owner;
+- indicadores de acesso remoto;
+- componentes exportados e Content Providers;
+- VPN e proxy de rede;
+- root, test-keys, build debuggable e marcadores de root;
+- target SDK antigo, debuggable, testOnly e cleartext;
+- certificado SHA-256 do aplicativo;
+- análise estática do APK com limites de tamanho/entradas/amostragem;
+- marcadores em DEX, bibliotecas e payloads executáveis disfarçados;
+- correlação de sinais sem tratar heurística como prova automática de malware.
 
-## Próximo passo obrigatório
+## Próxima etapa
 
-1. Reconsultar o run `35323196746` até obter estado final.
-2. Se falhar, obter o log do job e corrigir somente o erro concreto.
-3. Se passar, registrar os resultados de cada etapa, inclusive digest do APK, `zipalign` e `apksigner`.
-4. Só então prosseguir para novos testes adversariais de ZIP/DEX/native e refinamento da correlação de capacidades sensíveis.
+1. Esperar o scheduler do GitHub liberar a run 211 sem criar outra alteração de código.
+2. Se a run 211 falhar, usar o log concreto e corrigir somente a causa reproduzível.
+3. Se ficar verde, registrar os dados finais de APK e CI aqui.
+4. Depois disso, continuar o fechamento com:
+   - AndroidX Security State 1.1.0 para postura de patch por sistema/Mainline/kernel;
+   - endurecimento da cadeia de CI (incluindo pinagem de actions por SHA, se aplicável);
+   - eventual fluxo de release assinado separado do debug;
+   - revisão final de UX, relatório e limites do scanner.
 
-## Monitoramento de 20 minutos
+## Regra do monitor
 
-O monitor deve registrar evidência concreta de cada ciclo; não afirmar que houve um loop síncrono de 20 em 20 segundos se isso não foi realmente executado. O próximo agente deve começar pelo run `35323196746` e pelo commit `baf13bd9c94cde41e551a0e8942bc42e3217cc12`.
+Não afirmar que foram feitos ciclos síncronos “a cada 20 segundos por 20 minutos” sem evidência real desses ciclos. Registrar apenas verificações efetivamente executadas e resultados observáveis.
