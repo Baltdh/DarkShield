@@ -105,6 +105,18 @@
         </LinearLayout>
 
         <TextView
+            android:id="@+id/coverage_hint"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:padding="10dp"
+            android:background="@drawable/bg_report"
+            android:text="A análise combina aplicativos, permissões, serviços especiais, integridade do sistema e indicadores estáticos."
+            android:textColor="#7F8798"
+            android:textSize="11sp"
+            android:lineSpacingExtra="1dp" />
+
+        <TextView
             android:id="@+id/next_action"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
