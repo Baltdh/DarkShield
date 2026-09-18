@@ -42,6 +42,12 @@ Atualizado: 2026-09-18 — etapa de auditoria contínua
    - A descoberta do `apksigner` foi tornada robusta para `ANDROID_HOME` ou `ANDROID_SDK_ROOT`.
    - Commit: `6eccb579543a9059994c3a119169b761e687d699`.
 
+6. `DarkShield/app/src/test/java/com/darkshield/security/RiskCalculatorTest.java`
+   - A cobertura antiga foi restaurada (null/empty, normalização, overflow, negativos/nulls, severidade, nível nulo, delegação para display).
+   - As expectativas de normalização foram adaptadas ao novo teto de 15 pontos por pacote.
+   - Mantidos os novos testes de contenção por pacote e de independência entre pacotes, além de um teste explícito para achados globais sem pacote.
+   - Commit: `0fa4722d6cd856e394b17dd6e0caded003745f5a`.
+
 ## Trabalho paralelo observado
 
 - `35f66f16c678bb46cae58ce71012fa6940608344`: contenção da pontuação heurística por pacote.
