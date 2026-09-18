@@ -50,6 +50,26 @@ public class StaticApkAnalyzerTest {
         assertTrue(apk.delete());
     }
 
+    @Test public void suspiciousContentInsideDexIsDetected() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "classes.dex", "prefix-frida-server-suffix".getBytes("ISO-8859-1"));
+        }
+
+        List<ScanFinding> findings =
+                StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+        ScanFinding hit = findings.stream()
+                .filter(x -> x.title.contains("conteúdo de DEX"))
+                .findFirst().orElse(null);
+
+        assertTrue(hit != null);
+        assertEquals(ScanFinding.Level.LOW, hit.level);
+        assertTrue(hit.detail.contains("classes.dex:frida"));
+
+        assertTrue(apk.delete());
+    }
+
     @Test public void unreadablePathProducesFinding() {
         List<ScanFinding> findings = StaticApkAnalyzer.analyze("/definitely/missing/app.apk", "com.example.test");
         assertEquals(1, findings.size());
