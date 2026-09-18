@@ -744,3 +744,16 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Handoff
 - Conferir o novo Actions e manter o workflow separado das frentes de scanner/correlação/análise estática.
 - Se o build voltar a falhar, tratar primeiro como regressão do workflow, não do código de segurança.
+
+
+## 2026-09-18 — diagnóstico final do teste detalhado
+
+### Validação
+- Actions #139 no commit `3cd63179da12ec6278f3d4a274702192f4c33517` voltou a compilar o APK, mas falhou somente na linha 118 do teste de ordenação detalhada.
+- A implementação de produção ordena primeiro pacote e depois título; por isso os três blocos esperados são: `Alpha/Same`, `Alpha/same`, `alpha/Same`.
+- Corrigida a expectativa do teste sem alterar a produção.
+- Commit: `6a48482013dcdedde5cd66dc866c488dd5862649`.
+
+### Handoff
+- Aguardar o novo CI para confirmar os testes unitários.
+- O workflow já está usando as Actions modernizadas; manter essa frente separada da lógica do scanner.
