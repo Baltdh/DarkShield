@@ -22,7 +22,7 @@ public final class ScanFinding {
         StringBuilder b = new StringBuilder();
         b.append("[").append(level).append("] ").append(title).append("\n");
         b.append("    ").append(detail);
-        if (packageName != null) b.append("\n    pacote: ").append(packageName);
+        if (packageName != null) b.append("\n    pacote: ").append(packageName);\n        if (points > 0) b.append("\n    impacto heurístico: +").append(points).append(" ponto(s)");
         if (action != null) b.append("\n    ação: ").append(action);
         return b.toString();
     }
