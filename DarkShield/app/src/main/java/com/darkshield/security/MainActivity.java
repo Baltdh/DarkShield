@@ -105,8 +105,10 @@ public class MainActivity extends android.app.Activity {
         String rendered = builder.toString();
         for (ScanReport.PackageSummary item : scanReport.packageSummaries()) {
             if (item.packageName == null || item.packageName.trim().isEmpty()) continue;
-            int from = rendered.indexOf(item.packageName, packageStart);
-            if (from < 0 || from >= sectionEnd) continue;
+            String token = "• " + item.packageName + " •";
+            int tokenStart = rendered.indexOf(token, packageStart);
+            if (tokenStart < 0 || tokenStart >= sectionEnd) continue;
+            int from = tokenStart + 2;
             int to = from + item.packageName.length();
             final String packageName = item.packageName;
             builder.setSpan(new ClickableSpan() {
