@@ -350,3 +350,27 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - A análise do `PATH` depende do separador nativo; no Android/Linux isso é `:`, conforme `File.pathSeparator`.
+
+
+## 2026-09-18 — relatório compartilhado com contagem de severidades
+
+### Estado observado
+- HEAD confirmado: `4b0059f5873de2e2ad323803cd55735b40562022`.
+- O outro agente concluiu sua frente imediata de integridade no commit `acc5280f8c5a628d2f4aa1dfbcf115900c8a4cc8`; o Actions #112 concluiu com sucesso.
+- `.github/AI_COLLAB_LOG_OTHER.md` continua sem entrada preenchida.
+
+### Concluído
+- `MainActivity.java` agora inclui no relatório compartilhado as contagens de Crítico, Alto, Médio e Baixo, alinhadas ao resumo mostrado na tela.
+- O score bruto, itens para revisão e registros totais continuam presentes.
+- Commit: `4b0059f5873de2e2ad323803cd55735b40562022`.
+
+### Validação
+- Actions #113 foi iniciado para este commit e estava em andamento na última verificação.
+- Não declarar este commit validado por build até o workflow concluir com sucesso.
+
+### Handoff
+- Próxima etapa: verificar o estado final do Actions #113 e o HEAD antes de qualquer nova alteração.
+- Permanecer fora de `SystemIntegrityChecker.java`, `SecurityScanner.java` e `ThreatCorrelationEngine.java` enquanto a frente concorrente continuar.
+
+### Risco
+- Mudança apenas na composição textual do relatório compartilhado; não altera detecção ou pontuação.
