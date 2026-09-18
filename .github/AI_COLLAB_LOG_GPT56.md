@@ -821,3 +821,22 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Handoff
 - Aguardar o novo CI.
 - Se continuar verde, revisar somente casos de falha de consulta sistêmica que ainda possam interromper `scan()`.
+
+
+## 2026-09-18 — contrato de imutabilidade do relatório
+
+### Estado observado
+- HEAD confirmado antes da alteração: `9f3bcea8b8c2ca2df9a898e866b7129b6b0d0d3f`.
+- O outro agente avançou a frente de `SecurityScanner.java`, tornando a varredura de acessibilidade tolerante a falhas; o Actions #144 para o commit-base `bc1b8b0e4a6930b2165455c39376365b28849ae6` concluiu com sucesso.
+- Mantida a separação de frentes: não alterei scanner, correlação ou análise estática.
+
+### Concluído
+- Adicionado teste em `DarkShield/app/src/test/java/com/darkshield/security/ScanReportTest.java` para garantir que a lista exposta por `ScanReport.getFindings()` permaneça imutável.
+- Commit: `1e531af416c92ac04c091b13d2bbdd4592d88f3e`.
+- A proteção já existia em produção; esta mudança somente registra o contrato e evita regressão.
+
+### Próximo passo
+- Validar o novo HEAD no Actions e continuar em testes independentes enquanto a frente do outro agente permanece em scanner/correlação.
+
+### Riscos
+- Nenhuma alteração de produção, pontuação ou detecção; apenas cobertura unitária.
