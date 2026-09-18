@@ -941,3 +941,23 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Riscos
 - Alteração somente de teste; nenhum comportamento de produção ou pontuação foi modificado.
 
+
+
+## 2026-09-18 — cobertura de marcadores de recurso
+
+### Estado observado
+- HEAD observado antes desta alteração: `062009121d13279be749d4996aabf6f46c596422`.
+- A frente do outro agente continua sem entrada própria em `.github/AI_COLLAB_LOG_OTHER.md`; usei apenas o código e histórico verificáveis.
+- O teste anterior de conteúdo case-insensitive já estava no `main`; esta alteração permanece na frente independente de análise estática/testes.
+
+### Concluído
+- Adicionado teste para marcador estático em recurso não executável com capitalização diferente (`FRIDA`).
+- O teste confirma simultaneamente detecção case-insensitive, severidade `INFO` e zero pontos, preservando a regra de não pontuar recursos não executáveis isoladamente.
+- Arquivo: `DarkShield/app/src/test/java/com/darkshield/security/analysis/StaticApkAnalyzerTest.java`.
+- Commit: `994153a98dedbc533e87584e12584aa608d5f464`.
+
+### Próximo trabalho
+- Aguardar/validar o Actions do novo HEAD e continuar procurando casos-limite de análise estática sem aumentar o orçamento de leitura.
+
+### Riscos
+- Nenhuma mudança de produção; somente cobertura de teste. A interpretação dos marcadores continua heurística.
