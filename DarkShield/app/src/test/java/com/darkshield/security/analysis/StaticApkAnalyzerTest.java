@@ -573,4 +573,43 @@ public class StaticApkAnalyzerTest {
         zip.write(data);
         zip.closeEntry();
     }
+
+    @Test public void cappedResourceMarkersAreDeterministicAcrossZipOrder() throws Exception {
+        File first = File.createTempFile("darkshield-test", ".apk");
+        File second = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(first))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            for (int i = 51; i >= 1; i--) {
+                add(zip, String.format("res/raw/frida-resource-%02d.txt", i),
+                        ("resource-" + i).getBytes("ISO-8859-1"));
+            }
+        }
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(second))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            for (int i = 1; i <= 51; i++) {
+                add(zip, String.format("res/raw/frida-resource-%02d.txt", i),
+                        ("resource-" + i).getBytes("ISO-8859-1"));
+            }
+        }
+
+        ScanFinding firstHit = StaticApkAnalyzer.analyze(
+                first.getAbsolutePath(), "com.example.test").stream()
+                .filter(x -> x.title.equals("Marcador suspeito em recurso não executável"))
+                .findFirst().orElse(null);
+        ScanFinding secondHit = StaticApkAnalyzer.analyze(
+                second.getAbsolutePath(), "com.example.test").stream()
+                .filter(x -> x.title.equals("Marcador suspeito em recurso não executável"))
+                .findFirst().orElse(null);
+
+        assertTrue(firstHit != null);
+        assertTrue(secondHit != null);
+        assertEquals(firstHit.detail, secondHit.detail);
+        assertTrue(firstHit.detail.contains("frida-resource-01.txt"));
+        assertTrue(firstHit.detail.contains("frida-resource-06.txt"));
+        assertTrue(!firstHit.detail.contains("frida-resource-51.txt"));
+
+        assertTrue(first.delete());
+        assertTrue(second.delete());
+    }
+
 }
