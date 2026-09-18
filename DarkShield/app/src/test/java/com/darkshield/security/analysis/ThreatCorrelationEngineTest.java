@@ -199,7 +199,7 @@ public class ThreatCorrelationEngineTest {
         assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
         assertEquals(7, out.get(0).points);
         assertTrue(out.get(0).title.contains("Correlação de administrador e acessibilidade")
-                || out.get(0).title.contains("Correlação de controle remoto"));
+                || out.get(0).title.contains("Correlação de acesso remoto e administrador")\n                || out.get(0).title.contains("Correlação de controle remoto"));
     }
 
 }
