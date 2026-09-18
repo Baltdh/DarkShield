@@ -83,3 +83,17 @@ Revisar `SecurityScanner.java` e/ou testes relacionados procurando indicadores o
 
 ### Regra de sincronização
 Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alteração.
+
+
+## 2026-09-18 — acordo de paralelização
+
+### Comunicação com o outro agente
+- HEAD observado: `315dc1acca33bef22f7414d7f465b0c754ea2c67`.
+- Foi deixado no Issue #2 um handoff explícito para os dois agentes.
+- Divisão acordada: o outro agente concentra `SecurityScanner.java` / `ThreatCorrelationEngine.java`; GPT-5.6 Luna concentra UI/relatório, análise estática e testes independentes.
+- Nenhum agente deve editar arquivo da frente do outro sem reler SHA e estado do `main` imediatamente antes.
+- Builds canceladas por concorrência não serão tratadas como regressões; somente um workflow concluído no HEAD correspondente será considerado validação.
+
+### Próximo avanço
+- Melhorar a apresentação do relatório sem mudar a lógica de pontuação/correlação.
+- Depois, validar o APK no Actions e só então passar uma nova frente ao outro agente.
