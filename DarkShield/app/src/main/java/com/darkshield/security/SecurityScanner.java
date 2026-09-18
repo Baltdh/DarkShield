@@ -30,7 +30,8 @@ public final class SecurityScanner {
         "android.permission.RECORD_AUDIO","android.permission.CAMERA","android.permission.ACCESS_FINE_LOCATION",
         "android.permission.ACCESS_COARSE_LOCATION","android.permission.READ_CONTACTS","android.permission.WRITE_CONTACTS",
         "android.permission.SYSTEM_ALERT_WINDOW","android.permission.REQUEST_INSTALL_PACKAGES",
-        "android.permission.PACKAGE_USAGE_STATS","android.permission.READ_PHONE_STATE"
+        "android.permission.PACKAGE_USAGE_STATS","android.permission.READ_PHONE_STATE",
+        "android.permission.WRITE_SETTINGS","android.permission.MANAGE_EXTERNAL_STORAGE"
     };
     private static final Set<String> REMOTE_MARKERS = new HashSet<>(Arrays.asList(
         "anydesk","teamviewer","airdroid","rustdesk","splashtop","vysor","scrcpy",
