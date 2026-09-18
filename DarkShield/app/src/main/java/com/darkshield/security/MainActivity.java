@@ -219,10 +219,10 @@ public class MainActivity extends android.app.Activity {
         share.setEnabled(false);
         copy.setEnabled(false);
         lastReport = "";
-        countCritical.setText("CRÍTICO\n0);
-        countHigh.setText("ALTO\n0);
-        countMedium.setText("MÉDIO\n0);
-        countLow.setText("BAIXO\n0);
+        countCritical.setText("CRÍTICO\n0");
+        countHigh.setText("ALTO\n0");
+        countMedium.setText("MÉDIO\n0");
+        countLow.setText("BAIXO\n0");
         updateSeverityAccessibility(countCritical, "crítico", 0);
         updateSeverityAccessibility(countHigh, "alto", 0);
         updateSeverityAccessibility(countMedium, "médio", 0);
