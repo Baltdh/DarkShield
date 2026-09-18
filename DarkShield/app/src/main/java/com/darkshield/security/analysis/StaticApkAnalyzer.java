@@ -101,8 +101,7 @@ public final class StaticApkAnalyzer {
 
                 boolean binaryCode = lower.endsWith(".dex")
                         || (lower.startsWith("lib/") && lower.endsWith(".so"));
-                if (binaryCode && contentScanned < MAX_TOTAL_CONTENT_SCAN_BYTES
-                        && suspiciousContent.size() < MAX_SUSPICIOUS_CONTENT_HITS) {
+                if (binaryCode && contentScanned < MAX_TOTAL_CONTENT_SCAN_BYTES) {
                     int budget = (int) Math.min(
                             MAX_ENTRY_CONTENT_SCAN_BYTES,
                             MAX_TOTAL_CONTENT_SCAN_BYTES - contentScanned);
