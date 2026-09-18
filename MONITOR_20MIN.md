@@ -55,6 +55,8 @@ Atualizado: 2026-09-18 — auditoria contínua / correção de regressões
   2. `ScanReportTest` foi alinhado ao teto por pacote já implementado no `RiskCalculator`.
      - Commit: `4b3f639151e7c92f5e311fc6d0bf0a324d01403e`.
 - O teto de score por pacote não foi revertido: ele é uma proteção deliberada contra inflação por múltiplos indicadores do mesmo pacote.
+- Correção adicional após revisar a segunda falha: `StaticApkAnalyzer` agora marca explicitamente como cobertura parcial uma amostra menor que o orçamento esperado, enquanto preserva os marcadores encontrados no cabeçalho.
+  - Commit: `4d4c9056a8e31b486fa069ac3f2ff710c95fd83d`.
 - O próximo CI deve validar novamente build, testes, lint, APK, SHA-256, `zipalign` e `apksigner`.
 
 ## Artefato baseline verificado
