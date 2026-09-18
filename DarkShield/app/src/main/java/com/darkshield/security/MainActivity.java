@@ -23,7 +23,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends android.app.Activity {
-    private TextView score, summary, report, lastScan;
+    private TextView score, summary, report, lastScan, nextAction;
     private TextView countCritical, countHigh, countMedium, countLow;
     private ProgressBar progress;
     private Button scan, securitySettings, share, copy;
@@ -37,6 +37,7 @@ public class MainActivity extends android.app.Activity {
         summary = findViewById(R.id.summary);
         report = findViewById(R.id.report);
         lastScan = findViewById(R.id.last_scan);
+        nextAction = findViewById(R.id.next_action);
         countCritical = findViewById(R.id.count_critical);
         countHigh = findViewById(R.id.count_high);
         countMedium = findViewById(R.id.count_medium);
@@ -65,6 +66,7 @@ public class MainActivity extends android.app.Activity {
         score.setText("Verificando…");
         summary.setText("Analisando indicadores locais do Android");
         lastScan.setText("VERIFICAÇÃO EM ANDAMENTO");
+        nextAction.setText("Aguarde enquanto o DarkShield analisa o dispositivo.");
         report.setText("");
 
         exec.submit(() -> {
@@ -121,6 +123,11 @@ public class MainActivity extends android.app.Activity {
         String timestamp = new SimpleDateFormat("dd/MM/yyyy • HH:mm", Locale.getDefault())
                 .format(new Date());
         lastScan.setText("Última verificação: " + timestamp);
+        nextAction.setText(risk >= 70
+                ? "Próximo passo: revise primeiro os itens críticos e altos abaixo."
+                : risk >= 40
+                        ? "Próximo passo: revise os aplicativos e configurações sensíveis listados abaixo."
+                        : "Próximo passo: mantenha o Android e seus aplicativos atualizados e faça verificações periódicas.");
 
         progress.setVisibility(View.GONE);
         scan.setText("VERIFICAR NOVAMENTE");
@@ -167,6 +174,7 @@ public class MainActivity extends android.app.Activity {
         lastReport = "";
         score.setText("VERIFICAÇÃO NÃO CONCLUÍDA");
         lastScan.setText("Última verificação: falhou");
+        nextAction.setText("Próximo passo: tente a verificação novamente. O erro, por si só, não indica comprometimento.");
         summary.setText(
                 "O scanner encontrou um erro durante a análise. "
                         + "Isso não significa que o dispositivo esteja comprometido."
