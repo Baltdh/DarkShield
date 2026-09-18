@@ -16,6 +16,18 @@ public final class ThreatCorrelationEngine {
         return order != 0 ? order : leftValue.compareTo(rightValue);
     }
 
+    private static int compareCorrelationStrength(ScanFinding left, ScanFinding right) {
+        int severity = Integer.compare(right.level.ordinal(), left.level.ordinal());
+        if (severity != 0) return severity;
+        int points = Integer.compare(Math.max(0, right.points), Math.max(0, left.points));
+        if (points != 0) return points;
+        int title = compareDeterministically(left.title, right.title);
+        if (title != 0) return title;
+        int detail = compareDeterministically(left.detail, right.detail);
+        if (detail != 0) return detail;
+        return compareDeterministically(left.action, right.action);
+    }
+
     public static List<ScanFinding> correlate(List<ScanFinding> findings) {
         List<ScanFinding> derived = new ArrayList<>();
         if (findings == null || findings.isEmpty()) return derived;
@@ -151,6 +163,18 @@ public final class ThreatCorrelationEngine {
                         "Confirme que ambas as capacidades foram autorizadas conscientemente"));
             }
         }
+
+        // Multiple independent rules can describe the same package. Keep only the
+        // strongest derived correlation so the heuristic score is not inflated by
+        // overlapping explanations of the same underlying signal set.
+        Map<String, ScanFinding> strongestByPackage = new HashMap<>();
+        for (ScanFinding candidate : derived) {
+            ScanFinding current = strongestByPackage.get(candidate.packageName);
+            if (current == null || compareCorrelationStrength(candidate, current) < 0) {
+                strongestByPackage.put(candidate.packageName, candidate);
+            }
+        }
+        derived = new ArrayList<>(strongestByPackage.values());
 
         derived.sort((left, right) -> {
             int severity = Integer.compare(right.level.ordinal(), left.level.ordinal());
