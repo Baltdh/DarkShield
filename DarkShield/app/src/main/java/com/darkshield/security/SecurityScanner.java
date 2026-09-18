@@ -181,6 +181,15 @@ public final class SecurityScanner {
                     "Verifique se a instalação de APKs faz parte da função esperada"));
         }
 
+        if (!system && ps.contains("android.permission.RECEIVE_BOOT_COMPLETED")) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.LOW,
+                    "Inicialização automática declarada",
+                    label + " declara receber o evento de inicialização do Android",
+                    p.packageName, 1,
+                    "Confirme se iniciar após o boot é esperado para este aplicativo"));
+        }
+
         if (hasAccessibilityService(p)) {
             ScanFinding.Level lvl = system ? ScanFinding.Level.INFO : ScanFinding.Level.MEDIUM;
             int points = system ? 0 : 5;
