@@ -714,8 +714,8 @@ public final class SecurityScanner {
     static boolean isUnprotectedExportedProvider(
             boolean exported, String readPermission, String writePermission) {
         return exported
-                && TextUtils.isEmpty(readPermission)
-                && TextUtils.isEmpty(writePermission);
+                && (readPermission == null || readPermission.trim().isEmpty())
+                && (writePermission == null || writePermission.trim().isEmpty());
     }
 
     private void checkAccessibility(List<ScanFinding> out) {
