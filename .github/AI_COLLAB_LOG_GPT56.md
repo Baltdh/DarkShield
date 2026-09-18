@@ -980,3 +980,29 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - Alteração somente de teste; nenhuma mudança na pontuação ou no comportamento de produção.
+
+
+## 2026-09-18 — limite de custo da cauda comprimida
+
+### Estado observado
+- HEAD observado antes desta passagem: `6b4fc3914cd899dd13b3b3ad6b4e0af605bc5b9a`.
+- O outro agente avançou a cobertura de `RiskCalculator`; o log separado dele continua sem entrada própria.
+- Mantive a divisão de trabalho: análise estática/testes independentes, sem editar `SecurityScanner.java`, `ThreatCorrelationEngine.java` ou a frente de relatório concorrente.
+
+### Concluído
+- Em `StaticApkAnalyzer.java`, ajustado o limite da amostragem da cauda de entradas ZIP comprimidas: o caso de deslocamento exatamente igual a 2 MiB agora também é omitido.
+- Motivo: o caminho anterior poderia pular exatamente 2 MiB de dados descomprimidos e depois ler mais 1 MiB de cauda, ultrapassando o orçamento de trabalho pretendido para uma entrada.
+- Commit de produção: `0154568662fb9e3ee8a5334ccd4c2c71279cde98`.
+- Adicionado teste de fronteira para uma entrada DEX comprimida de aproximadamente 3 MiB, com marcador somente na cauda, confirmando que a cauda não é forçada quando atingiria o limite de salto.
+- Commit do teste: `f68399c50b29f28eb7d3b276700a078cc266b88a`.
+
+### Validação
+- O status combinado do commit do teste ainda não retornou checks.
+- O workflow de Actions dispara por push em `DarkShield/**`, mas a ferramenta disponível para runs por commit pode não expor execuções disparadas diretamente por push. Não declarei build aprovado.
+
+### Próximo trabalho
+- Continuar procurando limites de custo/falsos positivos em `StaticApkAnalyzerTest.java` e somente alterar produção quando houver um caso concreto.
+- Preservar os avanços do outro agente e reler SHA antes de qualquer nova edição.
+
+### Riscos
+- A análise de cauda comprimida continua deliberadamente conservadora: alguns marcadores distantes podem não ser encontrados para evitar inflar grandes prefixos comprimidos.
