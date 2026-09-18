@@ -31,6 +31,37 @@ public class StaticApkAnalyzerTest {
         assertTrue(apk.delete());
     }
 
+    @Test public void staticMarkerDetailsAreDeterministicAcrossZipOrder() throws Exception {
+        File first = File.createTempFile("darkshield-test", ".apk");
+        File second = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(first))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "lib/arm64-v8a/libxposed.so", new byte[]{1});
+            add(zip, "lib/arm64-v8a/libfrida.so", new byte[]{1});
+        }
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(second))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "lib/arm64-v8a/libfrida.so", new byte[]{1});
+            add(zip, "lib/arm64-v8a/libxposed.so", new byte[]{1});
+        }
+
+        ScanFinding firstHit = StaticApkAnalyzer.analyze(
+                first.getAbsolutePath(), "com.example.test").stream()
+                .filter(x -> x.title.contains("Nomes de arquivos associados"))
+                .findFirst().orElse(null);
+        ScanFinding secondHit = StaticApkAnalyzer.analyze(
+                second.getAbsolutePath(), "com.example.test").stream()
+                .filter(x -> x.title.contains("Nomes de arquivos associados"))
+                .findFirst().orElse(null);
+
+        assertTrue(firstHit != null);
+        assertTrue(secondHit != null);
+        assertEquals(firstHit.detail, secondHit.detail);
+
+        assertTrue(first.delete());
+        assertTrue(second.delete());
+    }
+
     @Test public void suspiciousNamesAreOnlyHeuristic() throws Exception {
         File apk = File.createTempFile("darkshield-test", ".apk");
         try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
