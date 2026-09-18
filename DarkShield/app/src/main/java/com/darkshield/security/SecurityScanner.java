@@ -209,9 +209,9 @@ public final class SecurityScanner {
                 || isPermissionGranted("android.permission.WRITE_CONTACTS", p.packageName);
         if (contacts) {
             out.add(new ScanFinding(
-                    ScanFinding.Level.LOW, "Acesso a contatos",
+                    ScanFinding.Level.INFO, "Acesso a contatos",
                     "O aplicativo possui acesso operacional à agenda de contatos",
-                    p.packageName, 2,
+                    p.packageName, 0,
                     "Confirme se a função do aplicativo realmente precisa dos seus contatos"));
         }
 
@@ -219,17 +219,17 @@ public final class SecurityScanner {
                 || isPermissionGranted("android.permission.ACCESS_COARSE_LOCATION", p.packageName);
         if (location) {
             out.add(new ScanFinding(
-                    ScanFinding.Level.LOW, "Acesso à localização",
+                    ScanFinding.Level.INFO, "Acesso à localização",
                     "O aplicativo possui acesso operacional à localização do dispositivo",
-                    p.packageName, 2,
+                    p.packageName, 0,
                     "Revise a permissão e prefira localização aproximada quando suficiente"));
         }
 
         if (isPermissionGranted("android.permission.READ_PHONE_STATE", p.packageName)) {
             out.add(new ScanFinding(
-                    ScanFinding.Level.LOW, "Acesso ao estado do telefone",
+                    ScanFinding.Level.INFO, "Acesso ao estado do telefone",
                     "O aplicativo possui acesso operacional a informações do estado da telefonia",
-                    p.packageName, 2,
+                    p.packageName, 0,
                     "Confirme se essa permissão é necessária para a função esperada"));
         }
 
@@ -284,18 +284,18 @@ public final class SecurityScanner {
             String installer = getInstaller(p.packageName);
             if (installer == null || installer.trim().isEmpty()) {
                 out.add(new ScanFinding(
-                        ScanFinding.Level.LOW, "Origem de instalação não identificada",
+                        ScanFinding.Level.INFO, "Origem de instalação não identificada",
                         "O Android não informou um instalador conhecido para este aplicativo",
-                        p.packageName, 1,
+                        p.packageName, 0,
                         "Confirme a origem do APK se você não reconhecer o app"));
             }
         }
 
         if (debuggable && !system) {
             out.add(new ScanFinding(
-                    ScanFinding.Level.LOW, "Aplicativo debuggable",
+                    ScanFinding.Level.INFO, "Aplicativo debuggable",
                     label + " está marcado como debuggable",
-                    p.packageName, 1,
+                    p.packageName, 0,
                     "Normal em apps de teste; confirme a origem se não for esperado"));
         }
 
@@ -316,9 +316,9 @@ public final class SecurityScanner {
 
         if (!system && (ai.flags & ApplicationInfo.FLAG_TEST_ONLY) != 0) {
             out.add(new ScanFinding(
-                    ScanFinding.Level.LOW, "Aplicativo marcado como testOnly",
+                    ScanFinding.Level.INFO, "Aplicativo marcado como testOnly",
                     label + " está marcado como testOnly",
-                    p.packageName, 1,
+                    p.packageName, 0,
                     "Normal em builds de desenvolvimento; confirme a origem se você não esperava um app de teste"));
         }
 
