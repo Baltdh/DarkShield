@@ -114,7 +114,12 @@ public class MainActivity extends android.app.Activity {
         b.append("Status: ").append(status).append("\n");
         b.append("Score heurístico: ").append(risk).append("/100\n");
         b.append("Itens para revisão: ").append(report.countRequiringReview()).append("\n");
-        b.append("Registros totais: ").append(report.getFindings().size()).append("\n\n");
+        b.append("Registros totais: ").append(report.getFindings().size()).append("\n");
+        String packageSummary = report.packageSummary();
+        if (!packageSummary.isEmpty()) {
+            b.append("\nPacotes com sinais para revisão:\n").append(packageSummary).append("\n");
+        }
+        b.append("\n");
         b.append(
                 details.isEmpty()
                         ? "Nenhum indicador exigindo revisão imediata.\n"
