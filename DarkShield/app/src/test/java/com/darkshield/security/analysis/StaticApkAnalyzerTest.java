@@ -562,6 +562,61 @@ public class StaticApkAnalyzerTest {
         }
     }
 
+
+    @Test public void truncatedStoredEntryIsReportedAsIncomplete() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try {
+            byte[] dex = "safe-content".getBytes("ISO-8859-1");
+            java.util.zip.CRC32 crc = new java.util.zip.CRC32();
+            crc.update(dex);
+
+            try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+                add(zip, "AndroidManifest.xml", new byte[]{1});
+                ZipEntry entry = new ZipEntry("classes.dex");
+                entry.setMethod(ZipEntry.STORED);
+                entry.setSize(dex.length);
+                entry.setCompressedSize(dex.length);
+                entry.setCrc(crc.getValue());
+                zip.putNextEntry(entry);
+                zip.write(dex);
+                zip.closeEntry();
+            }
+
+            // Keep the ZIP structurally valid but truncate the stored entry's
+            // data so the analyzer's requested sample cannot be fulfilled.
+            try (java.io.RandomAccessFile file = new java.io.RandomAccessFile(apk, "rw")) {
+                byte[] bytes = new byte[(int) file.length()];
+                file.readFully(bytes);
+                int marker = indexOf(bytes, dex);
+                assertTrue(marker >= 0);
+                file.setLength(marker + 1);
+            }
+
+            List<ScanFinding> findings =
+                    StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+
+            ScanFinding incomplete = findings.stream()
+                    .filter(x -> x.title.equals("Amostra de conteúdo indisponível"))
+                    .findFirst().orElse(null);
+            assertTrue(incomplete != null);
+            assertEquals(ScanFinding.Level.INFO, incomplete.level);
+            assertEquals(0, incomplete.points);
+        } finally {
+            assertTrue(apk.delete());
+        }
+    }
+
+    private static int indexOf(byte[] haystack, byte[] needle) {
+        outer:
+        for (int i = 0; i <= haystack.length - needle.length; i++) {
+            for (int j = 0; j < needle.length; j++) {
+                if (haystack[i + j] != needle[j]) continue outer;
+            }
+            return i;
+        }
+        return -1;
+    }
+
     @Test public void unreadablePathProducesFinding() {
         List<ScanFinding> findings = StaticApkAnalyzer.analyze("/definitely/missing/app.apk", "com.example.test");
         assertEquals(1, findings.size());
