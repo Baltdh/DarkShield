@@ -16,6 +16,7 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.net.ProxyInfo;
 import android.os.Build;
+import android.os.PowerManager;
 import android.provider.Settings;
 import android.text.TextUtils;
 import android.view.accessibility.AccessibilityManager;
@@ -242,6 +243,21 @@ public final class SecurityScanner {
                     "O aplicativo possui acesso operacional às estatísticas de uso de outros aplicativos e do dispositivo",
                     p.packageName, 3,
                     "Revise o acesso em Configurações > Acesso especial > Acesso aos dados de uso"));
+        }
+
+        if (!system && ps.contains("android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS")) {
+            boolean exempt = isIgnoringBatteryOptimizations(p.packageName);
+            out.add(new ScanFinding(
+                    exempt ? ScanFinding.Level.MEDIUM : ScanFinding.Level.INFO,
+                    exempt ? "Exceção de otimização de bateria ativa"
+                           : "Exceção de otimização de bateria declarada",
+                    exempt
+                            ? "O aplicativo pode pedir para permanecer fora das otimizações de bateria do Android"
+                            : "O aplicativo declara a capacidade de solicitar uma exceção de otimização de bateria, mas ela não foi identificada como ativa",
+                    p.packageName, exempt ? 3 : 0,
+                    exempt
+                            ? "Confirme se o aplicativo realmente precisa permanecer fora das otimizações"
+                            : null));
         }
 
         if (isPermissionGranted("android.permission.REQUEST_INSTALL_PACKAGES", p.packageName)) {
@@ -552,6 +568,17 @@ public final class SecurityScanner {
             if ("android.permission.BIND_VPN_SERVICE".equals(s.permission)) return true;
         }
         return false;
+    }
+
+    private boolean isIgnoringBatteryOptimizations(String packageName) {
+        if (Build.VERSION.SDK_INT < 23) return false;
+        try {
+            PowerManager powerManager =
+                    (PowerManager) c.getSystemService(Context.POWER_SERVICE);
+            return powerManager != null && powerManager.isIgnoringBatteryOptimizations(packageName);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     private boolean hasSpecialAccess(String permission, String packageName) {
