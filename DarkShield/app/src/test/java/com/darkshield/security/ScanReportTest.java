@@ -208,6 +208,19 @@ public class ScanReportTest {
         assertTrue(report.packageSummary().contains("com.example.null") == false);
     }
 
+    @Test public void nullLevelFindingsAreIgnoredByReviewDetails() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(null, "null level", "detail", "com.example.null", 9, null),
+                new ScanFinding(ScanFinding.Level.MEDIUM, "review", "detail",
+                        "com.example.review", 2, null)));
+
+        assertEquals(1, report.countRequiringReview());
+        assertTrue(!report.details().contains("null level"));
+        assertEquals(1, report.packageSummaries().size());
+        assertEquals("com.example.review", report.packageSummaries().get(0).packageName);
+    }
+
+
     @Test public void nullLevelCountIsZero() {
         ScanReport report = new ScanReport(null);
         assertEquals(0, report.count(null));
