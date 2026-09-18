@@ -144,7 +144,11 @@ public class MainActivity extends android.app.Activity {
         copy.setEnabled(true);
     }
 
-    private void updateSeverityAccessibility(TextView view, String severity, int count) {\n        view.setContentDescription("Quantidade de achados " + severity + ": " + count);\n    }\n\n    private void addPackageLinks(
+    private void updateSeverityAccessibility(TextView view, String severity, int count) {
+        view.setContentDescription("Quantidade de achados " + severity + ": " + count);
+    }
+
+    private void addPackageLinks(
             SpannableStringBuilder builder, int packageStart, ScanReport scanReport) {
         int sectionEnd = builder.length();
         String rendered = builder.toString();
