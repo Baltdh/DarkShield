@@ -38,6 +38,17 @@ public class RiskCalculatorTest {
         )));
     }
 
+    @Test public void globalPointsDoNotOverflowBeforeCap() {
+        ScanFinding first = new ScanFinding(
+                ScanFinding.Level.HIGH, "global-one", "detail",
+                null, Integer.MAX_VALUE, null);
+        ScanFinding second = new ScanFinding(
+                ScanFinding.Level.HIGH, "global-two", "detail",
+                null, Integer.MAX_VALUE, null);
+        assertEquals(100, RiskCalculator.score(Arrays.asList(first, second)));
+    }
+
+
     @Test public void negativeAndNullFindingsDoNotAddRisk() {
         assertEquals(0, RiskCalculator.score(Arrays.asList(
                 null,
