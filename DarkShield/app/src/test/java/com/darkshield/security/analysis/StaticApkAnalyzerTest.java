@@ -50,6 +50,27 @@ public class StaticApkAnalyzerTest {
         assertTrue(apk.delete());
     }
 
+    @Test public void suspiciousNamesAreCaseInsensitive() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "lib/arm64-v8a/libFRIDA-helper.so", new byte[]{1});
+        }
+
+        List<ScanFinding> findings =
+                StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+
+        ScanFinding hit = findings.stream()
+                .filter(x -> x.title.contains("instrumentação"))
+                .findFirst().orElse(null);
+
+        assertTrue(hit != null);
+        assertEquals(ScanFinding.Level.LOW, hit.level);
+        assertTrue(hit.detail.contains("lib/arm64-v8a/libFRIDA-helper.so"));
+
+        assertTrue(apk.delete());
+    }
+
     @Test public void suspiciousResourceMarkersAreInformationalOnly() throws Exception {
         File apk = File.createTempFile("darkshield-test", ".apk");
         try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
