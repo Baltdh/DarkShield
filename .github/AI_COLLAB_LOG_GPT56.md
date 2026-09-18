@@ -47,3 +47,17 @@ Revisar `SecurityScanner.java` e/ou testes relacionados procurando indicadores o
 ### Riscos
 - A amostragem do final de entradas ZIP comprimidas pode exigir leitura/seeking proporcional ao deslocamento; manter os limites atuais e evitar aumentar o custo global.
 - Não alterar arquivos já modificados por uma frente concorrente sem reler o SHA atual.
+
+
+## 2026-09-18 — frente do GPT-5.6 (scanner)
+
+### Concluído
+- HEAD observado antes da alteração: `e9cfc3aef14729583cd5a7d0b35e715347dfc1d6`.
+- Adicionados ao `SecurityScanner.java` os indicadores especiais concedidos de `WRITE_SETTINGS` e, em Android 11+, `MANAGE_EXTERNAL_STORAGE`.
+- Os dois sinais usam pontuação moderada e são descritos como capacidades legítimas que devem ser revisadas conforme a finalidade do aplicativo.
+- Commit: `2a8dc77cdecac696aed8d75585c2ed8d607b0f03`.
+- Actions #83 foi disparado para esse commit.
+
+### Handoff
+- HEAD atual confirmado agora: `2a8dc77cdecac696aed8d75585c2ed8d607b0f03`.
+- Próxima frente recomendada: revisar precisão/correlação dos novos acessos especiais com outros sinais, sem aumentar falsos positivos. Verificar primeiro o log do outro agente e o estado do Actions.
