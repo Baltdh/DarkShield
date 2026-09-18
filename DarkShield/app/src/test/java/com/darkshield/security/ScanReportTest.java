@@ -164,6 +164,21 @@ public class ScanReportTest {
         report.packageSummaries().clear();
     }
 
+
+    @Test public void informationalDetailsAreDeterministicByPackageAndTitle() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.INFO, "Zeta", "detail",
+                        "com.example.b", 0, null),
+                new ScanFinding(ScanFinding.Level.INFO, "Alpha", "detail",
+                        "com.example.b", 0, null),
+                new ScanFinding(ScanFinding.Level.INFO, "Beta", "detail",
+                        "com.example.a", 0, null)));
+
+        String info = report.informationalDetails();
+        assertTrue(info.indexOf("com.example.a") < info.indexOf("com.example.b"));
+        assertTrue(info.indexOf("Alpha") < info.indexOf("Zeta"));
+    }
+
     @Test public void nullLevelCountIsZero() {
         ScanReport report = new ScanReport(null);
         assertEquals(0, report.count(null));
