@@ -24,7 +24,18 @@ public class SecurityScannerTest {
                 true, null, "com.example.WRITE"));
     }
 
-     @Test public void nonExportedProviderIsNeverReportedAsUnprotected() {
+     @Test public void defaultInputMethodPackageParsesComponent() {
+        assertEquals("com.example.keyboard",
+                SecurityScanner.defaultInputMethodPackage(
+                        "com.example.keyboard/.KeyboardService"));
+    }
+
+    @Test public void invalidDefaultInputMethodReturnsNull() {
+        assertEquals(null, SecurityScanner.defaultInputMethodPackage("invalid"));
+        assertEquals(null, SecurityScanner.defaultInputMethodPackage(null));
+    }
+
+    @Test public void nonExportedProviderIsNeverReportedAsUnprotected() {
         assertFalse(SecurityScanner.isUnprotectedExportedProvider(
                 false, null, null));
     }
