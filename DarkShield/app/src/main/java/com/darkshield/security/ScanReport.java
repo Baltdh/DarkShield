@@ -160,10 +160,13 @@ public final class ScanReport {
             String rightPackage = right.packageName == null ? "" : right.packageName;
             int packageOrder = leftPackage.compareToIgnoreCase(rightPackage);
             if (packageOrder != 0) return packageOrder;
+            packageOrder = leftPackage.compareTo(rightPackage);
+            if (packageOrder != 0) return packageOrder;
 
             String leftTitle = left.title == null ? "" : left.title;
             String rightTitle = right.title == null ? "" : right.title;
-            return leftTitle.compareToIgnoreCase(rightTitle);
+            int titleOrder = leftTitle.compareToIgnoreCase(rightTitle);
+            return titleOrder != 0 ? titleOrder : leftTitle.compareTo(rightTitle);
         });
 
         StringBuilder out = new StringBuilder();
