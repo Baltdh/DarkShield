@@ -293,6 +293,24 @@ public class StaticApkAnalyzerTest {
         assertTrue(apk.delete());
     }
 
+    @Test public void corruptedZipProducesControlledFinding() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try {
+            try (FileOutputStream out = new FileOutputStream(apk)) {
+                out.write("not-a-valid-zip".getBytes("ISO-8859-1"));
+            }
+
+            List<ScanFinding> findings =
+                    StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+            assertEquals(1, findings.size());
+            assertEquals("Falha na análise estática", findings.get(0).title);
+            assertEquals(ScanFinding.Level.LOW, findings.get(0).level);
+            assertEquals(1, findings.get(0).points);
+        } finally {
+            assertTrue(apk.delete());
+        }
+    }
+
     @Test public void unreadablePathProducesFinding() {
         List<ScanFinding> findings = StaticApkAnalyzer.analyze("/definitely/missing/app.apk", "com.example.test");
         assertEquals(1, findings.size());
