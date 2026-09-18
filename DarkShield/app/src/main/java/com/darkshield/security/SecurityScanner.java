@@ -705,8 +705,7 @@ public final class SecurityScanner {
 
     static boolean isUnprotectedExportedProvider(android.content.pm.ProviderInfo provider) {
         if (provider == null || !provider.exported) return false;
-        return TextUtils.isEmpty(provider.permission)
-                && TextUtils.isEmpty(provider.readPermission)
+        return TextUtils.isEmpty(provider.readPermission)
                 && TextUtils.isEmpty(provider.writePermission);
     }
 
