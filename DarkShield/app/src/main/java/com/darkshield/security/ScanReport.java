@@ -22,11 +22,11 @@ public final class ScanReport {
     }
 
     public int getRawPoints() {
-        int points = 0;
+        long points = 0;
         for (ScanFinding finding : findings) {
             if (finding != null) points += Math.max(0, finding.points);
         }
-        return points;
+        return (int) Math.min(Integer.MAX_VALUE, points);
     }
 
     public String getStatus() {
@@ -179,6 +179,11 @@ public final class ScanReport {
             this.points = points;
         }
 
+        private static int saturatingAdd(int current, int addition) {
+            long sum = (long) current + addition;
+            return (int) Math.min(Integer.MAX_VALUE, sum);
+        }
+
         private PackageSummary add(ScanFinding finding) {
             ScanFinding.Level higher = finding.level.ordinal() > level.ordinal()
                     ? finding.level : level;
@@ -186,7 +191,7 @@ public final class ScanReport {
                     packageName,
                     higher,
                     findings + 1,
-                    points + Math.max(0, finding.points));
+                    saturatingAdd(points, Math.max(0, finding.points)));
         }
     }
 }
