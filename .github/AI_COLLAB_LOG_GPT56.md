@@ -415,3 +415,30 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Handoff
 - Continuar priorizando arquivos de teste/relatório nesta frente.
 - Preservar as mudanças de integridade e scanner do outro agente.
+
+
+## 2026-09-18 — proteção do ciclo de vida da Activity
+
+### Estado observado
+- HEAD confirmado antes da alteração: `dd27bdee9432196813c88ec5ddd9ed3296a5bf1f`.
+- Actions #113 concluiu com sucesso e validou o relatório compartilhado com contagens de severidade.
+- Actions #112 concluiu com sucesso e validou os testes da correção de falsos positivos de root do outro agente.
+- A implementação atual de `SystemIntegrityChecker` no `main` continua contendo a detecção por segmentos exatos de PATH.
+
+### Concluído
+- `MainActivity.finishScan()` e `finishScanError()` agora ignoram callbacks tardios quando a Activity está finalizando ou já foi destruída.
+- Isso evita tentar atualizar Views depois do ciclo de vida da tela.
+- Commit: `c46e12de02c957fafd97a136073c37c018be6c02`.
+- Não houve alteração em scanner, correlação ou integridade.
+
+### Validação
+- Actions #115 foi disparado para o novo commit e estava pendente na última consulta.
+- Actions #114, da etapa anterior de teste determinístico do relatório, ainda estava em andamento; a política de concorrência pode cancelá-lo em favor de #115.
+- Não declarar #115 validado antes da conclusão.
+
+### Handoff
+- Próxima passagem: conferir novamente o HEAD e o CI e preservar a frente do outro agente.
+- Priorizar robustez da UI/relatório ou testes independentes enquanto scanner/correlação estiverem ocupados.
+
+### Riscos
+- Mudança simples de ciclo de vida; não modifica pontuação ou detecção.
