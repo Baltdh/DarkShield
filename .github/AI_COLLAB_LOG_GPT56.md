@@ -539,3 +539,21 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Handoff
 - Aguardar estabilização do CI antes de novas mudanças estruturais.
+
+
+## 2026-09-18 — CI integrado e caso-limite encontrado fora da frente ocupada
+
+### Estado observado
+- HEAD após a frente de relatório: `a98ce5002c423f3e0f96acc4ad39c533e19aee99`.
+- Actions #123, no commit `6c55f6ff6488baa4f62654ebdb5276a4905b6f86`, concluiu com sucesso.
+- O commit `a98ce500...` é registro/handoff e não altera produção.
+
+### Revisão independente
+- `SecurityScanner.scan()` retorna uma lista criada localmente e concluída com `return out`; não há caminho observado retornando `null`.
+- A configuração Android/Gradle permanece coerente: compile/target SDK 35, min SDK 26, Java 17 e JUnit 4.13.2.
+- Foi identificado um caso-limite potencial em `ScanReport`: achado com `level == null` é ignorado por `RiskCalculator.status()`, mas pode entrar em `countRequiringReview()`/ `details()`. Essa frente está atualmente ocupada pelo outro agente, portanto não alterada para evitar conflito.
+
+### Handoff
+- Manter a proteção de overflow já validada pelo CI #123.
+- Quando a frente de relatório liberar o arquivo, adicionar regressão específica para `level == null` em `ScanReport` e ajustar o comportamento para ser consistente com o calculador de risco.
+- Não declarar o APK final validado até o CI correspondente ao último commit de produção terminar com sucesso.
