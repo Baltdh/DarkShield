@@ -675,3 +675,15 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Handoff
 - Aguardar CI do HEAD atual.
 - A frente de scanner continua usando a checagem efetiva de acesso especial; a frente de APK continua protegendo custo de descompressão.
+
+
+## 2026-09-18 — validação do relatório e CI verde
+
+### Validação
+- Actions #134 concluiu com sucesso no commit `21d2caf74b225af68ec9e03f13c3fd75cb16f404`.
+- A comparação confirmou que as alterações recentes ficaram restritas às frentes esperadas: relatório, scanner, análise estática, testes, README e logs.
+- `MainActivity.lastReport` já é inicializado com string vazia e `shareReport()/copyReport()` tratam estado sem relatório; não foi necessária alteração.
+
+### Handoff
+- O estado integrado possui um CI verde após a regressão de ordenação determinística.
+- Evitar novas alterações em `MainActivity` sem um problema reproduzível.
