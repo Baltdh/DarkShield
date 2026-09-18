@@ -375,8 +375,7 @@ public final class SecurityScanner {
                 if (!provider.exported) continue;
                 exportedProviders++;
                 if (TextUtils.isEmpty(provider.readPermission)
-                        && TextUtils.isEmpty(provider.writePermission)
-                        && TextUtils.isEmpty(provider.permission)) {
+                        && TextUtils.isEmpty(provider.writePermission)) {
                     unprotectedProviders++;
                 }
             }
