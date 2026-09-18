@@ -1,50 +1,61 @@
 # DarkShield — Monitor de continuidade
 
-Atualizado: 2026-09-18 — auditoria contínua / regressão verificada
+Atualizado: 2026-09-18 — auditoria contínua / correção de regressões
 
 ## Estado atual
 
 - Repositório: `Baltdh/DarkShield`
 - Branch: `main`
-- Baseline confirmado: run `35322024413` no commit `49e9b35b8f42a150a1b13ae99ea4b352a7a4a528` terminou SUCCESS com build, testes, lint, verificação do APK e upload.
-- Artefato baseline: APK 48.285 bytes; SHA-256 `8616611ad08b9e4d650f852da14fc365f550372ce2b2da8075c2b51286a013d5`; ZIP do artefato digest `ec3ab8e48fcdd4a9910bf39754aaf4a4ee8b200446c657f8723992cbb500d947`.
+- Último CI concretamente verificado: run `35322604522`, que terminou em **FAILURE** no job `105528276540`.
+- Nesse run, o build debug passou e os testes unitários falharam em 2 casos. O lint e as verificações finais do APK foram pulados por causa da falha dos testes.
+- O baseline anterior `35322024413` foi confirmado **SUCCESS** em validação do projeto, build, testes, lint, existência/tamanho do APK e upload.
 
-## Alterações técnicas confirmadas
+## Correções aplicadas após a falha do CI
 
-1. `StaticApkAnalyzer.java` — cauda comprimida além de `MAX_COMPRESSED_TAIL_SKIP_BYTES` não é mais tratada silenciosamente como amostra completa; `readTail()` retorna `null` e ativa `Amostra de conteúdo indisponível` sem pontos.
-   - Commit: `4ab95baf29a76799bb8daf96b4f14c8534b071ad`.
-2. `StaticApkAnalyzerTest.java` — teste de cauda distante cobre explicitamente a limitação de amostragem e zero risco.
-   - Commit: `3dbf116892b014df48f181557d42dd67f786e239`.
-3. `.github/workflows/android-apk.yml` — validação de APK foi endurecida com SHA-256, `zipalign` e `apksigner verify --verbose`; descoberta do `apksigner` foi tornada compatível com `ANDROID_HOME`/`ANDROID_SDK_ROOT`.
-   - Commits registrados: `0897663eb68b4165cad90338498e08110c6c18d1`, `6eccb579543a9059994c3a119169b761e687d699`, `9abf066a26f9598d44a527188a4b57a2cc5a2838`.
-4. `RiskCalculator` mantém teto de 15 pontos por pacote antes da normalização, reduzindo inflação por múltiplos achados do mesmo pacote.
-5. `StaticApkAnalyzer` atual está no blob `0c08d9183d6ff7fc0719b8ab6776c82058493141`; portanto, não registrar como concluída nenhuma alteração que alegue preservação parcial do cabeçalho via commits diferentes sem revalidar o blob atual.
+1. `StaticApkAnalyzer.readContentSample()` passou a preservar uma amostra de cabeçalho legível quando somente a cauda comprimida está fora do orçamento, mantendo a detecção útil sem fingir cobertura completa.
+   - Commit: `1d53b1a0b6a466e77cd8acd4811e1dc376aac42b`.
 
-## Último CI efetivamente verificado
+2. `ScanReportTest.rawPointsCanExceedDisplayScoreCap` foi alinhado ao contrato atual do `RiskCalculator`: pontos brutos podem exceder o teto de exibição por pacote, enquanto o score é limitado pelo teto de pontos por pacote.
+   - Commit: `4b3f639151e7c92f5e311fc6d0bf0a324d01403e`.
+   - O teto de `15` pontos por pacote foi mantido deliberadamente para reduzir inflação por múltiplos sinais no mesmo pacote.
 
-- Run `35322604522` (run 189), commit `f21c48da891b0afc45bf66f39eacaac956954a3c`, terminou **FAILURE**.
-- Build debug: SUCCESS.
-- Testes: FAILURE, 91 testes, 2 falhas.
-- Falhas observadas no log:
-  - `ScanReportTest.rawPointsCanExceedDisplayScoreCap`: expectativa antiga incompatível com o teto de 15 pontos por pacote; a versão atual do teste no `main` já espera 45.
-  - `StaticApkAnalyzerTest.partialCompressedSampleReportsCoverageAndKeepsHeadDetection`: a implementação usada nesse run retornou a amostra inteira como indisponível quando a cauda comprimida estava além do limite, portanto o cabeçalho não chegou a ser pontuado/detectado.
-- Por causa das falhas, nesse run o lint, `zipalign`, `apksigner`, SHA-256 final e upload não foram executados.
-- O run intermediário `35322572104` foi CANCELLED por `concurrency` quando o commit seguinte chegou; não é evidência de falha de código.
+3. O analisador passou a marcar explicitamente cobertura parcial quando uma entrada grande retorna menos bytes que o orçamento solicitado, preservando simultaneamente os marcadores encontrados no cabeçalho.
+   - Commit: `4d4c9056a8e31b486fa069ac3f2ff710c95fd83d`.
 
-## Estado de validação atual
+4. Foi registrado no monitor que a correção de cobertura parcial está concluída.
+   - Commit: `9bc2003eb366188e4bc00608b1745a0030870948`.
 
-- O commit atual de `main` inclui o monitor atualizado, mas esse arquivo não está no `paths` que disparam o workflow; portanto, a atualização do monitor não cria por si só um novo CI.
-- Não existe, neste registro, um novo run verde após `f21c48da...` que valide simultaneamente as correções de análise estática e a cadeia `zipalign` + `apksigner`.
-- **Não declarar APK atual como validado/verde.**
+## Novas alterações desta etapa
 
-## Próximo agente
+5. `RiskCalculator`: `globalPoints` deixou de usar `int` e passou para `long`. Isso elimina uma rota de overflow quando há vários achados globais com pontuações muito grandes; a normalização para 0–100 continua sendo feita após a soma.
+   - Commit: `5cd0a631d5b1424f2e360ec27c93091f8a71a274`.
 
-1. Revalidar o `StaticApkAnalyzer` atual e decidir entre semântica de amostra atômica (cauda indisponível => nenhum marcador da amostra) ou amostra parcial (cabeçalho preservado + flag explícita de cobertura). Se escolher parcial, implementar com estado explícito/objeto de resultado, não estado global frágil.
-2. Executar/confirmar o teste correspondente antes de considerar o CI verde.
-3. Confirmar novo workflow com build, unit tests, lint, APK não vazio, SHA-256, `zipalign` e `apksigner verify`.
-4. Continuar revisão de correlação de acesso remoto, permissões sensíveis e falsos positivos.
-5. Nunca transformar uma limitação de cobertura em evidência de malware.
+6. `RiskCalculatorTest`: adicionada regressão com dois achados globais de `Integer.MAX_VALUE`, exigindo score final de 100 em vez de comportamento dependente de overflow.
+   - Commit: `c8a5b30572ebd4a556a964d62183f877ea8c1c61`.
 
-## Observação de monitoramento
+7. CI: o passo de build recebeu o id `build_apk`. Lint e validação do APK agora usam `always()` condicionados ao sucesso do build, portanto uma falha dos testes unitários não impede a coleta independente de lint, SHA-256, `zipalign` e `apksigner`.
+   - Commit: `1d5b647f513d04a7dcc3d92521745374f41f6c3c`.
+   - Upload continua condicionado ao fluxo normal para não publicar artefato de uma cadeia incompleta.
 
-A automação disponível não executa um loop síncrono real de 20 em 20 segundos durante 20 minutos. As verificações são feitas em etapas; este arquivo é o ponto de continuidade para o próximo agente.
+## Próxima verificação obrigatória
+
+- O próximo run disparado pelos commits acima precisa ser confirmado no GitHub.
+- Só considerar a cadeia atual verde quando o mesmo run confirmar, de forma concreta:
+  - projeto válido;
+  - build debug;
+  - todos os testes unitários;
+  - Android lint;
+  - APK não vazio;
+  - SHA-256;
+  - `zipalign -c -v 4`;
+  - `apksigner verify --verbose`.
+- O conector GitHub disponível nesta sessão não expõe uma listagem geral dos runs de push; a consulta por commit atualmente retorna somente runs de pull request. Por isso, não registrar "SUCCESS" sem obter o run e seus passos diretamente.
+- O último run conhecido continua sendo `35322604522` = **FAILURE** até que um run posterior seja comprovado.
+
+## Continuidade da auditoria
+
+Depois do CI verde, continuar em paralelo na análise de segurança, priorizando correlação de acesso remoto, capacidades sensíveis, falsos positivos e testes adversariais de ZIP/DEX/native. Limitações de cobertura devem ser visíveis e nunca virar pontuação automaticamente.
+
+## Monitoramento de 20 minutos
+
+A automação disponível não executa um loop síncrono real de 20 em 20 segundos por 20 minutos; esse intervalo foi tratado como ciclos de verificação separados. Nunca afirmar que 30 verificações de 20 segundos foram executadas sem evidência real.
