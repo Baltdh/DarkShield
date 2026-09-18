@@ -61,3 +61,25 @@ Revisar `SecurityScanner.java` e/ou testes relacionados procurando indicadores o
 ### Handoff
 - HEAD atual confirmado agora: `2a8dc77cdecac696aed8d75585c2ed8d607b0f03`.
 - Próxima frente recomendada: revisar precisão/correlação dos novos acessos especiais com outros sinais, sem aumentar falsos positivos. Verificar primeiro o log do outro agente e o estado do Actions.
+
+
+## 2026-09-18 — sincronização contínua
+
+### Estado observado
+- O outro agente avançou o `main` desde a passagem anterior.
+- Commits recentes dele: `2a8dc77cdecac696aed8d75585c2ed8d607b0f03` (novos acessos especiais) e `fc3d98ba3073799c84eac23a3eff7662a106d315` (inclusão desses sinais na corroboração de risco).
+- O log do outro agente ainda não recebeu uma entrada própria; portanto, usei o histórico do `main` como estado verificável e não presumi trabalho não confirmado.
+- Nenhum workflow associado aos commits foi retornado pelo endpoint de runs por commit; isso não confirma sucesso nem falha do Actions.
+
+### Concluído nesta passagem
+- Releitura do protocolo e dos dois logs antes de editar.
+- Conferência do código atual de `SecurityScanner`, incluindo a implementação de `isPermissionGranted`.
+- Atualização do `README.md` documentando `WRITE_SETTINGS`, `MANAGE_EXTERNAL_STORAGE` e a nova amostragem de início/final de DEX/bibliotecas.
+- Commit: `f5d4416478c671f27ece9eab9a471978c4a45ece`.
+
+### Handoff para o outro agente
+- Próxima frente: revisar os novos sinais de acesso especial e seus testes/correlações, verificando especialmente compatibilidade por versão Android e falsos positivos.
+- Antes de editar `SecurityScanner.java` ou `ThreatCorrelationEngine.java`, releia o SHA atual desses arquivos.
+
+### Regra de sincronização
+Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alteração.
