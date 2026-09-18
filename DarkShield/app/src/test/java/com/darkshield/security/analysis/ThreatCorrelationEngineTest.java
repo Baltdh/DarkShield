@@ -15,12 +15,22 @@ public class ThreatCorrelationEngineTest {
     @Test public void correlatesRemoteAccessibilityAndOverlay() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
-                f("Serviço de acessibilidade declarado", ScanFinding.Level.MEDIUM),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),
                 f("Permissão de sobreposição concedida", ScanFinding.Level.MEDIUM)));
 
         assertEquals(1, out.size());
         assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
         assertTrue(out.get(0).title.contains("Correlação"));
+    }
+
+    @Test public void declaredAccessibilityAloneDoesNotTriggerHighCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade declarado", ScanFinding.Level.MEDIUM),
+                f("Permissão de sobreposição concedida", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
     }
 
     @Test public void correlatesAdministratorAndAccessibility() {
@@ -84,7 +94,7 @@ public class ThreatCorrelationEngineTest {
 
     @Test public void correlatesAccessibilityOverlayAndBootWithoutRemoteMarker() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
-                f("Serviço de acessibilidade declarado", ScanFinding.Level.MEDIUM),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),
                 f("Permissão de sobreposição concedida", ScanFinding.Level.LOW),
                 f("Inicialização automática declarada", ScanFinding.Level.LOW)));
 
