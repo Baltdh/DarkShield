@@ -11,6 +11,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: darkshield-main-build
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
