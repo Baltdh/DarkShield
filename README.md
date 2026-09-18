@@ -59,13 +59,14 @@ Quando o final de uma entrada ZIP comprimida exigiria pular um prefixo descompac
 
 ## Compilação
 
-O workflow do GitHub Actions usa JDK 17 e Gradle 8.11.1 para gerar um APK de debug e executar os testes unitários.
+O workflow do GitHub Actions usa JDK 17 e Gradle 8.11.1 para gerar um APK de debug, executar os testes unitários, rodar o Android lint, calcular o SHA-256 do artefato e validar a assinatura do APK com `apksigner verify --verbose`.
 
 Para uma máquina com o Android SDK configurado:
 
     cd DarkShield
-    gradle --no-daemon assembleDebug
-    gradle --no-daemon test
+    ./gradlew --no-daemon assembleDebug
+    ./gradlew --no-daemon test
+    ./gradlew --no-daemon lintDebug
 
 Saída esperada do APK:
 
