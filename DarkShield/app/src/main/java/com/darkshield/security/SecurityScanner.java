@@ -421,6 +421,58 @@ public final class SecurityScanner {
                         : "Confirme se você reconhece e confia no teclado; métodos de entrada podem processar o texto digitado"));
     }
 
+    private void checkDefaultCommunicationApps(List<ScanFinding> out) {
+        String defaultSms = null;
+        try {
+            defaultSms = android.provider.Telephony.Sms.getDefaultSmsPackage(c);
+        } catch (Exception ignored) {}
+
+        addDefaultHandlerFinding(out,
+                defaultSms,
+                "Aplicativo padrão de SMS",
+                "O aplicativo padrão de SMS pode processar mensagens recebidas e enviadas",
+                "Confirme se você reconhece o aplicativo definido como padrão para SMS");
+
+        if (Build.VERSION.SDK_INT >= 23) {
+            String defaultDialer = null;
+            try {
+                android.telecom.TelecomManager telecom =
+                        (android.telecom.TelecomManager) c.getSystemService(Context.TELECOM_SERVICE);
+                if (telecom != null) defaultDialer = telecom.getDefaultDialerPackage();
+            } catch (Exception ignored) {}
+
+            addDefaultHandlerFinding(out,
+                    defaultDialer,
+                    "Aplicativo padrão de chamadas",
+                    "O aplicativo padrão de chamadas pode controlar a experiência de telefonia do dispositivo",
+                    "Confirme se você reconhece o aplicativo definido como padrão para chamadas");
+        }
+    }
+
+    private void addDefaultHandlerFinding(
+            List<ScanFinding> out,
+            String packageName,
+            String title,
+            String detail,
+            String action) {
+        if (packageName == null || packageName.trim().isEmpty()) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO, title,
+                    "O Android não informou um aplicativo padrão",
+                    null, 0, null));
+            return;
+        }
+
+        boolean system = isSystemPackage(packageName);
+        out.add(new ScanFinding(
+                ScanFinding.Level.INFO,
+                system ? title + " do sistema" : title + " de terceiros",
+                detail,
+                packageName,
+                0,
+                system ? null : action));
+    }
+
     private void checkSystemIntegrity(List<ScanFinding> out) {
         boolean rootBinary = SystemIntegrityChecker.hasRootBinary();
         boolean testKeys = SystemIntegrityChecker.hasTestKeys();
@@ -743,6 +795,7 @@ public final class SecurityScanner {
 
         checkDevicePosture(out);
         checkDefaultInputMethod(out);
+        checkDefaultCommunicationApps(out);
     }
 
     private void checkDevicePosture(List<ScanFinding> out) {
