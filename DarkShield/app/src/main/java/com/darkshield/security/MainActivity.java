@@ -5,7 +5,6 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.content.SharedPreferences;
 import android.provider.Settings;
 import android.net.Uri;
 import android.text.SpannableStringBuilder;
