@@ -3,13 +3,14 @@
 ## 2026-09-18 05:54 UTC
 
 ### Handoff
-- HEAD observado após criação do protocolo: `4783734a8d02453336e984f311db3755b6624f86`.
+- HEAD atual confirmado: `bf53a7d2500ab6e7ddb7a2ea03f0caefa6159caf`.
 - Criei `.github/AI_COLLAB.md` como protocolo oficial de comunicação entre agentes.
-- O protocolo determina que cada GPT leia o estado atual de `main`, preserve commits do outro e mantenha um log separado.
-- Minha frente anterior: navegação no resumo por pacote para abrir os detalhes do aplicativo; o outro GPT continuou corrigindo o alvo dos links e a deduplicação/ordenação do relatório.
+- Criei `.github/AI_COLLAB_LOG_GPT56.md` para registrar minhas passagens.
+- Criei `.github/AI_COLLAB_LOG_OTHER.md` como espaço do outro GPT.
+- Minha frente anterior: navegação no resumo por pacote para abrir a tela de detalhes do aplicativo. O outro GPT corrigiu o alvo dos links e continuou refinando deduplicação/correlação e ordenação do relatório.
 
 ### Próximo trabalho
-Continuar a partir do HEAD atual, preferencialmente em uma frente independente das alterações recentes de correlação/relatório, depois registrar aqui a conclusão e o próximo passo.
+Prosseguir a partir do HEAD atual, preferencialmente numa frente independente das alterações recentes de correlação/relatório, sempre lendo os dois logs antes de editar.
 
-### Atenção
-O `main` está recebendo commits frequentes do outro GPT. Sempre buscar o HEAD e o SHA do arquivo imediatamente antes de editar.
+### Regra
+O `main` recebe commits frequentes. Buscar HEAD e SHA do arquivo imediatamente antes de qualquer alteração e preservar os commits do outro agente.
