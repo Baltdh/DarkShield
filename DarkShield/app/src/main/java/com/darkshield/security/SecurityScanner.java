@@ -59,26 +59,28 @@ public final class SecurityScanner {
         String lower=(label+" "+p.packageName).toLowerCase(Locale.ROOT);
         Set<String> ps=new HashSet<>();
         if(p.requestedPermissions!=null) Collections.addAll(ps,p.requestedPermissions);
-        int sensitive=0; for(String permission:SENSITIVE_PERMISSIONS) if(ps.contains(permission)) sensitive++;
+        int sensitive=0; for(String permission:SENSITIVE_PERMISSIONS) if(isPermissionGranted(permission,p.packageName)) sensitive++;
         boolean system=isSystemApp(ai), remoteMarker=containsRemoteControlMarker(lower);
         boolean sideLoad=isOutsideUsualSystemArea(ai), debuggable=(ai.flags&ApplicationInfo.FLAG_DEBUGGABLE)!=0;
 
-        if(ps.contains("android.permission.SYSTEM_ALERT_WINDOW"))
-            out.add(new ScanFinding(sideLoad?ScanFinding.Level.MEDIUM:ScanFinding.Level.LOW,"Permissão de sobreposição",label,p.packageName,sideLoad?4:2,"Revisar em Configurações > Apps > Acesso especial"));
-        int mediaCount=0; if(ps.contains("android.permission.RECORD_AUDIO")) mediaCount++; if(ps.contains("android.permission.CAMERA")) mediaCount++;
+        if(isPermissionGranted("android.permission.SYSTEM_ALERT_WINDOW",p.packageName))
+            out.add(new ScanFinding(sideLoad?ScanFinding.Level.MEDIUM:ScanFinding.Level.LOW,"Permissão de sobreposição concedida",label,p.packageName,sideLoad?4:2,"Revisar em Configurações > Apps > Acesso especial"));
+        else if(ps.contains("android.permission.SYSTEM_ALERT_WINDOW"))
+            out.add(new ScanFinding(ScanFinding.Level.INFO,"Sobreposição declarada","A permissão foi declarada, mas não consta como concedida",p.packageName,0,null));
+        int mediaCount=0; if(isPermissionGranted("android.permission.RECORD_AUDIO",p.packageName)) mediaCount++; if(isPermissionGranted("android.permission.CAMERA",p.packageName)) mediaCount++;
         if(mediaCount>0) out.add(new ScanFinding(ScanFinding.Level.LOW,"Acesso a microfone/câmera",label+" solicita "+mediaCount+" recurso(s) de áudio/vídeo",p.packageName,1,"Confirme se essa função é necessária"));
-        if(ps.contains("android.permission.READ_SMS")||ps.contains("android.permission.RECEIVE_SMS")||ps.contains("android.permission.SEND_SMS"))
+        if(isPermissionGranted("android.permission.READ_SMS",p.packageName)||isPermissionGranted("android.permission.RECEIVE_SMS",p.packageName)||isPermissionGranted("android.permission.SEND_SMS",p.packageName))
             out.add(new ScanFinding(ScanFinding.Level.MEDIUM,"Acesso a SMS","O aplicativo declara acesso a mensagens SMS",p.packageName,4,"Revisar a permissão e a finalidade do aplicativo"));
-        if(ps.contains("android.permission.READ_CALL_LOG")||ps.contains("android.permission.WRITE_CALL_LOG"))
+        if(isPermissionGranted("android.permission.READ_CALL_LOG",p.packageName)||isPermissionGranted("android.permission.WRITE_CALL_LOG",p.packageName))
             out.add(new ScanFinding(ScanFinding.Level.MEDIUM,"Acesso ao histórico de chamadas","O aplicativo declara acesso ao registro de chamadas",p.packageName,4,"Revise a permissão caso a função não exija chamadas"));
-        if(ps.contains("android.permission.REQUEST_INSTALL_PACKAGES"))
+        if(isPermissionGranted("android.permission.REQUEST_INSTALL_PACKAGES",p.packageName))
             out.add(new ScanFinding(ScanFinding.Level.MEDIUM,"Pode solicitar instalação de APKs","O aplicativo declara a capacidade de solicitar instalações",p.packageName,4,"Verifique se a instalação de APKs faz parte da função esperada"));
         if(hasAccessibilityService(p)) {
             ScanFinding.Level lvl=system?ScanFinding.Level.INFO:ScanFinding.Level.MEDIUM; int points=system?0:5;
             out.add(new ScanFinding(lvl,"Serviço de acessibilidade declarado",system?label+" é um app de sistema":label+" possui um serviço que pode interagir com a interface",p.packageName,points,"Verifique se é um serviço que você reconhece"));
         }
         if(remoteMarker) {
-            boolean corroborated=sensitive>=2||ps.contains("android.permission.SYSTEM_ALERT_WINDOW")||hasAccessibilityService(p);
+            boolean corroborated=sensitive>=2||isPermissionGranted("android.permission.SYSTEM_ALERT_WINDOW",p.packageName)||hasAccessibilityService(p);
             out.add(new ScanFinding(corroborated?ScanFinding.Level.MEDIUM:ScanFinding.Level.LOW,"Indicador heurístico de acesso remoto","Nome do app/pacote contém um marcador associado a suporte ou acesso remoto; isso sozinho não prova malware",p.packageName,corroborated?4:1,"Confirme se você instalou e reconhece este aplicativo"));
         }
         if(sideLoad&&!system) {
@@ -87,7 +89,20 @@ public final class SecurityScanner {
         }
         if(debuggable&&!system)
             out.add(new ScanFinding(ScanFinding.Level.LOW,"Aplicativo debuggable",label+" está marcado como debuggable",p.packageName,1,"Normal em apps de teste; confirme a origem se não for esperado"));
+        if(hasVpnService(p) && !system)
+            out.add(new ScanFinding(ScanFinding.Level.MEDIUM,"Serviço VPN declarado","O aplicativo declara um serviço BIND_VPN_SERVICE; VPN legítima é comum, mas vale revisar apps desconhecidos",p.packageName,3,"Confirme se a VPN é esperada e reconhecida"));
         String cert=signingSha256(p); if(cert!=null) out.add(new ScanFinding(ScanFinding.Level.INFO,"Assinatura SHA-256",cert,p.packageName,0,null));
+    }
+
+    private boolean hasVpnService(PackageInfo p) {
+        if(p.services==null) return false;
+        for(ServiceInfo s:p.services) if("android.permission.BIND_VPN_SERVICE".equals(s.permission)) return true;
+        return false;
+    }
+
+    private boolean isPermissionGranted(String permission,String packageName) {
+        try { return pm.checkPermission(permission,packageName)==PackageManager.PERMISSION_GRANTED; }
+        catch(Exception e) { return false; }
     }
 
     private boolean hasAccessibilityService(PackageInfo p) {
