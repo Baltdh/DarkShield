@@ -774,3 +774,16 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Handoff
 - Aguardar o CI do novo HEAD.
 - Depois, revisar possíveis casos-limite de correlação sem modificar as regras de severidade existentes.
+
+
+## 2026-09-18 — cobertura adicional de casos-limite do relatório
+
+### Concluído
+- Adicionados testes para confirmar que `ScanReport.getRawPoints()` ignora findings nulos e pontos negativos.
+- Adicionado teste para confirmar que `packageSummaries()` ignora nomes de pacote em branco e preserva pacotes válidos.
+- Não houve alteração no código de produção.
+- Commit: `118c41a1a37f173e9f69c411532ce366df0327fd`.
+
+### Handoff
+- O outro agente permanece na frente de correlação determinística.
+- Aguardar uma execução de CI não cancelada para validar o conjunto ampliado de testes.
