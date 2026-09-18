@@ -15,6 +15,7 @@ public final class ThreatCorrelationEngine {
 
         Map<String, Boolean> remote = new HashMap<>();
         Map<String, Boolean> accessibility = new HashMap<>();
+        Map<String, Boolean> accessibilityDeclared = new HashMap<>();
         Map<String, Boolean> overlay = new HashMap<>();
         Map<String, Boolean> admin = new HashMap<>();
         Map<String, Boolean> notification = new HashMap<>();
@@ -28,7 +29,8 @@ public final class ThreatCorrelationEngine {
             String t = f.title == null ? "" : f.title.toLowerCase(java.util.Locale.ROOT);
 
             if (t.contains("acesso remoto")) remote.put(p, true);
-            if (t.contains("acessibilidade")) accessibility.put(p, true);
+            if (t.contains("serviço de acessibilidade ativo")) accessibility.put(p, true);
+            if (t.contains("serviço de acessibilidade declarado")) accessibilityDeclared.put(p, true);
             if (t.contains("sobreposição")) overlay.put(p, true);
             if (t.contains("administrador do dispositivo")) admin.put(p, true);
             if (t.contains("acesso a notificações ativo")) notification.put(p, true);
@@ -47,6 +49,7 @@ public final class ThreatCorrelationEngine {
 
         for (String p : remote.keySet()) {
             boolean a = accessibility.getOrDefault(p, false);
+            boolean declared = accessibilityDeclared.getOrDefault(p, false);
             boolean o = overlay.getOrDefault(p, false);
             boolean n = notification.getOrDefault(p, false);
             boolean b = boot.getOrDefault(p, false);
@@ -60,7 +63,7 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote apresenta indicadores de acesso remoto, acessibilidade e sobreposição. A combinação merece revisão; isso não constitui prova automática de malware.",
                         p, 7,
                         "Verifique origem, serviço de acessibilidade, sobreposição e finalidade do aplicativo"));
-            } else if (a || o) {
+            } else if (a || o || (declared && o)) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,
                         "Correlação de indicador de acesso remoto",
@@ -99,7 +102,7 @@ public final class ThreatCorrelationEngine {
         }
 
         for (String p : accessibility.keySet()) {
-            boolean a = true;
+            boolean a = accessibility.getOrDefault(p, false);
             boolean o = overlay.getOrDefault(p, false);
             boolean b = boot.getOrDefault(p, false);
             boolean r = remote.getOrDefault(p, false);
