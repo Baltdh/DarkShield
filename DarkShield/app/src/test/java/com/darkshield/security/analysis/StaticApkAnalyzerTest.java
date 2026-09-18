@@ -202,6 +202,27 @@ public class StaticApkAnalyzerTest {
         assertTrue(apk.delete());
     }
 
+    @Test public void oversizedApkIsRejectedBeforeZipProcessing() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try {
+            try (FileOutputStream out = new FileOutputStream(apk)) {
+                out.getChannel().truncate(200L * 1024L * 1024L + 1L);
+            }
+
+            List<ScanFinding> findings =
+                    StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+            assertEquals(1, findings.size());
+            assertEquals(
+                    "APK grande demais para análise estática local",
+                    findings.get(0).title);
+            assertEquals(ScanFinding.Level.LOW, findings.get(0).level);
+            assertEquals(0, findings.get(0).points);
+            assertTrue(findings.get(0).detail.contains("bytes"));
+        } finally {
+            assertTrue(apk.delete());
+        }
+    }
+
     @Test public void missingManifestProducesMediumFinding() throws Exception {
         File apk = File.createTempFile("darkshield-test", ".apk");
         try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
