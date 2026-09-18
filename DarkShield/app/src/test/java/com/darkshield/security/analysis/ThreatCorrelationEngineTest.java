@@ -176,4 +176,19 @@ public class ThreatCorrelationEngineTest {
         assertEquals(first.get(0).title, second.get(0).title);
         assertEquals(first.get(1).title, second.get(1).title);
     }
+    @Test public void keepsOnlyStrongestCorrelationPerPackage() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),
+                f("Permissão de sobreposição concedida", ScanFinding.Level.MEDIUM),
+                f("Acesso a notificações ativo", ScanFinding.Level.MEDIUM),
+                f("Administrador do dispositivo ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(7, out.get(0).points);
+        assertTrue(out.get(0).title.contains("Correlação de administrador e acessibilidade")
+                || out.get(0).title.contains("Correlação de controle remoto"));
+    }
+
 }
