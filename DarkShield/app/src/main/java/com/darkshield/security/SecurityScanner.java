@@ -375,9 +375,13 @@ public final class SecurityScanner {
     }
 
     static String defaultInputMethodPackage(String setting) {
-        if (setting == null || setting.trim().isEmpty()) return null;
-        ComponentName component = ComponentName.unflattenFromString(setting.trim());
-        return component == null ? null : component.getPackageName();
+        if (setting == null) return null;
+        String value = setting.trim();
+        int separator = value.indexOf('/');
+        if (separator <= 0 || separator >= value.length() - 1) return null;
+        String packageName = value.substring(0, separator).trim();
+        String serviceName = value.substring(separator + 1).trim();
+        return packageName.isEmpty() || serviceName.isEmpty() ? null : packageName;
     }
 
     private void checkDefaultInputMethod(List<ScanFinding> out) {
