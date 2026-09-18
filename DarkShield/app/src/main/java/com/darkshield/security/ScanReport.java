@@ -128,7 +128,21 @@ public final class ScanReport {
             String leftTitle = left.title == null ? "" : left.title;
             String rightTitle = right.title == null ? "" : right.title;
             int titleOrder = leftTitle.compareToIgnoreCase(rightTitle);
-            return titleOrder != 0 ? titleOrder : leftTitle.compareTo(rightTitle);
+            if (titleOrder != 0) return titleOrder;
+            titleOrder = leftTitle.compareTo(rightTitle);
+            if (titleOrder != 0) return titleOrder;
+
+            String leftDetail = left.detail == null ? "" : left.detail;
+            String rightDetail = right.detail == null ? "" : right.detail;
+            int detailOrder = leftDetail.compareToIgnoreCase(rightDetail);
+            if (detailOrder != 0) return detailOrder;
+            detailOrder = leftDetail.compareTo(rightDetail);
+            if (detailOrder != 0) return detailOrder;
+
+            String leftAction = left.action == null ? "" : left.action;
+            String rightAction = right.action == null ? "" : right.action;
+            int actionOrder = leftAction.compareToIgnoreCase(rightAction);
+            return actionOrder != 0 ? actionOrder : leftAction.compareTo(rightAction);
         });
 
         StringBuilder out = new StringBuilder();
@@ -166,7 +180,21 @@ public final class ScanReport {
             String leftTitle = left.title == null ? "" : left.title;
             String rightTitle = right.title == null ? "" : right.title;
             int titleOrder = leftTitle.compareToIgnoreCase(rightTitle);
-            return titleOrder != 0 ? titleOrder : leftTitle.compareTo(rightTitle);
+            if (titleOrder != 0) return titleOrder;
+            titleOrder = leftTitle.compareTo(rightTitle);
+            if (titleOrder != 0) return titleOrder;
+
+            String leftDetail = left.detail == null ? "" : left.detail;
+            String rightDetail = right.detail == null ? "" : right.detail;
+            int detailOrder = leftDetail.compareToIgnoreCase(rightDetail);
+            if (detailOrder != 0) return detailOrder;
+            detailOrder = leftDetail.compareTo(rightDetail);
+            if (detailOrder != 0) return detailOrder;
+
+            String leftAction = left.action == null ? "" : left.action;
+            String rightAction = right.action == null ? "" : right.action;
+            int actionOrder = leftAction.compareToIgnoreCase(rightAction);
+            return actionOrder != 0 ? actionOrder : leftAction.compareTo(rightAction);
         });
 
         StringBuilder out = new StringBuilder();
