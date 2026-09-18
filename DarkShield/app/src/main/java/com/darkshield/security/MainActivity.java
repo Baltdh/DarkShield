@@ -67,6 +67,7 @@ public class MainActivity extends android.app.Activity {
     }
 
     private void finishScan(List<ScanFinding> findings) {
+        if (isFinishing() || isDestroyed()) return;
         ScanReport scanReport = new ScanReport(findings);
         int critical = scanReport.count(ScanFinding.Level.CRITICAL);
         int high = scanReport.count(ScanFinding.Level.HIGH);
@@ -135,6 +136,7 @@ public class MainActivity extends android.app.Activity {
     }
 
     private void finishScanError(Exception e) {
+        if (isFinishing() || isDestroyed()) return;
         progress.setVisibility(View.GONE);
         scan.setEnabled(true);
         share.setEnabled(false);
