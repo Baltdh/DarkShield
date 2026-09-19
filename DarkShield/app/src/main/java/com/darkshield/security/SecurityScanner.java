@@ -61,6 +61,10 @@ public final class SecurityScanner {
         /** Called immediately before an individual package enters deep inspection. */
         default void onPackageStart(int completed, int total, String packageName) {
         }
+
+        /** Called after an individual package finishes deep inspection. */
+        default void onPackageComplete(int completed, int total, String packageName, long durationMillis) {
+        }
     }
 
     public List<ScanFinding> scan() {
@@ -110,6 +114,7 @@ public final class SecurityScanner {
                 if (listener != null) listener.onProgress(completed, total, null);
                 continue;
             }
+            long packageStartedAt = System.nanoTime();
             if (listener != null) {
                 listener.onPackageStart(completed, total, p.packageName);
             }
@@ -129,6 +134,8 @@ public final class SecurityScanner {
             }
             completed++;
             if (listener != null) {
+                listener.onPackageComplete(completed, total, p.packageName,
+                        Math.max(0L, (System.nanoTime() - packageStartedAt) / 1_000_000L));
                 listener.onProgress(completed, total, p.packageName);
             }
         }
