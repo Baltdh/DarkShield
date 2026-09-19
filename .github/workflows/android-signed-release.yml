@@ -14,7 +14,7 @@ jobs:
   signed-release:
     runs-on: ubuntu-latest
     env:
-      DARKSHIELD_KEYSTORE_PATH: ${{ runner.temp }}/darkshield-release.keystore
+      DARKSHIELD_KEYSTORE_PATH: ${{ github.workspace }}/.darkshield-release.keystore
       DARKSHIELD_KEYSTORE_PASSWORD: ${{ secrets.DARKSHIELD_KEYSTORE_PASSWORD }}
       DARKSHIELD_KEY_ALIAS: ${{ secrets.DARKSHIELD_KEY_ALIAS }}
       DARKSHIELD_KEY_PASSWORD: ${{ secrets.DARKSHIELD_KEY_PASSWORD }}
