@@ -57,9 +57,8 @@ public final class SecurityScanner {
 
         default void onStage(String stage) {
         }
-    }
 
-    /** Called immediately before an individual package enters deep inspection. */
+        /** Called immediately before an individual package enters deep inspection. */
         default void onPackageStart(int completed, int total, String packageName) {
         }
     }
