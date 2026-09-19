@@ -62,6 +62,10 @@ Quando o final de uma entrada ZIP comprimida exigiria pular um prefixo descompac
 
 O workflow `android-release-candidate.yml` também permite gerar manualmente um **APK de release sem assinatura** para validar o empacotamento de produção. Esse artefato ainda precisa ser assinado com a chave de distribuição do responsável pelo aplicativo antes de ser publicado ou distribuído como versão final.
 
+Para gerar a versão assinada pelo GitHub Actions, use manualmente o workflow `android-signed-release.yml`. Ele espera quatro Secrets do repositório: `DARKSHIELD_KEYSTORE_BASE64`, `DARKSHIELD_KEYSTORE_PASSWORD`, `DARKSHIELD_KEY_ALIAS` e `DARKSHIELD_KEY_PASSWORD`. O arquivo de keystore nunca deve ser commitado no repositório. A chave de assinatura deve permanecer sob controle do responsável pelo aplicativo; perder essa chave pode impedir atualizações futuras do mesmo aplicativo. O workflow grava a keystore somente em um caminho temporário do runner, assina o APK e valida `zipalign` e `apksigner` antes de publicar o artefato da execução.
+
+No Linux/macOS, a Secret `DARKSHIELD_KEYSTORE_BASE64` pode ser preparada com `base64 -w 0 darkshield-release.keystore` (no macOS, use `base64 darkshield-release.keystore | tr -d '\\n'`). No Windows PowerShell, use `[Convert]::ToBase64String([IO.File]::ReadAllBytes('.\\darkshield-release.keystore'))`. Adicione os quatro valores em **Settings → Secrets and variables → Actions → New repository secret** e então execute o workflow manualmente em **Actions**.
+
 O workflow do GitHub Actions usa JDK 17 e Gradle 8.11.1 para gerar um APK de debug, executar os testes unitários, rodar o Android lint, calcular o SHA-256 do artefato e validar a assinatura do APK com `apksigner verify --verbose`.
 
 Para uma máquina com o Android SDK configurado:
