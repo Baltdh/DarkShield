@@ -45,15 +45,20 @@ public class StaticApkAnalyzerTest {
                 .findFirst().orElse(null);
         assertTrue(firstHash != null);
 
-        long changedTime = Math.max(System.currentTimeMillis() + 2000L, apk.lastModified() + 2000L);
-        assertTrue(apk.setLastModified(changedTime));
+        assertTrue(apk.delete());
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "classes.dex", new byte[]{1, 2, 4});
+        }
+        assertTrue(apk.setLastModified(Math.max(System.currentTimeMillis(), apk.lastModified() + 2000L)));
 
         List<ScanFinding> second = StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
         String secondHash = second.stream()
                 .filter(x -> x.title.equals("SHA-256 do APK"))
                 .map(x -> x.detail)
                 .findFirst().orElse(null);
-        assertEquals(firstHash, secondHash);
+        assertTrue(secondHash != null);
+        assertTrue(!firstHash.equals(secondHash));
 
         assertTrue(apk.delete());
     }
