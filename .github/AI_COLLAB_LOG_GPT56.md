@@ -1442,3 +1442,24 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Riscos
 - Não considerar o APK do #261 como válido; a validação final depende do #262.
+
+## 2026-09-19 — preparação final de release
+
+### Estado observado
+- HEAD confirmado antes desta passagem: `1a580a471d293278a50d658cab05d7dee8ef1f03`.
+- Actions #263 passou com build, testes, lint, verificação do APK e upload do artefato.
+- Não há release publicada nem assinatura de produção no repositório; o binário validado continua sendo um APK debug.
+
+### Concluído nesta passagem
+- Criado `.github/workflows/android-release-candidate.yml` para gerar manualmente um APK de release **sem assinatura**, validar o empacotamento com zipalign e publicar o APK + SHA-256 como artefato.
+- Atualizado `README.md` com o fluxo de release candidate e a necessidade de assinatura de distribuição antes da publicação.
+- Ajustado `MainActivity.java` para encerrar o `ExecutorService` em `onDestroy()`, evitando manter a thread da Activity além do ciclo de vida.
+- Commits: `cf616c88d7865d5a3313cd24b2a5525ce53f87f3`, `bdfb094fce28a4491183634f1c3ea48d31dc01e0`, `2a9962bd5bd09ea691a48df310f872048baff4a7`.
+
+### Próxima validação
+- O novo workflow de release candidate é manual e ainda precisa ser executado para gerar o APK release sem assinatura.
+- O workflow normal continua sendo a validação automática do `main`.
+
+### Riscos / bloqueios
+- A assinatura final deve ser feita com a chave de distribuição do proprietário; nenhuma chave privada foi criada ou armazenada no repositório.
+- O projeto usa `QUERY_ALL_PACKAGES`, portanto publicação na Google Play exige avaliação separada da política de visibilidade de pacotes.
