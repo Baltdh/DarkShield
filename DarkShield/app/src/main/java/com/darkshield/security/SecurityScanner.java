@@ -307,6 +307,11 @@ public final class SecurityScanner {
                         "O Android não informou um instalador conhecido para este aplicativo",
                         p.packageName, 0,
                         "Confirme a origem do APK se você não reconhecer o app"));
+            } else {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO, "Origem de instalação",
+                        "Instalador informado pelo Android: " + installer,
+                        p.packageName, 0, null));
             }
         }
 
