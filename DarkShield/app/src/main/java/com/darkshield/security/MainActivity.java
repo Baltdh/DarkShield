@@ -32,6 +32,7 @@ public class MainActivity extends android.app.Activity {
     private View progressContainer;
     private Button scan, cancelScan, remediation, securitySettings, share, copy;
     private ScanReport lastScanReport;
+    private ScanTimingTracker scanTimingTracker;
     private String lastReport = "";
     private static final String PREFS = "darkshield_ui";
     private static final String KEY_LAST_SCAN_MILLIS = "last_scan_millis";
@@ -119,6 +120,7 @@ public class MainActivity extends android.app.Activity {
         countLow.setText("BAIXO\n0");
 
         final long startedAt = System.nanoTime();
+        scanTimingTracker = new ScanTimingTracker();
         scanTask = exec.submit(() -> {
             try {
                 List<ScanFinding> findings = new SecurityScanner(this).scan(
@@ -151,6 +153,7 @@ public class MainActivity extends android.app.Activity {
                             }
 
                             @Override public void onPackageComplete(int completed, int total, String packageName, long durationMillis) {
+                                scanTimingTracker.record(packageName, durationMillis);
                                 final String pkg = packageName == null || packageName.isEmpty() ? "pacote desconhecido" : packageName;
                                 final String duration = formatDuration(durationMillis);
                                 runOnUiThread(() -> {
@@ -224,13 +227,19 @@ public class MainActivity extends android.app.Activity {
                 ? 0xFFFF6B6B
                 : risk >= 40 ? 0xFFFFC857 : 0xFF66E3A4);
         String packageSummary = scanReport.packageSummary();
+        ScanTimingTracker.Entry slowestPackage = scanTimingTracker == null ? null : scanTimingTracker.slowest();
+        String timingSummary = slowestPackage == null
+                ? ""
+                : "\nDiagnóstico de desempenho: " + slowestPackage.packageName
+                        + " levou " + formatDuration(slowestPackage.durationMillis) + " na análise profunda.";
         String summaryText =
                 "Crítico: " + critical + "   Alto: " + high
                         + "   Médio: " + medium + "   Baixo: " + low
                         + "\n" + scanReport.countRequiringReview()
                         + " item(ns) exigem revisão; " + findings.size() + " registro(s) no total.\n"
                         + "Pontos heurísticos: " + scanReport.getRawPoints()
-                        + " → score exibido: " + risk + "/100.\n\n";
+                        + " → score exibido: " + risk + "/100."
+                        + timingSummary + "\n\n";
         SpannableStringBuilder summaryBuilder = new SpannableStringBuilder(summaryText);
         if (!packageSummary.isEmpty()) {
             int packageStart = summaryBuilder.length();
