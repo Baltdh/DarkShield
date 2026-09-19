@@ -1,6 +1,6 @@
 # DarkShield
 
-**Versão atual: 0.6.3**
+**Versão atual: 0.7.0**
 
 DarkShield é um auditor local de segurança para Android. O objetivo é reunir indicadores observáveis no próprio dispositivo para ajudar o usuário a revisar configurações, permissões e componentes potencialmente sensíveis.
 
@@ -82,3 +82,18 @@ Saída esperada do APK:
 ## Segurança e privacidade
 
 A análise é local. O aplicativo não precisa de uma conta própria nem de um servidor remoto para executar a verificação. O botão de compartilhamento envia o texto do relatório somente quando o usuário escolhe explicitamente um aplicativo de destino no Android.
+
+
+## Inteligência de ameaças e correção segura
+
+A versão 0.7.0 acrescenta uma camada local de conhecimento de ameaças baseada em pesquisa pública de Android e MITRE ATT&CK Mobile. As correlações podem apresentar técnicas como abuso de acessibilidade (T1453), acesso a notificações (T1517), software de acesso remoto (T1663) e outros contextos relevantes. Esse conhecimento é explicativo: um único sinal não transforma um aplicativo legítimo em malware.
+
+A arquitetura também foi preparada para uma futura fonte de inteligência por hash/assinatura. Não há chave de API, amostras de malware ou feed externo embutidos no APK. Isso evita transformar uma dependência externa em um veredito falso ou vazar dados do dispositivo.
+
+A Central de correções seguras somente abre telas oficiais do Android para revisão pelo usuário. Ela não desinstala aplicativos nem altera configurações silenciosamente.
+
+Fontes de estudo usadas para o modelo:
+- MITRE ATT&CK Mobile: técnicas e exemplos de malware Android.
+- Google Play Protect: categorias e comportamento de aplicativos potencialmente nocivos.
+- MalwareBazaar/abuse.ch: referência para futura integração de inteligência por hash, sujeita aos termos e à autenticação da API.
+- Koodous: referência de análise colaborativa de APKs e resultados estáticos/dinâmicos.
