@@ -173,6 +173,25 @@ public final class ThreatCorrelationEngine {
             }
         }
 
+        // Add threat-intelligence context after correlation has identified a
+        // meaningful combination. The context is explanatory and does not alter score.
+        for (int i = 0; i < derived.size(); i++) {
+            ScanFinding finding = derived.get(i);
+            String annotation = ThreatKnowledgeBase.annotate(finding.title);
+            if (annotation == null || annotation.trim().isEmpty()) continue;
+            String detail = finding.detail == null ? "" : finding.detail;
+            if (!detail.contains(annotation)) {
+                detail = detail + " " + annotation;
+                derived.set(i, new ScanFinding(
+                        finding.level,
+                        finding.title,
+                        detail,
+                        finding.packageName,
+                        finding.points,
+                        finding.action));
+            }
+        }
+
         // Multiple independent rules can describe the same package. Keep only the
         // strongest derived correlation so the heuristic score is not inflated by
         // overlapping explanations of the same underlying signal set.
