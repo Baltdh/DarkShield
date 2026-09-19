@@ -60,6 +60,8 @@ Quando o final de uma entrada ZIP comprimida exigiria pular um prefixo descompac
 
 ## Compilação
 
+O workflow `android-release-candidate.yml` também permite gerar manualmente um **APK de release sem assinatura** para validar o empacotamento de produção. Esse artefato ainda precisa ser assinado com a chave de distribuição do responsável pelo aplicativo antes de ser publicado ou distribuído como versão final.
+
 O workflow do GitHub Actions usa JDK 17 e Gradle 8.11.1 para gerar um APK de debug, executar os testes unitários, rodar o Android lint, calcular o SHA-256 do artefato e validar a assinatura do APK com `apksigner verify --verbose`.
 
 Para uma máquina com o Android SDK configurado:
