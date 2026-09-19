@@ -179,7 +179,12 @@ public class MainActivity extends android.app.Activity {
         }
     }
 
-    private String formatDuration(long durationMillis) {\n        if (durationMillis < 1000L) return durationMillis + " ms";\n        return String.format(Locale.getDefault(), "%.1f s", durationMillis / 1000.0);\n    }\n\n    private void updateSeverityAccessibility(TextView view, String severity, int count) {
+    private String formatDuration(long durationMillis) {
+        if (durationMillis < 1000L) return durationMillis + " ms";
+        return String.format(Locale.getDefault(), "%.1f s", durationMillis / 1000.0);
+    }
+
+    private void updateSeverityAccessibility(TextView view, String severity, int count) {
         view.setContentDescription("Quantidade de achados " + severity + ": " + count);
     }
 
