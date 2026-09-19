@@ -13,8 +13,13 @@ public final class ScanTimingTracker {
     private final List<Entry> entries = new ArrayList<>();
 
     public void record(String packageName, long durationMillis) {
+        record(packageName, durationMillis, null);
+    }
+
+    public void record(String packageName, long durationMillis,
+                       com.darkshield.security.analysis.StaticApkAnalyzer.TimingSnapshot timing) {
         if (packageName == null || packageName.trim().isEmpty()) return;
-        entries.add(new Entry(packageName, Math.max(0L, durationMillis)));
+        entries.add(new Entry(packageName, Math.max(0L, durationMillis), timing));
     }
 
     public int size() {
@@ -44,10 +49,17 @@ public final class ScanTimingTracker {
     public static final class Entry {
         public final String packageName;
         public final long durationMillis;
+        public final com.darkshield.security.analysis.StaticApkAnalyzer.TimingSnapshot staticApkTiming;
 
         public Entry(String packageName, long durationMillis) {
+            this(packageName, durationMillis, null);
+        }
+
+        public Entry(String packageName, long durationMillis,
+                     com.darkshield.security.analysis.StaticApkAnalyzer.TimingSnapshot timing) {
             this.packageName = packageName;
             this.durationMillis = durationMillis;
+            this.staticApkTiming = timing;
         }
     }
 }
