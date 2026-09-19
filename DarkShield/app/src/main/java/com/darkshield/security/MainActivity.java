@@ -61,6 +61,11 @@ public class MainActivity extends android.app.Activity {
         summary.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
     }
 
+    @Override protected void onDestroy() {
+        exec.shutdownNow();
+        super.onDestroy();
+    }
+
     private void startScan() {
         scan.setEnabled(false);
         scan.setText("VERIFICANDO…");
@@ -317,37 +322,22 @@ public class MainActivity extends android.app.Activity {
         ClipboardManager clipboard =
                 (ClipboardManager) getSystemService(Context.CLIPBOARD_SERVICE);
         if (clipboard == null) {
-            Toast.makeText(this, "Não foi possível acessar a área de transferência.",
-                    Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Não foi possível acessar a área de transferência.", Toast.LENGTH_SHORT).show();
             return;
         }
 
-        try {
-            clipboard.setPrimaryClip(
-                    ClipData.newPlainText("Relatório DarkShield", lastReport));
-            Toast.makeText(this, "Relatório copiado.", Toast.LENGTH_SHORT).show();
-        } catch (Exception e) {
-            Toast.makeText(this, "Não foi possível copiar o relatório.",
-                    Toast.LENGTH_SHORT).show();
-        }
+        clipboard.setPrimaryClip(ClipData.newPlainText(
+                "DarkShield — Relatório de segurança", lastReport));
+        Toast.makeText(this, "Relatório copiado.", Toast.LENGTH_SHORT).show();
     }
 
     private void openSecuritySettings() {
         try {
             startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
         } catch (Exception e) {
-            try {
-                startActivity(new Intent(Settings.ACTION_SETTINGS));
-            } catch (Exception ignored) {
-                Toast.makeText(this,
-                        "Não foi possível abrir as configurações de segurança.",
-                        Toast.LENGTH_SHORT).show();
-            }
+            Toast.makeText(this,
+                    "Não foi possível abrir as configurações de segurança.",
+                    Toast.LENGTH_SHORT).show();
         }
-    }
-
-    @Override protected void onDestroy() {
-        exec.shutdownNow();
-        super.onDestroy();
     }
 }
