@@ -13,8 +13,8 @@ import android.text.style.ClickableSpan;
 import android.view.View;
 import android.widget.Toast;
 import android.widget.Button;
-import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.LinearLayout;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -25,8 +25,11 @@ import java.util.concurrent.Executors;
 public class MainActivity extends android.app.Activity {
     private TextView score, summary, report, lastScan, nextAction, coverageHint;
     private TextView countCritical, countHigh, countMedium, countLow;
-    private ProgressBar progress;
-    private Button scan, securitySettings, share, copy;
+    private ScanProgressView scanProgress;
+    private TextView scanProgressStage;
+    private View progressContainer;
+    private Button scan, remediation, securitySettings, share, copy;
+    private ScanReport lastScanReport;
     private String lastReport = "";
     private static final String PREFS = "darkshield_ui";
     private static final String KEY_LAST_SCAN_MILLIS = "last_scan_millis";
@@ -45,13 +48,17 @@ public class MainActivity extends android.app.Activity {
         countHigh = findViewById(R.id.count_high);
         countMedium = findViewById(R.id.count_medium);
         countLow = findViewById(R.id.count_low);
-        progress = findViewById(R.id.progress);
+        progressContainer = findViewById(R.id.progress_container);
+        scanProgress = findViewById(R.id.scan_progress);
+        scanProgressStage = findViewById(R.id.scan_progress_stage);
         scan = findViewById(R.id.scan);
+        remediation = findViewById(R.id.remediation);
         securitySettings = findViewById(R.id.settings);
         share = findViewById(R.id.share);
         copy = findViewById(R.id.copy);
 
         scan.setOnClickListener(v -> startScan());
+        remediation.setOnClickListener(v -> showRemediationCenter());
         securitySettings.setOnClickListener(v -> openSecuritySettings());
         share.setOnClickListener(v -> shareReport());
         copy.setOnClickListener(v -> copyReport());
@@ -71,10 +78,10 @@ public class MainActivity extends android.app.Activity {
         scan.setText("VERIFICANDO…");
         share.setEnabled(false);
         copy.setEnabled(false);
-        progress.setVisibility(View.VISIBLE);
-        progress.setIndeterminate(false);
-        progress.setMax(100);
-        progress.setProgress(0);
+        remediation.setEnabled(false);
+        progressContainer.setVisibility(View.VISIBLE);
+        scanProgress.setPercent(0);
+        scanProgressStage.setText("Preparando inventário…");
         score.setText("Verificando…");
         summary.setText("Analisando indicadores locais do Android");
         lastScan.setText("VERIFICAÇÃO EM ANDAMENTO");
@@ -96,7 +103,8 @@ public class MainActivity extends android.app.Activity {
                                     : packageName;
                             runOnUiThread(() -> {
                                 if (isFinishing() || isDestroyed()) return;
-                                progress.setProgress(percent);
+                                scanProgress.setPercent(percent);
+                                scanProgressStage.setText(label);
                                 summary.setText("Analisando aplicativo " + completed + "/" + total
                                         + "\n" + label);
                                 lastScan.setText("VERIFICAÇÃO EM ANDAMENTO • " + percent + "%");
@@ -114,6 +122,7 @@ public class MainActivity extends android.app.Activity {
     private void finishScan(List<ScanFinding> findings, long durationMillis) {
         if (isFinishing() || isDestroyed()) return;
         ScanReport scanReport = new ScanReport(findings);
+        lastScanReport = scanReport;
         int critical = scanReport.count(ScanFinding.Level.CRITICAL);
         int high = scanReport.count(ScanFinding.Level.HIGH);
         int medium = scanReport.count(ScanFinding.Level.MEDIUM);
@@ -171,12 +180,118 @@ public class MainActivity extends android.app.Activity {
                         ? "Próximo passo: revise os aplicativos e configurações sensíveis listados abaixo."
                         : "Próximo passo: mantenha o Android e seus aplicativos atualizados e faça verificações periódicas.");
 
-        progress.setProgress(100);
-        progress.setVisibility(View.GONE);
+        scanProgress.setPercent(100);
+        scanProgressStage.setText("Verificação concluída");
+        progressContainer.setVisibility(View.GONE);
         scan.setText("VERIFICAR NOVAMENTE");
         scan.setEnabled(true);
         share.setEnabled(true);
         copy.setEnabled(true);
+        remediation.setEnabled(!RemediationPlanner.plan(findings).isEmpty());
+    }
+
+    private void showRemediationCenter() {
+        if (lastScanReport == null) {
+            Toast.makeText(this, "Execute uma verificação primeiro.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        List<RemediationPlanner.Action> actions =
+                RemediationPlanner.plan(lastScanReport.getFindings());
+        if (actions.isEmpty()) {
+            Toast.makeText(this, "Nenhuma correção segura foi identificada.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        LinearLayout container = new LinearLayout(this);
+        container.setOrientation(LinearLayout.VERTICAL);
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
+        container.setPadding(pad, pad / 2, pad, pad / 2);
+
+        TextView intro = new TextView(this);
+        intro.setText("O DarkShield não altera aplicativos comuns sozinho. Cada ação abre a tela oficial do Android para você confirmar a correção.");
+        intro.setTextSize(13);
+        intro.setTextColor(0xFFB8BECC);
+        intro.setPadding(0, 0, 0, pad / 2);
+        container.addView(intro);
+
+        for (RemediationPlanner.Action action : actions) {
+            LinearLayout row = new LinearLayout(this);
+            row.setOrientation(LinearLayout.VERTICAL);
+            row.setPadding(0, pad / 3, 0, pad / 3);
+
+            TextView title = new TextView(this);
+            title.setText(action.title);
+            title.setTextSize(14);
+            title.setTextColor(0xFFFFFFFF);
+            title.setTypeface(null, android.graphics.Typeface.BOLD);
+            row.addView(title);
+
+            TextView reason = new TextView(this);
+            reason.setText(action.reason);
+            reason.setTextSize(12);
+            reason.setTextColor(0xFF8F97A8);
+            row.addView(reason);
+
+            Button open = new Button(this);
+            open.setText(action.uninstallCandidate
+                    ? "REVISAR / DESINSTALAR NO ANDROID"
+                    : "ABRIR CORREÇÃO");
+            open.setOnClickListener(v -> openRemediation(action));
+            row.addView(open);
+
+            container.addView(row);
+        }
+
+        new android.app.AlertDialog.Builder(this)
+                .setTitle("Central de correções seguras")
+                .setView(container)
+                .setPositiveButton("FECHAR", null)
+                .show();
+    }
+
+    private void openRemediation(RemediationPlanner.Action action) {
+        Intent intent;
+        Uri packageUri = Uri.parse("package:" + action.packageName);
+        switch (action.kind) {
+            case ACCESSIBILITY:
+                intent = new Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);
+                break;
+            case NOTIFICATIONS:
+                intent = new Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS);
+                break;
+            case OVERLAY:
+                intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, packageUri);
+                break;
+            case WRITE_SETTINGS:
+                intent = new Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS, packageUri);
+                break;
+            case UNKNOWN_SOURCES:
+                intent = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, packageUri);
+                break;
+            case USAGE_ACCESS:
+                intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
+                break;
+            case SECURITY:
+                intent = new Intent(Settings.ACTION_SECURITY_SETTINGS);
+                break;
+            default:
+                intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri);
+                break;
+        }
+
+        try {
+            startActivity(intent);
+        } catch (Exception first) {
+            try {
+                startActivity(new Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri));
+            } catch (Exception second) {
+                Toast.makeText(this,
+                        "O Android não disponibilizou a tela de correção para este item.",
+                        Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     private void saveLastScanTimestamp(long timestamp) {
@@ -243,12 +358,16 @@ public class MainActivity extends android.app.Activity {
 
     private void finishScanError(Exception e, long durationMillis) {
         if (isFinishing() || isDestroyed()) return;
-        progress.setVisibility(View.GONE);
+        progressContainer.setVisibility(View.GONE);
+        scanProgress.setPercent(0);
+        scanProgressStage.setText("Preparando inventário…");
         scan.setText("TENTAR NOVAMENTE");
         scan.setEnabled(true);
         share.setEnabled(false);
         copy.setEnabled(false);
+        remediation.setEnabled(false);
         lastReport = "";
+        lastScanReport = null;
         countCritical.setText("CRÍTICO\n0");
         countHigh.setText("ALTO\n0");
         countMedium.setText("MÉDIO\n0");
