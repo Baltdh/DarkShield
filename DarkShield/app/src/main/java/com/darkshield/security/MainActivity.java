@@ -447,6 +447,14 @@ public class MainActivity extends android.app.Activity {
         }
     }
 
+    private String formatStaticTiming(com.darkshield.security.analysis.StaticApkAnalyzer.TimingSnapshot timing) {
+        if (timing == null) return "";
+        if (timing.cacheHit) return " Cache APK reutilizado.";
+        return " (ZIP: " + formatDuration(timing.zipMillis)
+                + "; SHA-256: " + formatDuration(timing.hashMillis)
+                + "; amostra: " + timing.contentBytesScanned + " B).";
+    }
+
     private void finishScanError(Exception e, long durationMillis) {
         if (isFinishing() || isDestroyed()) return;
         if (cancelRequested) {
