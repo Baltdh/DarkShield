@@ -92,7 +92,9 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
                 android:visibility="gone"
-                android:indeterminate="true" />
+                android:max="100"
+                android:progress="0"
+                android:indeterminate="false" />
 
             <TextView
                 android:id="@+id/last_scan"
