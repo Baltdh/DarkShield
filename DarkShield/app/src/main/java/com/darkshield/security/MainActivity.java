@@ -77,12 +77,15 @@ public class MainActivity extends android.app.Activity {
         countMedium.setText("MÉDIO\n0");
         countLow.setText("BAIXO\n0");
 
+        final long startedAt = System.nanoTime();
         exec.submit(() -> {
             try {
                 List<ScanFinding> findings = new SecurityScanner(this).scan();
-                runOnUiThread(() -> finishScan(findings));
+                long durationMillis = Math.max(0L, (System.nanoTime() - startedAt) / 1_000_000L);
+                runOnUiThread(() -> finishScan(findings, durationMillis));
             } catch (Exception e) {
-                runOnUiThread(() -> finishScanError(e));
+                long durationMillis = Math.max(0L, (System.nanoTime() - startedAt) / 1_000_000L);
+                runOnUiThread(() -> finishScanError(e, durationMillis));
             }
         });
     }
