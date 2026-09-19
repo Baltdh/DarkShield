@@ -1419,3 +1419,26 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Próxima verificação
 - O CI deve validar o novo código e o lint adicionado no workflow.
 - Continuar procurando caminhos em que erro de leitura, permissão restrita ou amostragem parcial possam parecer ausência de indicador.
+
+
+## 2026-09-19 — fechamento do ciclo de UI e correção do CI
+
+### Estado observado
+- HEAD antes da correção: `5ec625e42cfd51e51b5c6a3e78a1eb67234ae934`.
+- Actions #260 passou com sucesso; a tentativa #261 falhou somente na compilação por formatação literal `\\n` inserida no novo método da UI.
+
+### Concluído
+- Adicionada medição da duração da verificação no `MainActivity`, exibida junto ao horário da última verificação e também em falhas.
+- Correção aplicada imediatamente no mesmo arquivo, removendo os literais de escape que quebravam o Java.
+- Commit corretivo: `1377e841007a25483ff202cbcbdcb2ed27cf49a8`.
+
+### Validação
+- Actions #262 foi disparado para o commit corretivo e está na fila neste momento.
+- A falha de #261 foi localizada no log do compilador em `MainActivity.java:182`; não houve alteração de lógica do scanner.
+
+### Próximo trabalho
+- Confirmar #262 completo antes de outra alteração de produção.
+- Se verde, fazer a revisão final de release/readiness e manter mudanças de baixo risco, priorizando cobertura/robustez e documentação sem reabrir áreas já estabilizadas.
+
+### Riscos
+- Não considerar o APK do #261 como válido; a validação final depende do #262.
