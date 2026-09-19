@@ -26,6 +26,7 @@ public final class StaticApkAnalyzer {
     private static final long MAX_TOTAL_CONTENT_SCAN_BYTES = 8L * 1024L * 1024L;
     private static final long MAX_COMPRESSED_TAIL_SKIP_BYTES = 2L * 1024L * 1024L;
     private static final int MAX_CACHE_ENTRIES = 256;
+    private static final ThreadLocal<TimingSnapshot> LAST_TIMING = new ThreadLocal<>();
 
     // Process-local cache only: findings are reused when the same installed APK
     // path keeps the same size and modification timestamp. Nothing is persisted
@@ -49,6 +50,8 @@ public final class StaticApkAnalyzer {
     private StaticApkAnalyzer() {}
 
     public static List<ScanFinding> analyze(String apkPath, String packageName) {
+        long analysisStartedAt = System.nanoTime();
+        LAST_TIMING.remove();
         List<ScanFinding> out = new ArrayList<>();
         if (apkPath == null || apkPath.trim().isEmpty()) {
             out.add(error("Caminho do APK ausente", packageName));
@@ -64,7 +67,10 @@ public final class StaticApkAnalyzer {
         CacheKey cacheKey = CacheKey.from(apk, packageName);
         if (cacheKey != null) {
             List<ScanFinding> cached = getCached(cacheKey);
-            if (cached != null) return cached;
+            if (cached != null) {
+                LAST_TIMING.set(TimingSnapshot.cacheHit(elapsedMillis(analysisStartedAt)));
+                return cached;
+            }
         }
 
         if (Thread.currentThread().isInterrupted()) {
@@ -93,6 +99,7 @@ public final class StaticApkAnalyzer {
         long contentScanned = 0L;
         boolean contentSampleReadFailure = false;
 
+        long zipStartedAt = System.nanoTime();
         try (ZipFile zip = new ZipFile(apk)) {
             java.util.Enumeration<? extends ZipEntry> e = zip.entries();
             while (e.hasMoreElements()) {
@@ -252,7 +259,14 @@ public final class StaticApkAnalyzer {
             return out;
         }
 
+        long zipDurationMillis = elapsedMillis(zipStartedAt);
+        long contentBytes = contentScanned;
+        long hashStartedAt = System.nanoTime();
         String hash = sha256(apk);
+        long hashDurationMillis = elapsedMillis(hashStartedAt);
+        LAST_TIMING.set(TimingSnapshot.analysis(
+                zipDurationMillis, hashDurationMillis, contentBytes,
+                elapsedMillis(analysisStartedAt)));
         if (hash != null) {
             out.add(new ScanFinding(
                     ScanFinding.Level.INFO,
@@ -264,6 +278,41 @@ public final class StaticApkAnalyzer {
         return out;
     }
 
+
+    public static TimingSnapshot getLastTiming() {
+        return LAST_TIMING.get();
+    }
+
+    private static long elapsedMillis(long startedAt) {
+        return Math.max(0L, (System.nanoTime() - startedAt) / 1_000_000L);
+    }
+
+    public static final class TimingSnapshot {
+        public final boolean cacheHit;
+        public final long zipMillis;
+        public final long hashMillis;
+        public final long contentBytesScanned;
+        public final long totalMillis;
+
+        private TimingSnapshot(boolean cacheHit, long zipMillis, long hashMillis,
+                               long contentBytesScanned, long totalMillis) {
+            this.cacheHit = cacheHit;
+            this.zipMillis = zipMillis;
+            this.hashMillis = hashMillis;
+            this.contentBytesScanned = contentBytesScanned;
+            this.totalMillis = totalMillis;
+        }
+
+        static TimingSnapshot cacheHit(long totalMillis) {
+            return new TimingSnapshot(true, 0L, 0L, 0L, totalMillis);
+        }
+
+        static TimingSnapshot analysis(long zipMillis, long hashMillis,
+                                       long contentBytesScanned, long totalMillis) {
+            return new TimingSnapshot(false, zipMillis, hashMillis,
+                    contentBytesScanned, totalMillis);
+        }
+    }
 
     private static List<ScanFinding> getCached(CacheKey key) {
         synchronized (ANALYSIS_CACHE) {
