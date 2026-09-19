@@ -67,6 +67,10 @@ public final class StaticApkAnalyzer {
             if (cached != null) return cached;
         }
 
+        if (Thread.currentThread().isInterrupted()) {
+            throw new ScanInterruptedException();
+        }
+
         if (apk.length() > MAX_APK_BYTES) {
             out.add(new ScanFinding(
                     ScanFinding.Level.LOW,
