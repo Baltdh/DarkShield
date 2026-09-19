@@ -103,19 +103,30 @@ public class MainActivity extends android.app.Activity {
         scanTask = exec.submit(() -> {
             try {
                 List<ScanFinding> findings = new SecurityScanner(this).scan(
-                        (completed, total, packageName) -> {
-                            int percent = total <= 0 ? 0 : (int) ((completed * 100L) / total);
-                            String label = packageName == null || packageName.isEmpty()
-                                    ? "Preparando inventário…"
-                                    : packageName;
-                            runOnUiThread(() -> {
-                                if (isFinishing() || isDestroyed()) return;
-                                scanProgress.setPercent(percent);
-                                scanProgressStage.setText(label);
-                                summary.setText("Analisando aplicativo " + completed + "/" + total
-                                        + "\n" + label);
-                                lastScan.setText("VERIFICAÇÃO EM ANDAMENTO • " + percent + "%");
-                            });
+                        new SecurityScanner.ProgressListener() {
+                            @Override public void onProgress(int completed, int total, String packageName) {
+                                int percent = total <= 0 ? 0 : (int) ((completed * 100L) / total);
+                                String label = packageName == null || packageName.isEmpty()
+                                        ? "Preparando inventário…"
+                                        : packageName;
+                                runOnUiThread(() -> {
+                                    if (isFinishing() || isDestroyed()) return;
+                                    scanProgress.setPercent(percent);
+                                    scanProgressStage.setText(label);
+                                    summary.setText("Analisando aplicativo " + completed + "/" + total
+                                            + "\n" + label);
+                                    lastScan.setText("VERIFICAÇÃO EM ANDAMENTO • " + percent + "%");
+                                });
+                            }
+
+                            @Override public void onStage(String stage) {
+                                runOnUiThread(() -> {
+                                    if (isFinishing() || isDestroyed()) return;
+                                    scanProgressStage.setText(stage);
+                                    summary.setText(stage);
+                                    lastScan.setText("VERIFICAÇÃO EM ANDAMENTO");
+                                });
+                            }
                         });
                 long durationMillis = Math.max(0L, (System.nanoTime() - startedAt) / 1_000_000L);
                 runOnUiThread(() -> finishScan(findings, durationMillis));
