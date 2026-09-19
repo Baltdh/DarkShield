@@ -150,6 +150,16 @@ public class MainActivity extends android.app.Activity {
                                 });
                             }
 
+                            @Override public void onPackageComplete(int completed, int total, String packageName, long durationMillis) {
+                                final String pkg = packageName == null || packageName.isEmpty() ? "pacote desconhecido" : packageName;
+                                final String duration = formatDuration(durationMillis);
+                                runOnUiThread(() -> {
+                                    if (isFinishing() || isDestroyed()) return;
+                                    lastScan.setText("VERIFICAÇÃO EM ANDAMENTO • " + completed + "/" + total
+                                            + " • último aplicativo: " + pkg + " • " + duration);
+                                });
+                            }
+
                             @Override public void onStage(String stage) {
                                 runOnUiThread(() -> {
                                     if (isFinishing() || isDestroyed()) return;
