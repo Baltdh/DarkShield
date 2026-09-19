@@ -27,7 +27,7 @@ public class SecurityScannerTest {
 
     @Test public void providerWithWhitespacePermissionsIsUnprotected() {
         assertTrue(SecurityScanner.isUnprotectedExportedProvider(
-                true, "  ", "\t"));
+                true, "  ", " 	 "));
     }
 
     @Test public void defaultInputMethodPackageParsesComponent() {
