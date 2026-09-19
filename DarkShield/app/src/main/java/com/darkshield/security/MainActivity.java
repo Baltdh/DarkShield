@@ -411,6 +411,7 @@ public class MainActivity extends android.app.Activity {
     private void finishScanError(Exception e, long durationMillis) {
         if (isFinishing() || isDestroyed()) return;
         if (cancelRequested) {
+            progressHandler.removeCallbacks(phaseTicker);
             progressContainer.setVisibility(View.GONE);
             cancelScan.setVisibility(View.GONE);
             cancelScan.setEnabled(false);
