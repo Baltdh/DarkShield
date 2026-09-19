@@ -71,6 +71,9 @@ public final class StaticApkAnalyzer {
         try (ZipFile zip = new ZipFile(apk)) {
             java.util.Enumeration<? extends ZipEntry> e = zip.entries();
             while (e.hasMoreElements()) {
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new ScanInterruptedException();
+                }
                 ZipEntry entry = e.nextElement();
                 if (++entries > MAX_ENTRIES) {
                     out.add(new ScanFinding(
@@ -217,6 +220,8 @@ public final class StaticApkAnalyzer {
                         packageName, 0,
                         "Quantidade elevada pode ser legítima; revise apenas junto de outros indicadores"));
             }
+        } catch (ScanInterruptedException ex) {
+            throw ex;
         } catch (IOException | SecurityException ex) {
             out.add(error("Não foi possível ler a estrutura ZIP do APK", packageName));
             return out;
@@ -399,6 +404,10 @@ public final class StaticApkAnalyzer {
         return false;
     }
 
+    private static final class ScanInterruptedException extends RuntimeException {
+        ScanInterruptedException() { super("A verificação foi interrompida."); }
+    }
+
     private static ScanFinding error(String detail, String packageName) {
         return new ScanFinding(
                 ScanFinding.Level.LOW,
@@ -413,7 +422,10 @@ public final class StaticApkAnalyzer {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] buffer = new byte[64 * 1024];
             int read;
-            while ((read = in.read(buffer)) != -1) digest.update(buffer, 0, read);
+            while ((read = in.read(buffer)) != -1) {
+                if (Thread.currentThread().isInterrupted()) throw new ScanInterruptedException();
+                digest.update(buffer, 0, read);
+            }
             byte[] bytes = digest.digest();
             StringBuilder out = new StringBuilder(bytes.length * 2);
             for (byte b : bytes) out.append(String.format(Locale.ROOT, "%02X", b));
