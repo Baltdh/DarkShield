@@ -168,6 +168,12 @@ public class MainActivity extends android.app.Activity {
     }
 
     private void finishScan(List<ScanFinding> findings, long durationMillis) {
+        // Cancellation can race with the worker finishing. Never publish a completed report
+        // after the user has already requested cancellation.
+        if (cancelRequested) {
+            finishScanError(new InterruptedException("Verificação cancelada pelo usuário."), durationMillis);
+            return;
+        }
         if (isFinishing() || isDestroyed()) return;
         ScanReport scanReport = new ScanReport(findings);
         lastScanReport = scanReport;
