@@ -270,6 +270,7 @@ public final class StaticApkAnalyzer {
             byte[] buffer = new byte[64 * 1024];
             int total = 0;
             while (total < limit) {
+                if (Thread.currentThread().isInterrupted()) throw new ScanInterruptedException();
                 int want = Math.min(buffer.length, limit - total);
                 int read = in.read(buffer, 0, want);
                 if (read < 0) break;
@@ -315,6 +316,7 @@ public final class StaticApkAnalyzer {
     private static void skipFully(InputStream in, long bytes) throws IOException {
         long remaining = bytes;
         while (remaining > 0) {
+            if (Thread.currentThread().isInterrupted()) throw new ScanInterruptedException();
             long skipped = in.skip(remaining);
             if (skipped > 0) {
                 remaining -= skipped;
@@ -430,6 +432,8 @@ public final class StaticApkAnalyzer {
             StringBuilder out = new StringBuilder(bytes.length * 2);
             for (byte b : bytes) out.append(String.format(Locale.ROOT, "%02X", b));
             return out.toString();
+        } catch (ScanInterruptedException e) {
+            throw e;
         } catch (Exception e) {
             return null;
         }
