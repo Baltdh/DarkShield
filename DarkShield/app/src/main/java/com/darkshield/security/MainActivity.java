@@ -87,7 +87,7 @@ public class MainActivity extends android.app.Activity {
         });
     }
 
-    private void finishScan(List<ScanFinding> findings) {
+    private void finishScan(List<ScanFinding> findings, long durationMillis) {
         if (isFinishing() || isDestroyed()) return;
         ScanReport scanReport = new ScanReport(findings);
         int critical = scanReport.count(ScanFinding.Level.CRITICAL);
@@ -140,7 +140,7 @@ public class MainActivity extends android.app.Activity {
                 .format(new Date());
         long completedAt = System.currentTimeMillis();
         saveLastScanTimestamp(completedAt);
-        lastScan.setText("Última verificação: " + timestamp);
+        lastScan.setText("Última verificação: " + timestamp + " • duração: " + formatDuration(durationMillis));
         nextAction.setText(risk >= 70
                 ? "Próximo passo: revise primeiro os itens críticos e altos abaixo."
                 : risk >= 40
@@ -179,7 +179,7 @@ public class MainActivity extends android.app.Activity {
         }
     }
 
-    private void updateSeverityAccessibility(TextView view, String severity, int count) {
+    private String formatDuration(long durationMillis) {\n        if (durationMillis < 1000L) return durationMillis + " ms";\n        return String.format(Locale.getDefault(), "%.1f s", durationMillis / 1000.0);\n    }\n\n    private void updateSeverityAccessibility(TextView view, String severity, int count) {
         view.setContentDescription("Quantidade de achados " + severity + ": " + count);
     }
 
@@ -211,7 +211,7 @@ public class MainActivity extends android.app.Activity {
         }
     }
 
-    private void finishScanError(Exception e) {
+    private void finishScanError(Exception e, long durationMillis) {
         if (isFinishing() || isDestroyed()) return;
         progress.setVisibility(View.GONE);
         scan.setText("TENTAR NOVAMENTE");
@@ -229,7 +229,7 @@ public class MainActivity extends android.app.Activity {
         updateSeverityAccessibility(countLow, "baixo", 0);
         coverageHint.setText("Cobertura desta verificação: indisponível porque a análise não foi concluída.");
         score.setText("VERIFICAÇÃO NÃO CONCLUÍDA");
-        lastScan.setText("Última verificação: falhou");
+        lastScan.setText("Última verificação: falhou • duração: " + formatDuration(durationMillis));
         nextAction.setText("Próximo passo: tente a verificação novamente. O erro, por si só, não indica comprometimento.");
         summary.setText(
                 "A verificação não foi concluída. Nenhum resultado desta tentativa deve ser interpretado como avaliação do dispositivo."
