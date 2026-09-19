@@ -45,7 +45,6 @@ public final class SecurityScanner {
     private final PackageManager pm;
     private final AppOpsManager appOps;
     private final Map<String, ApplicationInfo> appInfoCache = new HashMap<>();
-    private long scanStartedAtNanos;
 
     public SecurityScanner(Context c) {
         this.c = c.getApplicationContext();
@@ -73,7 +72,6 @@ public final class SecurityScanner {
     }
 
     public List<ScanFinding> scan(ProgressListener listener) {
-        scanStartedAtNanos = System.nanoTime();
         List<ScanFinding> out = new ArrayList<>();
         if (listener != null) listener.onStage("Preparando inventário…");
         addBaseline(out);
