@@ -5,6 +5,8 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.Settings;
 import android.net.Uri;
 import android.text.SpannableStringBuilder;
@@ -36,6 +38,18 @@ public class MainActivity extends android.app.Activity {
     private final ExecutorService exec = Executors.newSingleThreadExecutor();
     private java.util.concurrent.Future<?> scanTask;
     private volatile boolean cancelRequested;
+    private final Handler progressHandler = new Handler(Looper.getMainLooper());
+    private volatile long phaseStartedAt;
+    private volatile String currentPhase = "Preparando inventário…";
+    private final Runnable phaseTicker = new Runnable() {
+        @Override public void run() {
+            if (progressContainer != null && progressContainer.getVisibility() == View.VISIBLE) {
+                long elapsed = Math.max(0L, (System.nanoTime() - phaseStartedAt) / 1_000_000_000L);
+                lastScan.setText("VERIFICAÇÃO EM ANDAMENTO • " + currentPhase + " • " + elapsed + "s nesta fase");
+                progressHandler.postDelayed(this, 1000L);
+            }
+        }
+    };
 
     @Override public void onCreate(Bundle b) {
         super.onCreate(b);
@@ -73,6 +87,7 @@ public class MainActivity extends android.app.Activity {
     }
 
     @Override protected void onDestroy() {
+        progressHandler.removeCallbacks(phaseTicker);
         exec.shutdownNow();
         super.onDestroy();
     }
@@ -88,7 +103,11 @@ public class MainActivity extends android.app.Activity {
         remediation.setEnabled(false);
         progressContainer.setVisibility(View.VISIBLE);
         scanProgress.setPercent(0);
-        scanProgressStage.setText("Preparando inventário…");
+        currentPhase = "Preparando inventário…";
+        phaseStartedAt = System.nanoTime();
+        scanProgressStage.setText(currentPhase);
+        progressHandler.removeCallbacks(phaseTicker);
+        progressHandler.post(phaseTicker);
         score.setText("Verificando…");
         summary.setText("Analisando indicadores locais do Android");
         lastScan.setText("VERIFICAÇÃO EM ANDAMENTO");
@@ -122,9 +141,11 @@ public class MainActivity extends android.app.Activity {
                             @Override public void onStage(String stage) {
                                 runOnUiThread(() -> {
                                     if (isFinishing() || isDestroyed()) return;
+                                    currentPhase = stage;
+                                    phaseStartedAt = System.nanoTime();
                                     scanProgressStage.setText(stage);
                                     summary.setText(stage);
-                                    lastScan.setText("VERIFICAÇÃO EM ANDAMENTO");
+                                    lastScan.setText("VERIFICAÇÃO EM ANDAMENTO • " + stage);
                                 });
                             }
                         });
@@ -210,6 +231,7 @@ public class MainActivity extends android.app.Activity {
         scanProgress.setPercent(100);
         scanProgressStage.setText("Verificação concluída");
         progressContainer.setVisibility(View.GONE);
+        progressHandler.removeCallbacks(phaseTicker);
         cancelScan.setVisibility(View.GONE);
         cancelScan.setEnabled(false);
         cancelScan.setText("CANCELAR VERIFICAÇÃO");
