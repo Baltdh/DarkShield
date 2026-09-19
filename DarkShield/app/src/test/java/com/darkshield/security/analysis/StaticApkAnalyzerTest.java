@@ -31,6 +31,33 @@ public class StaticApkAnalyzerTest {
         assertTrue(apk.delete());
     }
 
+    @Test public void modifiedApkInvalidatesStaticAnalysisCache() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "classes.dex", new byte[]{1, 2, 3});
+        }
+
+        List<ScanFinding> first = StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+        String firstHash = first.stream()
+                .filter(x -> x.title.equals("SHA-256 do APK"))
+                .map(x -> x.detail)
+                .findFirst().orElse(null);
+        assertTrue(firstHash != null);
+
+        long changedTime = Math.max(System.currentTimeMillis() + 2000L, apk.lastModified() + 2000L);
+        assertTrue(apk.setLastModified(changedTime));
+
+        List<ScanFinding> second = StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+        String secondHash = second.stream()
+                .filter(x -> x.title.equals("SHA-256 do APK"))
+                .map(x -> x.detail)
+                .findFirst().orElse(null);
+        assertEquals(firstHash, secondHash);
+
+        assertTrue(apk.delete());
+    }
+
     @Test public void staticMarkerDetailsAreDeterministicAcrossZipOrder() throws Exception {
         File first = File.createTempFile("darkshield-test", ".apk");
         File second = File.createTempFile("darkshield-test", ".apk");
