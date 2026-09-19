@@ -28,12 +28,14 @@ public class MainActivity extends android.app.Activity {
     private ScanProgressView scanProgress;
     private TextView scanProgressStage;
     private View progressContainer;
-    private Button scan, remediation, securitySettings, share, copy;
+    private Button scan, cancelScan, remediation, securitySettings, share, copy;
     private ScanReport lastScanReport;
     private String lastReport = "";
     private static final String PREFS = "darkshield_ui";
     private static final String KEY_LAST_SCAN_MILLIS = "last_scan_millis";
     private final ExecutorService exec = Executors.newSingleThreadExecutor();
+    private java.util.concurrent.Future<?> scanTask;
+    private volatile boolean cancelRequested;
 
     @Override public void onCreate(Bundle b) {
         super.onCreate(b);
@@ -52,12 +54,14 @@ public class MainActivity extends android.app.Activity {
         scanProgress = findViewById(R.id.scan_progress);
         scanProgressStage = findViewById(R.id.scan_progress_stage);
         scan = findViewById(R.id.scan);
+        cancelScan = findViewById(R.id.cancel_scan);
         remediation = findViewById(R.id.remediation);
         securitySettings = findViewById(R.id.settings);
         share = findViewById(R.id.share);
         copy = findViewById(R.id.copy);
 
         scan.setOnClickListener(v -> startScan());
+        cancelScan.setOnClickListener(v -> cancelActiveScan());
         remediation.setOnClickListener(v -> showRemediationCenter());
         securitySettings.setOnClickListener(v -> openSecuritySettings());
         share.setOnClickListener(v -> shareReport());
@@ -74,6 +78,9 @@ public class MainActivity extends android.app.Activity {
     }
 
     private void startScan() {
+        cancelRequested = false;
+        cancelScan.setVisibility(View.VISIBLE);
+        cancelScan.setEnabled(true);
         scan.setEnabled(false);
         scan.setText("VERIFICANDO…");
         share.setEnabled(false);
@@ -93,7 +100,7 @@ public class MainActivity extends android.app.Activity {
         countLow.setText("BAIXO\n0");
 
         final long startedAt = System.nanoTime();
-        exec.submit(() -> {
+        scanTask = exec.submit(() -> {
             try {
                 List<ScanFinding> findings = new SecurityScanner(this).scan(
                         (completed, total, packageName) -> {
@@ -117,6 +124,15 @@ public class MainActivity extends android.app.Activity {
                 runOnUiThread(() -> finishScanError(e, durationMillis));
             }
         });
+    }
+
+
+    private void cancelActiveScan() {
+        if (scanTask == null || scanTask.isDone()) return;
+        cancelRequested = true;
+        cancelScan.setEnabled(false);
+        cancelScan.setText("CANCELANDO…");
+        scanTask.cancel(true);
     }
 
     private void finishScan(List<ScanFinding> findings, long durationMillis) {
@@ -183,6 +199,9 @@ public class MainActivity extends android.app.Activity {
         scanProgress.setPercent(100);
         scanProgressStage.setText("Verificação concluída");
         progressContainer.setVisibility(View.GONE);
+        cancelScan.setVisibility(View.GONE);
+        cancelScan.setEnabled(false);
+        cancelScan.setText("CANCELAR VERIFICAÇÃO");
         scan.setText("VERIFICAR NOVAMENTE");
         scan.setEnabled(true);
         share.setEnabled(true);
@@ -358,6 +377,24 @@ public class MainActivity extends android.app.Activity {
 
     private void finishScanError(Exception e, long durationMillis) {
         if (isFinishing() || isDestroyed()) return;
+        if (cancelRequested) {
+            progressContainer.setVisibility(View.GONE);
+            cancelScan.setVisibility(View.GONE);
+            cancelScan.setEnabled(false);
+            cancelScan.setText("CANCELAR VERIFICAÇÃO");
+            scan.setText("VERIFICAR NOVAMENTE");
+            scan.setEnabled(true);
+            share.setEnabled(false);
+            copy.setEnabled(false);
+            remediation.setEnabled(false);
+            score.setText("VERIFICAÇÃO CANCELADA");
+            lastScan.setText("Verificação cancelada • duração: " + formatDuration(durationMillis));
+            nextAction.setText("Próximo passo: execute uma nova verificação quando quiser.");
+            summary.setText("A verificação foi interrompida pelo usuário. Nenhum resultado parcial foi apresentado como diagnóstico.");
+            report.setText("A verificação foi cancelada antes da conclusão.");
+            cancelRequested = false;
+            return;
+        }
         progressContainer.setVisibility(View.GONE);
         scanProgress.setPercent(0);
         scanProgressStage.setText("Preparando inventário…");
