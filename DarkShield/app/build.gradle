@@ -1,5 +1,13 @@
 plugins { id 'com.android.application' }
 
+def releaseSigningValues = [
+    System.getenv('DARKSHIELD_KEYSTORE_PATH'),
+    System.getenv('DARKSHIELD_KEYSTORE_PASSWORD'),
+    System.getenv('DARKSHIELD_KEY_ALIAS'),
+    System.getenv('DARKSHIELD_KEY_PASSWORD')
+]
+def hasReleaseSigning = releaseSigningValues.every { it != null && !it.isEmpty() }
+
 android {
     namespace 'com.darkshield.security'
     compileSdk 35
@@ -14,6 +22,25 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
+    }
+
+    signingConfigs {
+        release {
+            if (hasReleaseSigning) {
+                storeFile file(System.getenv('DARKSHIELD_KEYSTORE_PATH'))
+                storePassword System.getenv('DARKSHIELD_KEYSTORE_PASSWORD')
+                keyAlias System.getenv('DARKSHIELD_KEY_ALIAS')
+                keyPassword System.getenv('DARKSHIELD_KEY_PASSWORD')
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+        }
     }
 }
 
