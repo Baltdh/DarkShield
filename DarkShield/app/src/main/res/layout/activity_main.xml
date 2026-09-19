@@ -86,15 +86,31 @@
                 android:textSize="14sp"
                 android:lineSpacingExtra="2dp" />
 
-            <ProgressBar
-                android:id="@+id/progress"
+            <FrameLayout
+                android:id="@+id/progress_container"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
+                android:layout_height="112dp"
+                android:layout_marginTop="10dp"
                 android:visibility="gone"
-                android:max="100"
-                android:progress="0"
-                android:indeterminate="false" />
+                android:contentDescription="Progresso da verificação">
+                
+                <com.darkshield.security.ScanProgressView
+                    android:id="@+id/scan_progress"
+                    android:layout_width="104dp"
+                    android:layout_height="104dp"
+                    android:layout_gravity="center" />
+
+                <TextView
+                    android:id="@+id/scan_progress_stage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="bottom"
+                    android:gravity="center"
+                    android:text="Preparando inventário…"
+                    android:textColor="#8F97A8"
+                    android:textSize="11sp"
+                    android:visibility="visible" />
+            </FrameLayout>
 
             <TextView
                 android:id="@+id/last_scan"
@@ -206,6 +222,16 @@
             android:text="VERIFICAR AGORA"
             android:textSize="14sp"
             android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/remediation"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:contentDescription="Abrir central de correções seguras"
+            android:text="CORRIGIR COM SEGURANÇA"
+            android:textSize="13sp"
+            android:enabled="false" />
 
         <Button
             android:id="@+id/settings"
