@@ -232,8 +232,7 @@ public class MainActivity extends android.app.Activity {
         lastScan.setText("Última verificação: falhou");
         nextAction.setText("Próximo passo: tente a verificação novamente. O erro, por si só, não indica comprometimento.");
         summary.setText(
-                "O scanner encontrou um erro durante a análise. "
-                        + "Isso não significa que o dispositivo esteja comprometido."
+                "A verificação não foi concluída. Nenhum resultado desta tentativa deve ser interpretado como avaliação do dispositivo."
         );
         String message = e.getMessage();
         report.setText(
