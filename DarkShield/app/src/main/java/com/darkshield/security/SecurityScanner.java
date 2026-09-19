@@ -59,6 +59,11 @@ public final class SecurityScanner {
         }
     }
 
+    /** Called immediately before an individual package enters deep inspection. */
+        default void onPackageStart(int completed, int total, String packageName) {
+        }
+    }
+
     public List<ScanFinding> scan() {
         return scan(null);
     }
@@ -105,6 +110,9 @@ public final class SecurityScanner {
                 completed++;
                 if (listener != null) listener.onProgress(completed, total, null);
                 continue;
+            }
+            if (listener != null) {
+                listener.onPackageStart(completed, total, p.packageName);
             }
             try {
                 inspectApp(p, out);
