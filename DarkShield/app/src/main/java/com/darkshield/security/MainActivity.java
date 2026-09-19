@@ -152,8 +152,9 @@ public class MainActivity extends android.app.Activity {
                                 });
                             }
 
-                            @Override public void onPackageComplete(int completed, int total, String packageName, long durationMillis) {
-                                scanTimingTracker.record(packageName, durationMillis);
+                            @Override public void onPackageComplete(int completed, int total, String packageName, long durationMillis,
+                                                                    com.darkshield.security.analysis.StaticApkAnalyzer.TimingSnapshot timing) {
+                                scanTimingTracker.record(packageName, durationMillis, timing);
                                 final String pkg = packageName == null || packageName.isEmpty() ? "pacote desconhecido" : packageName;
                                 final String duration = formatDuration(durationMillis);
                                 runOnUiThread(() -> {
@@ -231,7 +232,8 @@ public class MainActivity extends android.app.Activity {
         String timingSummary = slowestPackage == null
                 ? ""
                 : "\nDiagnóstico de desempenho: " + slowestPackage.packageName
-                        + " levou " + formatDuration(slowestPackage.durationMillis) + " na análise profunda.";
+                        + " levou " + formatDuration(slowestPackage.durationMillis) + " na análise profunda."
+                        + formatStaticTiming(slowestPackage.staticApkTiming);
         String summaryText =
                 "Crítico: " + critical + "   Alto: " + high
                         + "   Médio: " + medium + "   Baixo: " + low
