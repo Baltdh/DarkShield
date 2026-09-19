@@ -65,6 +65,13 @@ public final class SecurityScanner {
         /** Called after an individual package finishes deep inspection. */
         default void onPackageComplete(int completed, int total, String packageName, long durationMillis) {
         }
+
+        /** Called after an individual package with static APK timing diagnostics. */
+        default void onPackageComplete(int completed, int total, String packageName,
+                                        long durationMillis,
+                                        StaticApkAnalyzer.TimingSnapshot timing) {
+            onPackageComplete(completed, total, packageName, durationMillis);
+        }
     }
 
     public List<ScanFinding> scan() {
@@ -134,8 +141,10 @@ public final class SecurityScanner {
             }
             completed++;
             if (listener != null) {
+                long packageDurationMillis =
+                        Math.max(0L, (System.nanoTime() - packageStartedAt) / 1_000_000L);
                 listener.onPackageComplete(completed, total, p.packageName,
-                        Math.max(0L, (System.nanoTime() - packageStartedAt) / 1_000_000L));
+                        packageDurationMillis, StaticApkAnalyzer.getLastTiming());
                 listener.onProgress(completed, total, p.packageName);
             }
         }
