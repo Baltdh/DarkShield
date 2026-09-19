@@ -57,7 +57,7 @@ jobs:
             gradle --no-daemon --stacktrace assembleRelease
           fi
 
-      - name: Verify signed APK
+      - name: Verify signed APK and generate release metadata
         working-directory: DarkShield
         run: |
           set -euo pipefail
@@ -71,9 +71,18 @@ jobs:
           test -x "$APKSIGNER"
           test -x "$ZIPALIGN"
           "$ZIPALIGN" -c -v 4 "$APK"
-          "$APKSIGNER" verify --verbose --print-certs "$APK"
+          "$APKSIGNER" verify --verbose --print-certs "$APK" | tee apk-signature.txt
           sha256sum "$APK" | tee "$APK.sha256"
-          ls -lh "$APK" "$APK.sha256"
+          {
+            echo "DarkShield signed release"
+            echo "Commit: $GITHUB_SHA"
+            echo "Version: $(grep -E 'versionName' app/build.gradle | head -n 1 | sed -E "s/.*versionName[[:space:]]+'([^']+)'.*/\1/")"
+            echo "APK: $APK"
+            cat "$APK.sha256"
+            echo "Signature verification:"
+            cat apk-signature.txt
+          } > release-metadata.txt
+          ls -lh "$APK" "$APK.sha256" release-metadata.txt
 
       - name: Upload signed release
         uses: actions/upload-artifact@v6
@@ -82,4 +91,11 @@ jobs:
           path: |
             DarkShield/app/build/outputs/**/*.apk
             DarkShield/app/build/outputs/**/*.apk.sha256
+            DarkShield/apk-signature.txt
+            DarkShield/release-metadata.txt
           if-no-files-found: error
+
+      - name: Remove signing material
+        if: always()
+        run: |
+          rm -f "$DARKSHIELD_KEYSTORE_PATH"
