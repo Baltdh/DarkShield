@@ -1478,3 +1478,21 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Próximo passo
 - O código está em estado de fechamento; a pendência operacional para uma publicação real é a assinatura de produção e eventual avaliação das políticas da loja, especialmente `QUERY_ALL_PACKAGES`.
+
+
+## 2026-09-19 — progresso por fases para diagnóstico de varredura longa
+
+### Concluído
+- Revisei o comportamento do scanner após o relato de que a verificação completa parecia não terminar.
+- Mantive a análise profunda e o cache/cancelamento existentes; a melhoria desta frente é de observabilidade, não de redução de cobertura.
+- SecurityScanner.ProgressListener agora aceita uma fase textual opcional (onStage), preservando compatibilidade com os consumidores existentes por método default.
+- O scanner informa fases explícitas: inventário, análise de aplicativos, serviços especiais, correlação, integridade, rede e finalização.
+- MainActivity passou a exibir essas fases no progresso e no resumo enquanto a varredura avança.
+- Commits desta passagem: e8d8d775c41ed7675dd2f506b7cab9fcf13533a6 e afebaa8cd5b0960977b95b2fb9289103ea6ca2f4.
+
+### Aprendizado aplicado
+- Um percentual por pacote não basta para diagnosticar uma etapa que consome tempo depois do último pacote. O scanner pode estar trabalhando normalmente em correlação/integridade/rede, mas a UI anterior dava a impressão de travamento.
+- A separação entre progresso quantitativo (pacotes) e progresso qualitativo (fase) permite investigar gargalos sem enfraquecer a detecção.
+
+### Próxima etapa
+- Validar o Actions do HEAD atual. Se passar, medir a duração por fase em uma próxima iteração para identificar onde a varredura completa realmente concentra custo.
