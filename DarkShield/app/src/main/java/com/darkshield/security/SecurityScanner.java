@@ -54,6 +54,9 @@ public final class SecurityScanner {
 
     public interface ProgressListener {
         void onProgress(int completed, int total, String packageName);
+
+        default void onStage(String stage) {
+        }
     }
 
     public List<ScanFinding> scan() {
@@ -62,9 +65,11 @@ public final class SecurityScanner {
 
     public List<ScanFinding> scan(ProgressListener listener) {
         List<ScanFinding> out = new ArrayList<>();
+        if (listener != null) listener.onStage("Preparando inventário…");
         addBaseline(out);
         List<PackageInfo> apps = getApps();
         if (apps == null) {
+            if (listener != null) listener.onStage("Verificando serviços especiais…");
             out.add(new ScanFinding(
                     ScanFinding.Level.MEDIUM,
                     "Inventário de aplicativos incompleto",
@@ -74,9 +79,13 @@ public final class SecurityScanner {
             checkAccessibility(out);
             checkNotificationListeners(out);
             checkDeviceAdmins(out);
+            if (listener != null) listener.onStage("Correlacionando indicadores…");
             out.addAll(ThreatCorrelationEngine.correlate(out));
+            if (listener != null) listener.onStage("Verificando integridade do sistema…");
             checkSystemIntegrity(out);
+            if (listener != null) listener.onStage("Verificando rede…");
             checkNetworkState(out);
+            if (listener != null) listener.onStage("Finalizando relatório…");
             return out;
         }
         out.add(new ScanFinding(
@@ -84,7 +93,10 @@ public final class SecurityScanner {
                 apps.size() + " pacote(s) visíveis para o scanner", null, 0, null));
         int total = apps.size();
         int completed = 0;
-        if (listener != null) listener.onProgress(0, total, null);
+        if (listener != null) {
+            listener.onStage("Analisando aplicativos…");
+            listener.onProgress(0, total, null);
+        }
         for (PackageInfo p : apps) {
             if (Thread.currentThread().isInterrupted()) {
                 throw new IllegalStateException("A verificação foi interrompida antes de concluir.");
@@ -113,12 +125,17 @@ public final class SecurityScanner {
                 listener.onProgress(completed, total, p.packageName);
             }
         }
+        if (listener != null) listener.onStage("Verificando serviços especiais…");
         checkAccessibility(out);
         checkNotificationListeners(out);
         checkDeviceAdmins(out);
+        if (listener != null) listener.onStage("Correlacionando indicadores…");
         out.addAll(ThreatCorrelationEngine.correlate(out));
+        if (listener != null) listener.onStage("Verificando integridade do sistema…");
         checkSystemIntegrity(out);
+        if (listener != null) listener.onStage("Verificando rede…");
         checkNetworkState(out);
+        if (listener != null) listener.onStage("Finalizando relatório…");
         return out;
     }
 
