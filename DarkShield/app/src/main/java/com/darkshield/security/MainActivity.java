@@ -72,6 +72,9 @@ public class MainActivity extends android.app.Activity {
         share.setEnabled(false);
         copy.setEnabled(false);
         progress.setVisibility(View.VISIBLE);
+        progress.setIndeterminate(false);
+        progress.setMax(100);
+        progress.setProgress(0);
         score.setText("Verificando…");
         summary.setText("Analisando indicadores locais do Android");
         lastScan.setText("VERIFICAÇÃO EM ANDAMENTO");
@@ -85,7 +88,20 @@ public class MainActivity extends android.app.Activity {
         final long startedAt = System.nanoTime();
         exec.submit(() -> {
             try {
-                List<ScanFinding> findings = new SecurityScanner(this).scan();
+                List<ScanFinding> findings = new SecurityScanner(this).scan(
+                        (completed, total, packageName) -> {
+                            int percent = total <= 0 ? 0 : (int) ((completed * 100L) / total);
+                            String label = packageName == null || packageName.isEmpty()
+                                    ? "Preparando inventário…"
+                                    : packageName;
+                            runOnUiThread(() -> {
+                                if (isFinishing() || isDestroyed()) return;
+                                progress.setProgress(percent);
+                                summary.setText("Analisando aplicativo " + completed + "/" + total
+                                        + "\n" + label);
+                                lastScan.setText("VERIFICAÇÃO EM ANDAMENTO • " + percent + "%");
+                            });
+                        });
                 long durationMillis = Math.max(0L, (System.nanoTime() - startedAt) / 1_000_000L);
                 runOnUiThread(() -> finishScan(findings, durationMillis));
             } catch (Exception e) {
@@ -155,6 +171,7 @@ public class MainActivity extends android.app.Activity {
                         ? "Próximo passo: revise os aplicativos e configurações sensíveis listados abaixo."
                         : "Próximo passo: mantenha o Android e seus aplicativos atualizados e faça verificações periódicas.");
 
+        progress.setProgress(100);
         progress.setVisibility(View.GONE);
         scan.setText("VERIFICAR NOVAMENTE");
         scan.setEnabled(true);
