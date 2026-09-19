@@ -25,10 +25,21 @@ public class SecurityScannerTest {
                 true, null, "com.example.WRITE"));
     }
 
-     @Test public void defaultInputMethodPackageParsesComponent() {
+    @Test public void providerWithWhitespacePermissionsIsUnprotected() {
+        assertTrue(SecurityScanner.isUnprotectedExportedProvider(
+                true, "  ", "\t"));
+    }
+
+    @Test public void defaultInputMethodPackageParsesComponent() {
         assertEquals("com.example.keyboard",
                 SecurityScanner.defaultInputMethodPackage(
                         "com.example.keyboard/.KeyboardService"));
+    }
+
+    @Test public void defaultInputMethodPackageTrimsComponent() {
+        assertEquals("com.example.keyboard",
+                SecurityScanner.defaultInputMethodPackage(
+                        "  com.example.keyboard / .KeyboardService  "));
     }
 
     @Test public void invalidDefaultInputMethodReturnsNull() {
@@ -36,6 +47,8 @@ public class SecurityScannerTest {
         assertNull(SecurityScanner.defaultInputMethodPackage(null));
         assertNull(SecurityScanner.defaultInputMethodPackage("/.KeyboardService"));
         assertNull(SecurityScanner.defaultInputMethodPackage("com.example.keyboard/"));
+        assertNull(SecurityScanner.defaultInputMethodPackage("com.example.keyboard"));
+        assertNull(SecurityScanner.defaultInputMethodPackage(" / "));
     }
 
     @Test public void nonExportedProviderIsNeverReportedAsUnprotected() {
