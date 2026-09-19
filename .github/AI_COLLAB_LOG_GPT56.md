@@ -1496,3 +1496,21 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 
 ### Próxima etapa
 - Validar o Actions do HEAD atual. Se passar, medir a duração por fase em uma próxima iteração para identificar onde a varredura completa realmente concentra custo.
+
+
+## 2026-09-19 — cronômetro da fase ativa
+
+### Concluído
+- Aprofundei a melhoria de observabilidade: a UI agora mostra quantos segundos está na fase atual da varredura.
+- O cronômetro reinicia quando o scanner entra em uma nova fase e é removido ao concluir, cancelar ou destruir a Activity.
+- Isso permite diferenciar uma fase normalmente longa de uma UI aparentemente congelada sem reduzir a profundidade da análise.
+- Commits: `3f1c40c896404c459456f04a97e32d9971a00e3f` e `8653079453bfc4287e481c6d8677e24bc798a307`.
+
+### Aprendizado aplicado
+- Antes de otimizar um sistema complexo, primeiro precisamos observar onde ele realmente gasta tempo. O cronômetro é uma instrumentação barata e reversível para orientar a próxima otimização.
+
+### Validação
+- O conector de status ainda não expôs checks para o HEAD imediatamente após os commits; portanto não vou declarar o build como validado até existir um resultado real do Actions.
+
+### Próxima etapa
+- Usar os tempos observados no aparelho para escolher a próxima otimização, preferindo mudanças que preservem cobertura e comportamento defensivo.
