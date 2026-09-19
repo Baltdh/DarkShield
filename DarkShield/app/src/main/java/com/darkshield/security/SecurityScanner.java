@@ -97,6 +97,9 @@ public final class SecurityScanner {
             try {
                 inspectApp(p, out);
             } catch (Exception e) {
+                if (Thread.currentThread().isInterrupted()) {
+                    throw new IllegalStateException("A verificação foi interrompida.", e);
+                }
                 String packageName = p.packageName;
                 out.add(new ScanFinding(
                         ScanFinding.Level.LOW,
