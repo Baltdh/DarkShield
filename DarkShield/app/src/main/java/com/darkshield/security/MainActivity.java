@@ -145,7 +145,7 @@ public class MainActivity extends android.app.Activity {
                                     phaseStartedAt = System.nanoTime();
                                     scanProgressStage.setText(packageName == null ? "Aplicativo" : packageName);
                                     summary.setText("Analisando aplicativo " + (completed + 1) + "/" + total
-                                            + "\\n" + (packageName == null ? "pacote desconhecido" : packageName));
+                                            + "\n" + (packageName == null ? "pacote desconhecido" : packageName));
                                     lastScan.setText("VERIFICAÇÃO EM ANDAMENTO • aplicativo " + (completed + 1) + "/" + total);
                                 });
                             }
