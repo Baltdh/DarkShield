@@ -52,7 +52,15 @@ public final class SecurityScanner {
         this.appOps = (AppOpsManager) this.c.getSystemService(Context.APP_OPS_SERVICE);
     }
 
+    public interface ProgressListener {
+        void onProgress(int completed, int total, String packageName);
+    }
+
     public List<ScanFinding> scan() {
+        return scan(null);
+    }
+
+    public List<ScanFinding> scan(ProgressListener listener) {
         List<ScanFinding> out = new ArrayList<>();
         addBaseline(out);
         List<PackageInfo> apps = getApps();
@@ -74,8 +82,18 @@ public final class SecurityScanner {
         out.add(new ScanFinding(
                 ScanFinding.Level.INFO, "Aplicativos analisados",
                 apps.size() + " pacote(s) visíveis para o scanner", null, 0, null));
+        int total = apps.size();
+        int completed = 0;
+        if (listener != null) listener.onProgress(0, total, null);
         for (PackageInfo p : apps) {
-            if (p == null) continue;
+            if (Thread.currentThread().isInterrupted()) {
+                throw new IllegalStateException("A verificação foi interrompida antes de concluir.");
+            }
+            if (p == null) {
+                completed++;
+                if (listener != null) listener.onProgress(completed, total, null);
+                continue;
+            }
             try {
                 inspectApp(p, out);
             } catch (Exception e) {
@@ -86,6 +104,10 @@ public final class SecurityScanner {
                         "O scanner não conseguiu concluir a análise deste pacote; os demais aplicativos continuarão sendo analisados",
                         packageName, 1,
                         "Revise manualmente o aplicativo se você não o reconhecer"));
+            }
+            completed++;
+            if (listener != null) {
+                listener.onProgress(completed, total, p.packageName);
             }
         }
         checkAccessibility(out);
