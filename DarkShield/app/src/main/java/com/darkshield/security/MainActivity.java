@@ -126,7 +126,7 @@ public class MainActivity extends android.app.Activity {
                 List<ScanFinding> findings = new SecurityScanner(this).scan(
                         new SecurityScanner.ProgressListener() {
                             @Override public void onProgress(int completed, int total, String packageName) {
-                                int percent = total <= 0 ? 0 : (int) ((completed * 100L) / total);
+                                int percent = total <= 0 ? 5 : 5 + (int) ((completed * 80L) / total);
                                 String label = packageName == null || packageName.isEmpty()
                                         ? "Preparando inventário…"
                                         : packageName;
@@ -184,6 +184,18 @@ public class MainActivity extends android.app.Activity {
         });
     }
 
+
+    private int progressForStage(String stage) {
+        if (stage == null) return 5;
+        if (stage.contains("Preparando")) return 5;
+        if (stage.contains("Analisando aplicativos")) return 10;
+        if (stage.contains("serviços especiais")) return 88;
+        if (stage.contains("Correlacionando")) return 92;
+        if (stage.contains("integridade")) return 95;
+        if (stage.contains("rede")) return 98;
+        if (stage.contains("Finalizando")) return 99;
+        return 85;
+    }
 
     private void cancelActiveScan() {
         if (scanTask == null || scanTask.isDone()) return;
