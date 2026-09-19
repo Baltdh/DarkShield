@@ -1463,3 +1463,18 @@ Sempre verificar o HEAD e o log do outro agente novamente antes da próxima alte
 ### Riscos / bloqueios
 - A assinatura final deve ser feita com a chave de distribuição do proprietário; nenhuma chave privada foi criada ou armazenada no repositório.
 - O projeto usa `QUERY_ALL_PACKAGES`, portanto publicação na Google Play exige avaliação separada da política de visibilidade de pacotes.
+
+
+## 2026-09-19 — validação final do ciclo
+
+### Resultado
+- Actions #265 no commit `2a9962bd5bd09ea691a48df310f872048baff4a7`: **SUCCESS** em build, testes, lint, verificação e upload do APK.
+- Artefato: `DarkShield-debug-apk`, 52.565 bytes; digest do artefato ZIP: `sha256:a99ce88a02102f3d0e5e5f8f1ea28f77cd487868716c93215da63dff2a7573ce`.
+- SHA-256 do APK extraído: `6c914a3b8b0a262aae180ebf488f66cd132af45dbd9f3578c3a46652800ce1fa`, conferindo com o arquivo `.sha256` publicado pelo workflow.
+
+### Estado de entrega
+- O `main` contém a preparação para release candidate, o fluxo de build release sem assinatura e a limpeza de ciclo de vida da Activity.
+- O último APK automaticamente validado é o debug do #265. O release candidate deve ser gerado manualmente pelo workflow `Build DarkShield release candidate` e assinado com uma chave de distribuição própria antes da publicação.
+
+### Próximo passo
+- O código está em estado de fechamento; a pendência operacional para uma publicação real é a assinatura de produção e eventual avaliação das políticas da loja, especialmente `QUERY_ALL_PACKAGES`.
