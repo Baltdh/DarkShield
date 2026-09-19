@@ -28,6 +28,13 @@ public class StaticApkAnalyzerTest {
         assertTrue(findings.stream().anyMatch(x -> x.title.equals("SHA-256 do APK")));
         assertEquals(0, findings.stream().filter(x -> x.level == ScanFinding.Level.MEDIUM).count());
 
+        StaticApkAnalyzer.TimingSnapshot timing = StaticApkAnalyzer.getLastTiming();
+        assertTrue(timing != null);
+        assertTrue(!timing.cacheHit);
+        assertTrue(timing.zipMillis >= 0L);
+        assertTrue(timing.hashMillis >= 0L);
+        assertTrue(timing.contentBytesScanned > 0L);
+
         assertTrue(apk.delete());
     }
 
