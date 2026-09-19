@@ -138,6 +138,18 @@ public class MainActivity extends android.app.Activity {
                                 });
                             }
 
+                            @Override public void onPackageStart(int completed, int total, String packageName) {
+                                runOnUiThread(() -> {
+                                    if (isFinishing() || isDestroyed()) return;
+                                    currentPhase = "Analisando aplicativo";
+                                    phaseStartedAt = System.nanoTime();
+                                    scanProgressStage.setText(packageName == null ? "Aplicativo" : packageName);
+                                    summary.setText("Analisando aplicativo " + (completed + 1) + "/" + total
+                                            + "\\n" + (packageName == null ? "pacote desconhecido" : packageName));
+                                    lastScan.setText("VERIFICAÇÃO EM ANDAMENTO • aplicativo " + (completed + 1) + "/" + total);
+                                });
+                            }
+
                             @Override public void onStage(String stage) {
                                 runOnUiThread(() -> {
                                     if (isFinishing() || isDestroyed()) return;
