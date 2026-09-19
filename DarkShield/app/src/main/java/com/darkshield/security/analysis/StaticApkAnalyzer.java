@@ -9,7 +9,10 @@ import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
@@ -22,6 +25,18 @@ public final class StaticApkAnalyzer {
     private static final int MAX_ENTRY_CONTENT_SCAN_BYTES = 2 * 1024 * 1024;
     private static final long MAX_TOTAL_CONTENT_SCAN_BYTES = 8L * 1024L * 1024L;
     private static final long MAX_COMPRESSED_TAIL_SKIP_BYTES = 2L * 1024L * 1024L;
+    private static final int MAX_CACHE_ENTRIES = 256;
+
+    // Process-local cache only: findings are reused when the same installed APK
+    // path keeps the same size and modification timestamp. Nothing is persisted
+    // to disk, and interrupted scans are never cached.
+    private static final Map<CacheKey, List<ScanFinding>> ANALYSIS_CACHE =
+            new LinkedHashMap<CacheKey, List<ScanFinding>>(MAX_CACHE_ENTRIES, 0.75f, true) {
+                @Override
+                protected boolean removeEldestEntry(Map.Entry<CacheKey, List<ScanFinding>> eldest) {
+                    return size() > MAX_CACHE_ENTRIES;
+                }
+            };
 
     // Keep distinctive markers here. Very short/generic terms such as "rat"
     // can match innocent filenames and create excessive false positives.
@@ -44,6 +59,12 @@ public final class StaticApkAnalyzer {
         if (!apk.isFile() || !apk.canRead()) {
             out.add(error("APK não encontrado ou sem acesso de leitura", packageName));
             return out;
+        }
+
+        CacheKey cacheKey = CacheKey.from(apk, packageName);
+        if (cacheKey != null) {
+            List<ScanFinding> cached = getCached(cacheKey);
+            if (cached != null) return cached;
         }
 
         if (apk.length() > MAX_APK_BYTES) {
@@ -235,7 +256,22 @@ public final class StaticApkAnalyzer {
                     hash,
                     packageName, 0, null));
         }
+        if (cacheKey != null) putCached(cacheKey, out);
         return out;
+    }
+
+
+    private static List<ScanFinding> getCached(CacheKey key) {
+        synchronized (ANALYSIS_CACHE) {
+            List<ScanFinding> cached = ANALYSIS_CACHE.get(key);
+            return cached == null ? null : new ArrayList<>(cached);
+        }
+    }
+
+    private static void putCached(CacheKey key, List<ScanFinding> findings) {
+        synchronized (ANALYSIS_CACHE) {
+            ANALYSIS_CACHE.put(key, Collections.unmodifiableList(new ArrayList<>(findings)));
+        }
     }
 
     private static byte[] readContentSample(ZipFile zip, ZipEntry entry, int limit) {
@@ -404,6 +440,43 @@ public final class StaticApkAnalyzer {
             if (name.contains(marker)) return true;
         }
         return false;
+    }
+
+
+    private static final class CacheKey {
+        final String path;
+        final String packageName;
+        final long size;
+        final long lastModified;
+
+        private CacheKey(String path, String packageName, long size, long lastModified) {
+            this.path = path;
+            this.packageName = packageName;
+            this.size = size;
+            this.lastModified = lastModified;
+        }
+
+        static CacheKey from(File file, String packageName) {
+            try {
+                return new CacheKey(file.getCanonicalPath(), packageName, file.length(), file.lastModified());
+            } catch (IOException | SecurityException e) {
+                return null;
+            }
+        }
+
+        @Override public boolean equals(Object o) {
+            if (this == o) return true;
+            if (!(o instanceof CacheKey)) return false;
+            CacheKey other = (CacheKey) o;
+            return size == other.size
+                    && lastModified == other.lastModified
+                    && path.equals(other.path)
+                    && java.util.Objects.equals(packageName, other.packageName);
+        }
+
+        @Override public int hashCode() {
+            return java.util.Objects.hash(path, packageName, size, lastModified);
+        }
     }
 
     private static final class ScanInterruptedException extends RuntimeException {
