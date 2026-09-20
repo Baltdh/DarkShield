@@ -15,7 +15,7 @@ public class ThreatKnowledgeBaseTest {
 
         assertNotNull(annotation);
         assertTrue(annotation.contains("T1663"));
-        assertTrue(annotation.contains("não"));
+        assertTrue(annotation.contains("não prova"));
     }
 
     @Test public void accessibilityAnnotationIsCaseInsensitive() {
