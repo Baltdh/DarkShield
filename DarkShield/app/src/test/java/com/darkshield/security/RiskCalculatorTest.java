@@ -48,7 +48,6 @@ public class RiskCalculatorTest {
         assertEquals(100, RiskCalculator.score(Arrays.asList(first, second)));
     }
 
-
     @Test public void negativeAndNullFindingsDoNotAddRisk() {
         assertEquals(0, RiskCalculator.score(Arrays.asList(
                 null,
@@ -113,6 +112,12 @@ public class RiskCalculatorTest {
         assertEquals(45, RiskCalculator.score(Arrays.asList(findings)));
     }
 
+    @Test public void packageCapIsExactlyFifteenPoints() {
+        assertEquals(45, RiskCalculator.score(Arrays.asList(
+                finding(ScanFinding.Level.HIGH, 15, "com.example.app"),
+                finding(ScanFinding.Level.MEDIUM, 1, "com.example.app"))));
+    }
+
     @Test public void scoreKeepsIndependentPackagesSeparate() {
         ScanFinding first = new ScanFinding(
                 ScanFinding.Level.MEDIUM, "signal", "detail",
@@ -138,5 +143,11 @@ public class RiskCalculatorTest {
                 ScanFinding.Level.HIGH, "global-two", "detail",
                 null, 10, null);
         assertEquals(60, RiskCalculator.score(Arrays.asList(first, second)));
+    }
+
+    @Test public void blankPackageNameUsesGlobalRiskBucket() {
+        assertEquals(60, RiskCalculator.score(Arrays.asList(
+                finding(ScanFinding.Level.MEDIUM, 10, " "),
+                finding(ScanFinding.Level.MEDIUM, 10, "	"))));
     }
 }
