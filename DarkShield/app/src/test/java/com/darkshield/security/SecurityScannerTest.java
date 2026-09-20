@@ -55,4 +55,32 @@ public class SecurityScannerTest {
         assertFalse(SecurityScanner.isUnprotectedExportedProvider(
                 false, null, null));
     }
+    @Test public void securityPatchAgeDaysCalculatesExactAge() {
+        assertEquals(180,
+                SecurityScanner.securityPatchAgeDays(
+                        "2026-03-24",
+                        java.time.LocalDate.of(2026, 9, 20)));
+    }
+
+    @Test public void securityPatchAgeDaysRejectsFutureAndMalformedDates() {
+        assertEquals(-1,
+                SecurityScanner.securityPatchAgeDays(
+                        "2026-09-21",
+                        java.time.LocalDate.of(2026, 9, 20)));
+        assertEquals(-1,
+                SecurityScanner.securityPatchAgeDays(
+                        "not-a-date",
+                        java.time.LocalDate.of(2026, 9, 20)));
+        assertEquals(-1,
+                SecurityScanner.securityPatchAgeDays(
+                        null,
+                        java.time.LocalDate.of(2026, 9, 20)));
+    }
+
+    @Test public void securityPatchAgeDaysHandlesMissingReferenceDate() {
+        assertEquals(-1,
+                SecurityScanner.securityPatchAgeDays(
+                        "2026-03-24", null));
+    }
+
 }
