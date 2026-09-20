@@ -3,6 +3,7 @@ package com.darkshield.security.analysis;
 import com.darkshield.security.ScanFinding;
 import org.junit.Test;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -10,6 +11,18 @@ import static org.junit.Assert.assertTrue;
 public class ThreatCorrelationEngineTest {
     private ScanFinding f(String title, ScanFinding.Level level) {
         return new ScanFinding(level, title, "detail", "com.example.suspect", 1, "action");
+    }
+
+    @Test public void nullAndEmptyInputProduceNoCorrelations() {
+        assertTrue(ThreatCorrelationEngine.correlate(null).isEmpty());
+        assertTrue(ThreatCorrelationEngine.correlate(Collections.emptyList()).isEmpty());
+    }
+
+    @Test public void remoteMarkerAloneDoesNotCreateCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW)));
+
+        assertTrue(out.isEmpty());
     }
 
     @Test public void correlatesRemoteAccessibilityAndOverlay() {
