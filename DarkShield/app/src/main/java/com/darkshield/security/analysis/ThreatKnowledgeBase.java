@@ -17,7 +17,7 @@ public final class ThreatKnowledgeBase {
         String t = title.toLowerCase(Locale.ROOT);
 
         if (t.contains("controle remoto") || t.contains("acesso remoto")) {
-            return "MITRE ATT&CK Mobile T1663 (Remote Access Software): acesso remoto legítimo também existe; a correlação com outras capacidades é o que aumenta a prioridade.";
+            return "MITRE ATT&CK Mobile T1663 (Remote Access Software): acesso remoto legítimo também existe; esse sinal isolado não prova abuso, e a correlação com outras capacidades é o que aumenta a prioridade.";
         }
         if (t.contains("acessibilidade")) {
             return "MITRE ATT&CK Mobile T1453 (Abuse Accessibility Features): ameaças Android conhecidas podem abusar da acessibilidade para interação e captura de dados.";
