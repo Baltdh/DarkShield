@@ -58,11 +58,23 @@ Para manter a verificação completa previsível em aparelhos comuns, o analisad
 
 Quando o final de uma entrada ZIP comprimida exigiria pular um prefixo descompactado muito grande, a amostragem da cauda é omitida para evitar custo excessivo. Se uma entrada DEX/biblioteca não puder ser lida, o relatório registra explicitamente a amostra indisponível e não interpreta essa falha como ausência de risco. Esses limites podem reduzir a cobertura da análise estática, e por isso seus avisos não devem ser interpretados como prova de segurança ou ausência de malware.
 
+## Instalação rápida
+
+A forma recomendada de instalar é pela página **Releases** do repositório. O workflow de versão assinada publica um arquivo com nome fixo **`DarkShield.apk`**, evitando a necessidade de procurar o APK dentro dos artefatos internos do GitHub Actions.
+
+1. Abra **Releases**.
+2. Entre na versão **DarkShield - APK para instalar**.
+3. Baixe **`DarkShield.apk`**.
+4. Abra o APK no Android e confirme a instalação. Se o Android bloquear a instalação externa, autorize somente o aplicativo usado para abrir o arquivo.
+5. Opcionalmente, confira **`DarkShield.apk.sha256`** antes de instalar.
+
+> A versão publicada em Releases deve ser a versão **assinada**. O APK de debug e o release candidate sem assinatura continuam sendo apenas artefatos de desenvolvimento/teste.
+
 ## Compilação
 
-O workflow `android-release-candidate.yml` também permite gerar manualmente um **APK de release sem assinatura** para validar o empacotamento de produção. Esse artefato ainda precisa ser assinado com a chave de distribuição do responsável pelo aplicativo antes de ser publicado ou distribuído como versão final.
+Para desenvolvimento, o workflow `android-release-candidate.yml` permite gerar manualmente um **APK de release sem assinatura** para validar o empacotamento de produção. Esse artefato ainda precisa ser assinado com a chave de distribuição do responsável pelo aplicativo antes de ser publicado ou distribuído como versão final.
 
-Para gerar a versão assinada pelo GitHub Actions, use manualmente o workflow `android-signed-release.yml`. Ele espera quatro Secrets do repositório: `DARKSHIELD_KEYSTORE_BASE64`, `DARKSHIELD_KEYSTORE_PASSWORD`, `DARKSHIELD_KEY_ALIAS` e `DARKSHIELD_KEY_PASSWORD`. O arquivo de keystore nunca deve ser commitado no repositório. A chave de assinatura deve permanecer sob controle do responsável pelo aplicativo; perder essa chave pode impedir atualizações futuras do mesmo aplicativo. O workflow grava a keystore somente em um caminho temporário do runner, assina o APK e valida `zipalign` e `apksigner` antes de publicar o artefato da execução.
+Para gerar e disponibilizar a versão instalável, execute manualmente o workflow `android-signed-release.yml` com **Publicar APK na página Releases** habilitado. O workflow valida a assinatura, gera SHA-256, renomeia a saída para `DarkShield.apk` e a publica em Releases. Ele espera quatro Secrets do repositório: `DARKSHIELD_KEYSTORE_BASE64`, `DARKSHIELD_KEYSTORE_PASSWORD`, `DARKSHIELD_KEY_ALIAS` e `DARKSHIELD_KEY_PASSWORD`. O arquivo de keystore nunca deve ser commitado no repositório. A chave de assinatura deve permanecer sob controle do responsável pelo aplicativo; perder essa chave pode impedir atualizações futuras do mesmo aplicativo. O workflow grava a keystore somente em um caminho temporário do runner, assina o APK e valida `zipalign` e `apksigner` antes de publicar o artefato da execução.
 
 No Linux/macOS, a Secret `DARKSHIELD_KEYSTORE_BASE64` pode ser preparada com `base64 -w 0 darkshield-release.keystore` (no macOS, use `base64 darkshield-release.keystore | tr -d '\\n'`). No Windows PowerShell, use `[Convert]::ToBase64String([IO.File]::ReadAllBytes('.\\darkshield-release.keystore'))`. Adicione os quatro valores em **Settings → Secrets and variables → Actions → New repository secret** e então execute o workflow manualmente em **Actions**.
 
