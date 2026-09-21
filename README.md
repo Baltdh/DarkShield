@@ -63,7 +63,7 @@ Quando o final de uma entrada ZIP comprimida exigiria pular um prefixo descompac
 A forma recomendada de instalar é pela página **Releases** do repositório. O workflow de versão assinada publica um arquivo com nome fixo **`DarkShield.apk`**, evitando a necessidade de procurar o APK dentro dos artefatos internos do GitHub Actions.
 
 1. Abra **Releases**.
-2. Entre na versão **DarkShield - APK para instalar**.
+2. Entre na versão mais recente, atualmente **DarkShield v0.7.0**.
 3. Baixe **`DarkShield.apk`**.
 4. Abra o APK no Android e confirme a instalação. Se o Android bloquear a instalação externa, autorize somente o aplicativo usado para abrir o arquivo.
 5. Opcionalmente, confira **`DarkShield.apk.sha256`** antes de instalar.
