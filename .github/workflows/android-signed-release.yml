@@ -2,9 +2,15 @@ name: Build DarkShield signed release
 
 on:
   workflow_dispatch:
+    inputs:
+      publish_release:
+        description: "Publicar APK na página Releases para download direto"
+        required: true
+        default: true
+        type: boolean
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: darkshield-signed-release
@@ -82,18 +88,40 @@ jobs:
             echo "Signature verification:"
             cat apk-signature.txt
           } > release-metadata.txt
-          ls -lh "$APK" "$APK.sha256" release-metadata.txt
+          mkdir -p release
+          cp "$APK" release/DarkShield.apk
+          cp "$APK.sha256" release/DarkShield.apk.sha256
+          cp release-metadata.txt release/release-metadata.txt
+          ls -lh release/DarkShield.apk release/DarkShield.apk.sha256 release/release-metadata.txt
 
       - name: Upload signed release
         uses: actions/upload-artifact@v6
         with:
           name: DarkShield-signed-release
           path: |
-            DarkShield/app/build/outputs/**/*.apk
-            DarkShield/app/build/outputs/**/*.apk.sha256
+            DarkShield/release/DarkShield.apk
+            DarkShield/release/DarkShield.apk.sha256
+            DarkShield/release/release-metadata.txt
             DarkShield/apk-signature.txt
-            DarkShield/release-metadata.txt
           if-no-files-found: error
+
+      - name: Publish easy-install GitHub Release
+        if: ${{ inputs.publish_release }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: DarkShield - APK para instalar
+          prerelease: true
+          make_latest: false
+          body: |
+            APK assinado do DarkShield, gerado automaticamente pelo GitHub Actions.
+            
+            **Instalação:** baixe `DarkShield.apk` no Android e abra o arquivo.
+            O SHA-256 e os metadados de assinatura acompanham o APK para verificação.
+          files: |
+            DarkShield/release/DarkShield.apk
+            DarkShield/release/DarkShield.apk.sha256
+            DarkShield/release/release-metadata.txt
 
       - name: Remove signing material
         if: always()
