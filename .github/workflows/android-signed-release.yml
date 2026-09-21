@@ -109,12 +109,12 @@ jobs:
         if: ${{ inputs.publish_release }}
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: latest
-          name: DarkShield - APK para instalar
-          prerelease: true
-          make_latest: false
+          tag_name: v0.7.0
+          name: DarkShield v0.7.0
+          prerelease: false
+          make_latest: true
           body: |
-            APK assinado do DarkShield, gerado automaticamente pelo GitHub Actions.
+            DarkShield v0.7.0 — APK assinado e validado automaticamente pelo GitHub Actions.
             
             **Instalação:** baixe `DarkShield.apk` no Android e abra o arquivo.
             O SHA-256 e os metadados de assinatura acompanham o APK para verificação.
