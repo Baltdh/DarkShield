@@ -6,7 +6,6 @@ on:
     paths:
       - "DarkShield/**"
       - ".github/workflows/android-apk.yml"
-      - "DarkShield_backup_v0.6.0.zip"
       - "README.md"
 
 permissions:
@@ -68,6 +67,21 @@ jobs:
           else
             echo "No unit tests yet; build validation continues."
           fi
+
+      - name: Validate optimized release build
+        if: ${{ always() && steps.build_apk.outcome == 'success' }}
+        working-directory: DarkShield
+        run: |
+          set -euo pipefail
+          if [ -x "./gradlew" ]; then
+            ./gradlew --no-daemon assembleRelease
+          else
+            gradle --no-daemon assembleRelease
+          fi
+          RELEASE_APK="$(find app/build/outputs -type f -name '*-release*.apk' | head -n 1)"
+          test -n "$RELEASE_APK"
+          test -s "$RELEASE_APK"
+          ls -lh "$RELEASE_APK"
 
       - name: Run Android lint
         if: ${{ always() && steps.build_apk.outcome == 'success' }}
