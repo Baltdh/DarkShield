@@ -17,6 +17,9 @@ import android.widget.Toast;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.CheckBox;
+import java.util.ArrayList;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -306,34 +309,38 @@ public class MainActivity extends android.app.Activity {
             return;
         }
 
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
         LinearLayout container = new LinearLayout(this);
         container.setOrientation(LinearLayout.VERTICAL);
-        int pad = (int) (20 * getResources().getDisplayMetrics().density);
         container.setPadding(pad, pad / 2, pad, pad / 2);
 
         TextView intro = new TextView(this);
-        intro.setText("O DarkShield não altera aplicativos comuns sozinho. Cada ação abre a tela oficial do Android para você confirmar a correção.");
+        intro.setText("Selecione as providências desejadas. O DarkShield automatiza o encaminhamento seguro; "
+                + "quando o Android protege uma alteração, a confirmação final continua sendo feita na tela oficial do sistema.");
         intro.setTextSize(13);
         intro.setTextColor(0xFFB8BECC);
         intro.setPadding(0, 0, 0, pad / 2);
         container.addView(intro);
 
+        List<CheckBox> selections = new ArrayList<>();
         for (RemediationPlanner.Action action : actions) {
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.VERTICAL);
             row.setPadding(0, pad / 3, 0, pad / 3);
 
-            TextView title = new TextView(this);
-            title.setText(action.title);
-            title.setTextSize(14);
-            title.setTextColor(0xFFFFFFFF);
-            title.setTypeface(null, android.graphics.Typeface.BOLD);
-            row.addView(title);
+            CheckBox select = new CheckBox(this);
+            select.setText(action.title);
+            select.setTextSize(14);
+            select.setTextColor(0xFFFFFFFF);
+            select.setTag(action);
+            selections.add(select);
+            row.addView(select);
 
             TextView reason = new TextView(this);
             reason.setText(action.reason);
             reason.setTextSize(12);
-            reason.setTextColor(0xFF8F97A8);
+            reason.setTextColor(0xFFB8BECC);
+            reason.setPadding(0, 0, 0, pad / 4);
             row.addView(reason);
 
             Button open = new Button(this);
@@ -342,15 +349,43 @@ public class MainActivity extends android.app.Activity {
                     : "ABRIR CORREÇÃO");
             open.setOnClickListener(v -> openRemediation(action));
             row.addView(open);
-
             container.addView(row);
         }
 
-        new android.app.AlertDialog.Builder(this)
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.addView(container);
+        int maxHeight = (int) (getResources().getDisplayMetrics().heightPixels * 0.68f);
+        scroll.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, maxHeight));
+
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
                 .setTitle("Central de correções seguras")
-                .setView(container)
-                .setPositiveButton("FECHAR", null)
-                .show();
+                .setView(scroll)
+                .setNegativeButton("FECHAR", null)
+                .setPositiveButton("CORRIGIR SELECIONADO", null)
+                .create();
+
+        dialog.setOnShowListener(ignored -> dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(v -> {
+                    List<RemediationPlanner.Action> selected = new ArrayList<>();
+                    for (CheckBox box : selections) {
+                        if (box.isChecked()) {
+                            selected.add((RemediationPlanner.Action) box.getTag());
+                        }
+                    }
+                    if (selected.isEmpty()) {
+                        Toast.makeText(this, "Selecione pelo menos uma providência.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    if (selected.size() > 1) {
+                        Toast.makeText(this,
+                                "Abrindo a primeira correção. Volte ao DarkShield para continuar as demais.",
+                                Toast.LENGTH_LONG).show();
+                    }
+                    openRemediation(selected.get(0));
+                }));
+        dialog.show();
     }
 
     private void openRemediation(RemediationPlanner.Action action) {
