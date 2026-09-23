@@ -25,7 +25,7 @@ Atualizado em 2026-09-23. Este documento transforma pesquisa defensiva em requis
 | Acesso a credenciais | acessibilidade, overlay, teclado ativo/declarado, notificações e autofill declarado | o conteúdo capturado não é lido pelo DarkShield; a análise preserva privacidade |
 | Descoberta | inventário, target SDK, componentes, uso, todos os arquivos e postura do sistema | não há inspeção de memória ou de comandos já executados |
 | Coleta | SMS, chamadas, contatos, localização, microfone, câmera e MediaProjection declarada | captura efetiva de tela/mídia requer contexto de runtime que o Android restringe |
-| Comando e controle | VPN, proxy, acesso remoto nominal, APIs de rede combinadas com carregamento DEX | INTERNET é comum; domínio/IP ou criptografia isolados não são tratados como prova |
+| Comando e controle | VPN, proxy, estado do DNS privado na rede ativa, acesso remoto nominal, APIs de rede combinadas com carregamento DEX | DNS e INTERNET são comuns; provedor, domínio/IP ou criptografia isolados não são tratados como prova |
 | Exfiltração | correlação de dados sensíveis com capacidades privilegiadas | o app não intercepta tráfego nem realiza ataque-in-the-middle |
 | Impacto | administrador, instalação de APK, shell, arquivos e SMS | alterações destrutivas não são testadas nem executadas pelo DarkShield |
 | Segurança do próprio app | sem INTERNET, backup desativado, toques encobertos filtrados, overlays ocultados em telas de reparo | teste em aparelhos/fabricantes diferentes continua obrigatório |
@@ -47,6 +47,8 @@ Atualizado em 2026-09-23. Este documento transforma pesquisa defensiva em requis
 - reconhece referências estáticas a carregadores DEX, obtenção de conteúdo pela rede, execução de shell e ponte JavaScript de WebView;
 - mantém carregamento dinâmico isolado como informativo e só pontua a combinação carregador + rede de forma heurística;
 - preserva limites de tamanho, quantidade e tempo da análise estática.
+- observa o DNS privado da rede ativa sem confundir ausência de dados com configuração desativada;
+- exige concessão da permissão para indicadores comuns e evita elevar sobreposição apenas declarada.
 
 ## Próximas prioridades
 

@@ -8,7 +8,10 @@
 - correlaciona captura de tela declarada com acesso remoto ou acessibilidade ativa, preservando a exigência de consentimento por sessão;
 - adiciona análise heurística limitada de carregadores DEX combinados com rede, execução de comandos e pontes JavaScript de WebView;
 - documenta a cobertura por tática da matriz MITRE ATT&CK Mobile e os limites de um scanner Android sem root;
-- adiciona regressões para impedir que declarações isoladas sejam elevadas a comportamento operacional.
+- adiciona regressões para impedir que declarações isoladas sejam elevadas a comportamento operacional;
+- informa DNS privado na rede ativa e oferece acesso aos ajustes de rede, sem pontuação de risco isolada;
+- exige concessão da permissão antes de considerar AppOps como acesso operacional para permissões comuns;
+- impede correlação de risco baseada apenas na declaração de sobreposição.
 
 ## 0.7.1
 

@@ -53,7 +53,9 @@ public final class ThreatCorrelationEngine {
             if (t.contains("acesso remoto")) remote.put(p, true);
             if (t.contains("serviço de acessibilidade ativo")) accessibility.put(p, true);
             if (t.contains("serviço de acessibilidade declarado")) accessibilityDeclared.put(p, true);
-            if (t.contains("sobreposição")) overlay.put(p, true);
+            if ("permissão de sobreposição concedida".equals(t.trim())) {
+                overlay.put(p, true);
+            }
             if ("administrador do dispositivo ativo".equals(t.trim())) admin.put(p, true);
             if (t.contains("acesso a notificações ativo")) notification.put(p, true);
             if (t.contains("inicialização automática declarada")) boot.put(p, true);

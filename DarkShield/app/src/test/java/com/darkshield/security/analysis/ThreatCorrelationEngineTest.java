@@ -156,6 +156,19 @@ public class ThreatCorrelationEngineTest {
         assertTrue(out.isEmpty());
     }
 
+    @Test public void declaredOverlayDoesNotBecomeAnActiveRemoteControlSignal() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
+                f("Sobreposição declarada", ScanFinding.Level.INFO)));
+        assertTrue(out.isEmpty());
+
+        List<ScanFinding> accessibility = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),
+                f("Sobreposição declarada", ScanFinding.Level.INFO),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW)));
+        assertTrue(accessibility.isEmpty());
+    }
+
     @Test public void correlatesAccessibilityOverlayAndBootWithoutRemoteMarker() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),
