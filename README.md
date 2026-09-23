@@ -1,6 +1,6 @@
 # DarkShield
 
-**Versão atual: 0.7.0**
+**Versão atual: 0.7.1**
 
 DarkShield é um auditor local de segurança para Android. O objetivo é reunir indicadores observáveis no próprio dispositivo para ajudar o usuário a revisar configurações, permissões e componentes potencialmente sensíveis.
 
@@ -31,6 +31,7 @@ DarkShield é um auditor local de segurança para Android. O objetivo é reunir 
 - componentes Android exportados e proteção explícita por permissão, incluindo Activities, serviços, receivers e providers; componentes públicos comuns são mantidos como informação, enquanto providers exportados sem `readPermission`/`writePermission` explícitas recebem um alerta pontuado;
 - indicadores heurísticos associados a aplicativos de acesso remoto;
 - correlação entre sinais do mesmo pacote para destacar combinações que merecem revisão;
+- correlação de indicadores de acesso remoto com autorizações especiais realmente ativas, sem elevar declarações inativas;
 - metadados de aplicativos como target SDK muito antigo, `testOnly` e uso permitido de cleartext;
 - aplicativo padrão de SMS e aplicativo padrão de chamadas, mantidos como informação de revisão porque podem lidar diretamente com comunicações do dispositivo;
 - resumo por pacote com maior severidade, quantidade de achados e pontos brutos para facilitar a revisão.
@@ -83,7 +84,7 @@ Para gerar e disponibilizar a versão instalável, execute manualmente o workflo
 
 No Linux/macOS, a Secret `DARKSHIELD_KEYSTORE_BASE64` pode ser preparada com `base64 -w 0 darkshield-release.keystore` (no macOS, use `base64 darkshield-release.keystore | tr -d '\\n'`). No Windows PowerShell, use `[Convert]::ToBase64String([IO.File]::ReadAllBytes('.\\darkshield-release.keystore'))`. Adicione os quatro valores em **Settings → Secrets and variables → Actions → New repository secret** e então execute o workflow manualmente em **Actions**.
 
-O workflow do GitHub Actions usa JDK 17 e Gradle 8.11.1 para gerar um APK de debug, executar os testes unitários, rodar o Android lint, calcular o SHA-256 do artefato e validar a assinatura do APK com `apksigner verify --verbose`.
+O workflow do GitHub Actions usa JDK 17 e o Gradle Wrapper 8.11.1 verificado para gerar um APK de debug, executar os testes unitários, rodar o Android lint, calcular o SHA-256 do artefato e validar a assinatura do APK com `apksigner verify --verbose`. O Wrapper fixa também o SHA-256 da distribuição oficial para tornar a compilação reproduzível.
 
 Para uma máquina com o Android SDK configurado:
 
@@ -103,7 +104,7 @@ A análise é local. O aplicativo não precisa de uma conta própria nem de um s
 
 ## Inteligência de ameaças e correção segura
 
-A versão 0.7.0 acrescenta uma camada local de conhecimento de ameaças baseada em pesquisa pública de Android e MITRE ATT&CK Mobile. As correlações podem apresentar técnicas como abuso de acessibilidade (T1453), acesso a notificações (T1517), software de acesso remoto (T1663) e outros contextos relevantes. Esse conhecimento é explicativo: um único sinal não transforma um aplicativo legítimo em malware.
+A linha 0.7 acrescenta uma camada local de conhecimento de ameaças baseada em pesquisa pública de Android e MITRE ATT&CK Mobile. As correlações podem apresentar técnicas como abuso de acessibilidade (T1453), acesso a notificações (T1517), software de acesso remoto (T1663) e outros contextos relevantes. Esse conhecimento é explicativo: um único sinal não transforma um aplicativo legítimo em malware.
 
 A arquitetura também foi preparada para uma futura fonte de inteligência por hash/assinatura. Não há chave de API, amostras de malware ou feed externo embutidos no APK. Isso evita transformar uma dependência externa em um veredito falso ou vazar dados do dispositivo.
 
