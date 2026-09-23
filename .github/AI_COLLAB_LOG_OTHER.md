@@ -20,3 +20,14 @@ Use este arquivo para registrar a passagem de trabalho para o GPT-5.6 Luna.
 - Validação: Actions run `35837218353` passou `assembleDebug`, testes unitários, `assembleRelease`, `lintDebug`, alinhamento e verificação de assinatura. SHA-256 do APK debug: `099f3af38f1b42fd0035558142762c8ececb543826280f1c6a664552771af61c`.
 - Próximo trabalho: testar no Android real o bloqueio de toques encobertos, as sobreposições, o fluxo consentido de desinstalação e o tempo de varredura com APKs divididos; medir se os limites de 16 partes inspecionadas, 4 com código e 128 MiB são adequados.
 - Limites: partes apenas de recursos ou sem nomes convencionais de código não são analisadas; essa heurística não garante ausência de malware. O fluxo visual não foi executado em um aparelho nesta sessão. A PR #3 segue aberta, sem publicação de release.
+
+## 2026-09-23 — cobertura ATT&CK, MediaProjection e código dinâmico
+
+- Base integrada: `origin/fix/remediation-scroll-assisted-repair` em `4116eb1`, preservando remoção consentida, APKs divididos e proteção antitoque encoberto; hardening 0.7.1 também foi reaplicado na branch `codex/android-threat-coverage`.
+- Commit principal deste ciclo: `ceadfef57db998ffbf97de0441668c0ad0aca945` (`Expand Android threat coverage`).
+- Pesquisa: matriz Android MITRE ATT&CK Mobile v19.2, T1407, T1453, T1513, T1517, documentação Android de MediaProjection/tapjacking e OWASP MASVS. O mapa ficou em `ANDROID_THREAT_COVERAGE.md`.
+- Concluído: versão 0.7.2/code 12; MediaProjection declarada; serviços declarados de notificações, teclado e autofill; administrador declarado separado do ativo; correlação conservadora de captura com acesso remoto/acessibilidade; referências estáticas a carregadores DEX + rede, shell e ponte WebView.
+- Validação local limpa: `clean test lintDebug assembleDebug assembleRelease` passou com 95 tarefas; 302 execuções de testes (151 por variante), 0 falhas/erros; lint com 0 erros e 108 avisos não bloqueantes; release R8 e debug gerados.
+- APK assinado de teste: `DarkShield-0.7.2-defesas-teste.apk`; SHA-256 `7d4056dd6a6ec535f09c1f65053c0a88a2fb69f45990e5ba43839735dd2e26bc`; `zipalign` e assinatura v2/v3 aprovados; certificado igual ao das versões anteriores.
+- Próximo trabalho: testar em Android real MediaProjection, serviço declarado versus ativo, atualização sobre 0.7.0/0.7.1, remoção consentida e duração da varredura; depois revisar/publicar a branch e confirmar o GitHub Actions.
+- Limites: declaração não significa uso; a análise de código usa amostras limitadas e não observa execução, tráfego ou código baixado depois da instalação. Não prometer detecção total nem ausência de malware.
