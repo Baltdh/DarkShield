@@ -40,6 +40,8 @@ public final class ThreatCorrelationEngine {
         Map<String, Boolean> notification = new HashMap<>();
         Map<String, Boolean> boot = new HashMap<>();
         Map<String, Boolean> apkInstall = new HashMap<>();
+        Map<String, Boolean> settingsAccess = new HashMap<>();
+        Map<String, Boolean> allFilesAccess = new HashMap<>();
         Map<String, Integer> sensitive = new HashMap<>();
 
         for (ScanFinding f : findings) {
@@ -55,6 +57,12 @@ public final class ThreatCorrelationEngine {
             if (t.contains("acesso a notificações ativo")) notification.put(p, true);
             if (t.contains("inicialização automática declarada")) boot.put(p, true);
             if (t.contains("pode solicitar instalação de apks")) apkInstall.put(p, true);
+            if ("acesso especial para modificar configurações".equals(t.trim())) {
+                settingsAccess.put(p, true);
+            }
+            if ("acesso a todos os arquivos concedido".equals(t.trim())) {
+                allFilesAccess.put(p, true);
+            }
             if (t.contains("acesso a sms")
                     || t.contains("histórico de chamadas")
                     || t.contains("microfone/câmera")
@@ -73,6 +81,8 @@ public final class ThreatCorrelationEngine {
             boolean n = notification.getOrDefault(p, false);
             boolean b = boot.getOrDefault(p, false);
             boolean i = apkInstall.getOrDefault(p, false);
+            boolean w = settingsAccess.getOrDefault(p, false);
+            boolean f = allFilesAccess.getOrDefault(p, false);
             int s = sensitive.getOrDefault(p, 0);
 
             if (a && o) {
@@ -110,6 +120,13 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote apresenta indicador de acesso remoto e capacidade operacional para solicitar instalação de APKs.",
                         p, 4,
                         "Confirme se o aplicativo é reconhecido e se a instalação de APKs faz parte da função esperada"));
+            } else if (w || f) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Acesso remoto combinado com acesso especial",
+                        "O mesmo pacote apresenta indicador de acesso remoto e uma autorização especial ativa para modificar configurações ou acessar amplamente os arquivos.",
+                        p, 4,
+                        "Confirme se o aplicativo é reconhecido e se esse acesso especial é necessário"));
             } else if (s > 0) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,

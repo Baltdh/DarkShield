@@ -198,8 +198,10 @@ public final class SecurityScanner {
         boolean system = isSystemApp(ai);
         boolean remoteMarker = containsRemoteControlMarker(lower);
         boolean debuggable = (ai.flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+        boolean overlayGranted = isPermissionGranted(
+                "android.permission.SYSTEM_ALERT_WINDOW", p.packageName);
 
-        if (isPermissionGranted("android.permission.SYSTEM_ALERT_WINDOW", p.packageName)) {
+        if (overlayGranted) {
             out.add(new ScanFinding(
                     ScanFinding.Level.LOW,
                     "Permissão de sobreposição concedida",
@@ -353,9 +355,7 @@ public final class SecurityScanner {
         }
 
         if (remoteMarker) {
-            boolean corroborated = sensitive >= 2
-                    || isPermissionGranted("android.permission.SYSTEM_ALERT_WINDOW", p.packageName)
-                    || hasAccessibilityService(p);
+            boolean corroborated = shouldElevateRemoteMarker(sensitive, overlayGranted);
             out.add(new ScanFinding(
                     corroborated ? ScanFinding.Level.MEDIUM : ScanFinding.Level.LOW,
                     "Indicador heurístico de acesso remoto",
@@ -443,6 +443,17 @@ public final class SecurityScanner {
             out.addAll(StaticApkAnalyzer.analyzeInstalled(
                     ai.sourceDir, ai.splitSourceDirs, p.packageName));
         }
+    }
+
+    /**
+     * A name associated with remote support is only elevated by capabilities
+     * confirmed as operational. Merely declaring an accessibility service is
+     * intentionally excluded here; active accessibility is collected later and
+     * correlated by {@link ThreatCorrelationEngine}.
+     */
+    static boolean shouldElevateRemoteMarker(
+            int operationalSensitiveCount, boolean overlayGranted) {
+        return operationalSensitiveCount >= 2 || overlayGranted;
     }
 
     static String defaultInputMethodPackage(String setting) {

@@ -116,6 +116,35 @@ public class ThreatCorrelationEngineTest {
         assertTrue(out.get(0).title.contains("instalação de APK"));
     }
 
+    @Test public void correlatesRemoteAccessWithGrantedSettingsAccess() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
+                f("Acesso especial para modificar configurações", ScanFinding.Level.MEDIUM)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertTrue(out.get(0).title.contains("acesso especial"));
+    }
+
+    @Test public void correlatesRemoteAccessWithGrantedAllFilesAccess() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
+                f("Acesso a todos os arquivos concedido", ScanFinding.Level.MEDIUM)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertTrue(out.get(0).title.contains("acesso especial"));
+    }
+
+    @Test public void declaredSpecialAccessDoesNotCreateCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
+                f("Acesso especial para modificar configurações declarado", ScanFinding.Level.INFO),
+                f("Acesso a todos os arquivos declarado", ScanFinding.Level.INFO)));
+
+        assertTrue(out.isEmpty());
+    }
+
     @Test public void correlatesAccessibilityOverlayAndBootWithoutRemoteMarker() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),

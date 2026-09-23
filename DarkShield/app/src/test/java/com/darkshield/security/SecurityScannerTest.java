@@ -69,6 +69,20 @@ public class SecurityScannerTest {
         assertFalse(SecurityScanner.isUnprotectedExportedProvider(
                 false, null, null));
     }
+
+    @Test public void remoteMarkerRequiresOperationalCorroboration() {
+        assertFalse(SecurityScanner.shouldElevateRemoteMarker(0, false));
+        assertFalse(SecurityScanner.shouldElevateRemoteMarker(1, false));
+        assertTrue(SecurityScanner.shouldElevateRemoteMarker(2, false));
+        assertTrue(SecurityScanner.shouldElevateRemoteMarker(0, true));
+    }
+
+    @Test public void declaredAccessibilityIsNotOperationalCorroboration() {
+        // Accessibility declaration is deliberately not an input to this helper.
+        // The active-service collector and correlation engine handle it later.
+        assertFalse(SecurityScanner.shouldElevateRemoteMarker(0, false));
+    }
+
     @Test public void securityPatchAgeDaysCalculatesExactAge() {
         assertEquals(180,
                 SecurityScanner.securityPatchAgeDays(
