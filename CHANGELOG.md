@@ -3,7 +3,7 @@
 ## 0.7.2
 
 - integra a Central de correções e remoção confirmada pelo Android com o hardening e a cadeia de build reproduzível da linha 0.7.1;
-- identifica MediaProjection e outros serviços privilegiados declarados sem tratá-los como ativos;
+- identifica MediaProjection e outros serviços privilegiados declarados sem tratá-los como ativos ou pontuar captura apenas declarada;
 - diferencia administrador do dispositivo declarado de administrador realmente ativo;
 - correlaciona captura de tela declarada com acesso remoto ou acessibilidade ativa, preservando a exigência de consentimento por sessão;
 - adiciona análise heurística limitada de carregadores DEX combinados com rede, execução de comandos e pontes JavaScript de WebView;

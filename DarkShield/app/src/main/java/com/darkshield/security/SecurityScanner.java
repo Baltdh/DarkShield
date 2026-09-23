@@ -839,10 +839,10 @@ public final class SecurityScanner {
 
         if (mediaProjection) {
             out.add(new ScanFinding(
-                    ScanFinding.Level.LOW,
+                    ScanFinding.Level.INFO,
                     "Capacidade de captura de tela declarada",
                     "O aplicativo declara serviço/permissão de MediaProjection. O Android exige consentimento do usuário para cada sessão, mas uma sessão autorizada pode capturar conteúdo exibido na tela.",
-                    p.packageName, 1,
+                    p.packageName, 0,
                     "Autorize compartilhamento ou gravação de tela somente quando você iniciar e reconhecer a função"));
         }
         if (notificationListener) {
