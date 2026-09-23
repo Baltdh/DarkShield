@@ -411,8 +411,7 @@ public final class SecurityScanner {
                     "Normal em builds de desenvolvimento; confirme a origem se você não esperava um app de teste"));
         }
 
-        if (!system && Build.VERSION.SDK_INT >= 23
-                && (ai.flags & ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC) != 0) {
+        if (!system && (ai.flags & ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC) != 0) {
             out.add(new ScanFinding(
                     ScanFinding.Level.INFO, "Aplicativo permite tráfego sem criptografia",
                     label + " pode usar tráfego cleartext, como HTTP; isso não prova comportamento malicioso",
@@ -515,20 +514,18 @@ public final class SecurityScanner {
                 "O aplicativo padrão de SMS pode processar mensagens recebidas e enviadas",
                 "Confirme se você reconhece o aplicativo definido como padrão para SMS");
 
-        if (Build.VERSION.SDK_INT >= 23) {
-            String defaultDialer = null;
-            try {
-                android.telecom.TelecomManager telecom =
-                        (android.telecom.TelecomManager) c.getSystemService(Context.TELECOM_SERVICE);
-                if (telecom != null) defaultDialer = telecom.getDefaultDialerPackage();
-            } catch (Exception ignored) {}
+        String defaultDialer = null;
+        try {
+            android.telecom.TelecomManager telecom =
+                    (android.telecom.TelecomManager) c.getSystemService(Context.TELECOM_SERVICE);
+            if (telecom != null) defaultDialer = telecom.getDefaultDialerPackage();
+        } catch (Exception ignored) {}
 
-            addDefaultHandlerFinding(out,
-                    defaultDialer,
-                    "Aplicativo padrão de chamadas",
-                    "O aplicativo padrão de chamadas pode controlar a experiência de telefonia do dispositivo",
-                    "Confirme se você reconhece o aplicativo definido como padrão para chamadas");
-        }
+        addDefaultHandlerFinding(out,
+                defaultDialer,
+                "Aplicativo padrão de chamadas",
+                "O aplicativo padrão de chamadas pode controlar a experiência de telefonia do dispositivo",
+                "Confirme se você reconhece o aplicativo definido como padrão para chamadas");
     }
 
     private void addDefaultHandlerFinding(
@@ -791,7 +788,6 @@ public final class SecurityScanner {
     }
 
     private boolean isIgnoringBatteryOptimizations(String packageName) {
-        if (Build.VERSION.SDK_INT < 23) return false;
         try {
             PowerManager powerManager =
                     (PowerManager) c.getSystemService(Context.POWER_SERVICE);
@@ -927,28 +923,26 @@ public final class SecurityScanner {
     }
 
     private void checkDevicePosture(List<ScanFinding> out) {
-        if (Build.VERSION.SDK_INT >= 23) {
-            try {
-                KeyguardManager keyguard =
-                        (KeyguardManager) c.getSystemService(Context.KEYGUARD_SERVICE);
-                if (keyguard != null) {
-                    boolean secure = keyguard.isDeviceSecure();
-                    out.add(new ScanFinding(
-                            ScanFinding.Level.INFO,
-                            "Bloqueio de tela seguro",
-                            secure ? "Um método de bloqueio seguro está configurado"
-                                   : "Nenhum método de bloqueio seguro foi identificado",
-                            null, 0,
-                            secure ? null
-                                   : "Configure PIN, senha ou padrão para reforçar a proteção física do dispositivo"));
-                }
-            } catch (SecurityException ignored) {
+        try {
+            KeyguardManager keyguard =
+                    (KeyguardManager) c.getSystemService(Context.KEYGUARD_SERVICE);
+            if (keyguard != null) {
+                boolean secure = keyguard.isDeviceSecure();
                 out.add(new ScanFinding(
                         ScanFinding.Level.INFO,
                         "Bloqueio de tela seguro",
-                        "Não foi possível consultar o estado do bloqueio de tela",
-                        null, 0, null));
+                        secure ? "Um método de bloqueio seguro está configurado"
+                               : "Nenhum método de bloqueio seguro foi identificado",
+                        null, 0,
+                        secure ? null
+                               : "Configure PIN, senha ou padrão para reforçar a proteção física do dispositivo"));
             }
+        } catch (SecurityException ignored) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Bloqueio de tela seguro",
+                    "Não foi possível consultar o estado do bloqueio de tela",
+                    null, 0, null));
         }
 
         String patch = Build.VERSION.SECURITY_PATCH;

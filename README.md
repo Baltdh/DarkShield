@@ -101,6 +101,8 @@ Saída esperada do APK:
 
 A análise é local. O aplicativo não precisa de uma conta própria nem de um servidor remoto para executar a verificação. O botão de compartilhamento envia o texto do relatório somente quando o usuário escolhe explicitamente um aplicativo de destino no Android.
 
+O backup do aplicativo permanece desativado. Regras explícitas de extração também excluem os dados privados tanto do backup em nuvem quanto da transferência entre dispositivos nas versões modernas do Android.
+
 
 ## Inteligência de ameaças e correção segura
 
