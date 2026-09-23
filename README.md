@@ -6,7 +6,7 @@ DarkShield é um auditor local de segurança para Android. O objetivo é reunir 
 
 ## O que a versão atual verifica
 
-- permissões sensíveis e o estado operacional de AppOps quando disponível;
+- permissões sensíveis efetivamente concedidas e o estado operacional de AppOps quando disponível;
 - sobreposição de tela;
 - câmera e microfone;
 - SMS e histórico de chamadas;
@@ -24,6 +24,7 @@ DarkShield é um auditor local de segurança para Android. O objetivo é reunir 
 - indicadores locais de root, builds de teste e builds de desenvolvimento;
 - marcadores de gerenciamento de root em caminhos observáveis;
 - proxy HTTP/HTTPS observado pela rede;
+- estado do DNS privado na rede ativa em Android 9+, com provedor quando disponível, sem pontuação de risco isolada;
 - origem de instalação conhecida quando o Android a disponibiliza;
 - assinatura SHA-256 do(s) certificado(s) do aplicativo, usando o certificado atual quando há rotação e listando múltiplos signatários em ordem determinística;
 - análise estática básica do APK base e de APKs divididos instalados que contenham DEX/bibliotecas identificados pelo nome;
@@ -41,6 +42,8 @@ DarkShield não é um antivírus baseado em assinatura e não pode garantir que 
 A análise estática atual examina a estrutura ZIP, nomes de entradas e amostras limitadas do início e do final do conteúdo de DEX/bibliotecas em busca de marcadores heurísticos; ela não executa o APK e não substitui análise dinâmica, engenharia reversa ou verificação de reputação do arquivo. Marcadores em recursos não executáveis são tratados como informação técnica sem pontuação isolada. Em APKs divididos, as partes sem DEX/bibliotecas reconhecidos pelo nome são ignoradas; código disfarçado nessas partes pode passar despercebido.
 
 O scanner usa apenas APIs e informações acessíveis a um aplicativo Android sem root. Alguns estados são protegidos pelo sistema operacional e podem aparecer como não disponíveis. Quando a lista de aplicativos não pode ser obtida, a verificação registra explicitamente que o inventário está incompleto em vez de tratar o resultado como uma varredura normal sem aplicativos.
+
+Para câmera, microfone e outras permissões comuns, o scanner combina a concessão da permissão pelo Android com o estado AppOps disponível. Acessos especiais, como sobreposição e estatísticas de uso, seguem a consulta própria de AppOps. O indicador de DNS privado descreve somente a rede ativa: redes sem conexão ou sem dados consultáveis geram estado indisponível; VPNs e aplicativos podem usar resolvedores próprios. DNS privado desativado ou um provedor desconhecido não prova infecção.
 
 O uso de QUERY_ALL_PACKAGES pode estar sujeito às políticas de distribuição da Google Play. O projeto foi estruturado para auditoria local e pode ser instalado fora da Play Store.
 
@@ -109,6 +112,8 @@ A Central de correções seguras permite selecionar vários acessos apontados na
 O botão **Gerenciar / remover aplicativos** lista os apps instalados, permite buscar por nome ou pacote e, se desejado, mostrar também os aplicativos de sistema. Para apps instalados pelo usuário, **Solicitar desinstalação** abre o desinstalador oficial após uma confirmação no DarkShield; o Android exige a confirmação final. Para apps do sistema, a interface abre seus detalhes para desativação ou remoção de atualizações, caso o dispositivo permita. Um administrador ativo pode precisar ser desativado nas configurações antes da desinstalação. `REQUEST_DELETE_PACKAGES` no manifesto permite solicitar a remoção, mas não concede a capacidade de remover silenciosamente ou de revogar privilégios de outros apps.
 
 As janelas de revisão e remoção filtram toques recebidos através de uma sobreposição. Em Android 12 ou posterior, o app pede ao sistema para ocultar janelas de sobreposição de outros aplicativos enquanto essas janelas estão visíveis. O pedido de remoção ainda passa pela interface de confirmação do próprio Android.
+
+O botão **Revisar rede e DNS privado** explica onde conferir o provedor configurado e abre os ajustes de rede do Android. Como fabricantes organizam essas telas de formas distintas, o usuário escolhe a configuração no próprio sistema. O DarkShield não troca o provedor DNS automaticamente.
 
 Fontes de estudo usadas para o modelo:
 - MITRE ATT&CK Mobile: técnicas e exemplos de malware Android.

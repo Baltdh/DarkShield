@@ -638,6 +638,45 @@ public final class SecurityScanner {
                     "O sistema restringiu a consulta do estado de rede",
                     null, 1, null));
         }
+
+        checkPrivateDns(cm, active, out);
+    }
+
+    private void checkPrivateDns(ConnectivityManager cm, Network active,
+                                 List<ScanFinding> out) {
+        if (Build.VERSION.SDK_INT < 28) return;
+        if (active == null) {
+            out.add(new ScanFinding(ScanFinding.Level.INFO, "DNS privado da rede ativa",
+                    "Indisponível: nenhuma rede ativa foi identificada", null, 0, null));
+            return;
+        }
+        try {
+            LinkProperties properties = cm.getLinkProperties(active);
+            if (properties == null) {
+                out.add(new ScanFinding(ScanFinding.Level.INFO, "DNS privado da rede ativa",
+                        "Indisponível: o Android não forneceu os dados da rede", null, 0, null));
+                return;
+            }
+            out.add(privateDnsFinding(properties.isPrivateDnsActive(),
+                    properties.getPrivateDnsServerName()));
+        } catch (SecurityException e) {
+            out.add(new ScanFinding(ScanFinding.Level.INFO, "DNS privado da rede ativa",
+                    "Indisponível: o Android restringiu a consulta da rede", null, 0, null));
+        }
+    }
+
+    static ScanFinding privateDnsFinding(boolean active, String serverName) {
+        String server = serverName == null ? "" : serverName
+                .replaceAll("[\\p{Cntrl}]", " ").trim();
+        if (server.length() > 253) server = server.substring(0, 253) + "…";
+        String detail = !active
+                ? "DNS privado não está ativo nesta rede; isso não indica malware"
+                : server.isEmpty()
+                ? "DNS privado ativo em modo oportunista nesta rede"
+                : "DNS privado ativo com provedor: " + server;
+        return new ScanFinding(ScanFinding.Level.INFO, "DNS privado da rede ativa",
+                detail + ". VPNs e aplicativos podem usar resolução própria.", null, 0,
+                "Revise as configurações de DNS privado do Android se o provedor for desconhecido");
     }
 
     private String getNetworkProxyHost(ConnectivityManager cm, Network active) {
@@ -777,6 +816,13 @@ public final class SecurityScanner {
 
     private boolean isPermissionGranted(String permission, String packageName) {
         try {
+            // A granted AppOp alone does not prove that a dangerous/runtime
+            // permission was granted to this package. Usage access and overlay
+            // are special app-op grants and must be handled separately.
+            boolean appOpOnly = "android.permission.SYSTEM_ALERT_WINDOW".equals(permission)
+                    || "android.permission.PACKAGE_USAGE_STATS".equals(permission);
+            if (!appOpOnly && pm.checkPermission(permission, packageName)
+                    != PackageManager.PERMISSION_GRANTED) return false;
             String op = AppOpsManager.permissionToOp(permission);
             if (op != null && appOps != null) {
                 ApplicationInfo ai = appInfoCache.get(packageName);

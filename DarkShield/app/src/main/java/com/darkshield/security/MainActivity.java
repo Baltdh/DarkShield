@@ -44,7 +44,8 @@ public class MainActivity extends android.app.Activity {
     private ScanProgressView scanProgress;
     private TextView scanProgressStage;
     private View progressContainer;
-    private Button scan, cancelScan, remediation, manageApps, securitySettings, share, copy;
+    private Button scan, cancelScan, remediation, manageApps, securitySettings,
+            networkSettings, share, copy;
     private ScanReport lastScanReport;
     private ScanTimingTracker scanTimingTracker;
     private String lastReport = "";
@@ -92,6 +93,7 @@ public class MainActivity extends android.app.Activity {
         remediation = findViewById(R.id.remediation);
         manageApps = findViewById(R.id.manage_apps);
         securitySettings = findViewById(R.id.settings);
+        networkSettings = findViewById(R.id.network_settings);
         share = findViewById(R.id.share);
         copy = findViewById(R.id.copy);
 
@@ -100,6 +102,7 @@ public class MainActivity extends android.app.Activity {
         remediation.setOnClickListener(v -> showRemediationCenter());
         manageApps.setOnClickListener(v -> showInstalledApps());
         securitySettings.setOnClickListener(v -> openSecuritySettings());
+        networkSettings.setOnClickListener(v -> reviewNetworkSettings());
         share.setOnClickListener(v -> shareReport());
         copy.setOnClickListener(v -> copyReport());
         restoreLastScanTimestamp();
@@ -932,5 +935,31 @@ public class MainActivity extends android.app.Activity {
                     "Não foi possível abrir as configurações de segurança.",
                     Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void reviewNetworkSettings() {
+        String explanation = Build.VERSION.SDK_INT >= 28
+                ? "No Android, procure Rede e internet > DNS privado. Confira se o provedor "
+                        + "é seu conhecido. Uma VPN ou um app pode usar outro método de resolução."
+                : "DNS privado pelo sistema só está disponível a partir do Android 9. "
+                        + "Você ainda pode revisar Wi-Fi, rede móvel e VPN nas configurações.";
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("Revisar rede e DNS privado")
+                .setMessage(explanation)
+                .setNegativeButton("VOLTAR", null)
+                .setPositiveButton("ABRIR AJUSTES DE REDE", (ignoredDialog, which) -> {
+                    try {
+                        startActivity(new Intent(Settings.ACTION_WIRELESS_SETTINGS));
+                    } catch (RuntimeException unavailable) {
+                        try {
+                            startActivity(new Intent(Settings.ACTION_SETTINGS));
+                        } catch (RuntimeException e) {
+                            Toast.makeText(this, "O Android não abriu os ajustes de rede.",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                })
+                .create();
+        showProtectedDialog(dialog);
     }
 }

@@ -261,6 +261,15 @@
             android:contentDescription="Abrir as configurações de segurança do Android"
             android:textSize="13sp" />
 
+        <Button
+            android:id="@+id/network_settings"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:text="REVISAR REDE E DNS PRIVADO"
+            android:contentDescription="Revisar configurações de rede e DNS privado do Android"
+            android:textSize="13sp" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

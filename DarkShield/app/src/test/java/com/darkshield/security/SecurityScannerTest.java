@@ -8,6 +8,20 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class SecurityScannerTest {
+    @Test public void privateDnsReportDistinguishesNetworkStateWithoutScoringIt() {
+        ScanFinding inactive = SecurityScanner.privateDnsFinding(false, null);
+        ScanFinding automatic = SecurityScanner.privateDnsFinding(true, null);
+        ScanFinding provider = SecurityScanner.privateDnsFinding(true, "dns.example\nALERTA FALSO");
+
+        assertEquals(ScanFinding.Level.INFO, inactive.level);
+        assertEquals(0, inactive.points);
+        assertTrue(inactive.detail.contains("não está ativo nesta rede"));
+        assertTrue(automatic.detail.contains("modo oportunista"));
+        assertTrue(provider.detail.contains("dns.example ALERTA FALSO"));
+        assertFalse(provider.detail.contains("\n"));
+        assertEquals(0, provider.points);
+    }
+
     @Test public void unprotectedExportedProviderRequiresNoPermissions() {
         assertTrue(SecurityScanner.isUnprotectedExportedProvider(
                 true, null, null));
