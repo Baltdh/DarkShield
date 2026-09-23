@@ -1,5 +1,15 @@
 # Histórico de versões
 
+## 0.7.2
+
+- integra a Central de correções e remoção confirmada pelo Android com o hardening e a cadeia de build reproduzível da linha 0.7.1;
+- identifica MediaProjection e outros serviços privilegiados declarados sem tratá-los como ativos;
+- diferencia administrador do dispositivo declarado de administrador realmente ativo;
+- correlaciona captura de tela declarada com acesso remoto ou acessibilidade ativa, preservando a exigência de consentimento por sessão;
+- adiciona análise heurística limitada de carregadores DEX combinados com rede, execução de comandos e pontes JavaScript de WebView;
+- documenta a cobertura por tática da matriz MITRE ATT&CK Mobile e os limites de um scanner Android sem root;
+- adiciona regressões para impedir que declarações isoladas sejam elevadas a comportamento operacional.
+
 ## 0.7.1
 
 - reduz falso positivo ao não elevar um marcador nominal de acesso remoto por serviço de acessibilidade apenas declarado;

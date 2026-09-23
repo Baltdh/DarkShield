@@ -42,6 +42,7 @@ public final class ThreatCorrelationEngine {
         Map<String, Boolean> apkInstall = new HashMap<>();
         Map<String, Boolean> settingsAccess = new HashMap<>();
         Map<String, Boolean> allFilesAccess = new HashMap<>();
+        Map<String, Boolean> screenCapture = new HashMap<>();
         Map<String, Integer> sensitive = new HashMap<>();
 
         for (ScanFinding f : findings) {
@@ -53,10 +54,13 @@ public final class ThreatCorrelationEngine {
             if (t.contains("serviço de acessibilidade ativo")) accessibility.put(p, true);
             if (t.contains("serviço de acessibilidade declarado")) accessibilityDeclared.put(p, true);
             if (t.contains("sobreposição")) overlay.put(p, true);
-            if (t.contains("administrador do dispositivo")) admin.put(p, true);
+            if ("administrador do dispositivo ativo".equals(t.trim())) admin.put(p, true);
             if (t.contains("acesso a notificações ativo")) notification.put(p, true);
             if (t.contains("inicialização automática declarada")) boot.put(p, true);
             if (t.contains("pode solicitar instalação de apks")) apkInstall.put(p, true);
+            if ("capacidade de captura de tela declarada".equals(t.trim())) {
+                screenCapture.put(p, true);
+            }
             if ("acesso especial para modificar configurações".equals(t.trim())) {
                 settingsAccess.put(p, true);
             }
@@ -83,6 +87,7 @@ public final class ThreatCorrelationEngine {
             boolean i = apkInstall.getOrDefault(p, false);
             boolean w = settingsAccess.getOrDefault(p, false);
             boolean f = allFilesAccess.getOrDefault(p, false);
+            boolean capture = screenCapture.getOrDefault(p, false);
             int s = sensitive.getOrDefault(p, 0);
 
             if (a && o) {
@@ -106,6 +111,13 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote apresenta indicador de acesso remoto e acesso ativo às notificações.",
                         p, 4,
                         "Confirme se o aplicativo é reconhecido e se a leitura de notificações é necessária"));
+            } else if (capture) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Acesso remoto combinado com captura de tela",
+                        "O mesmo pacote apresenta indicador de acesso remoto e declara capacidade de MediaProjection. A captura ainda depende de consentimento do usuário e essa combinação pode ser legítima em apps de suporte remoto.",
+                        p, 4,
+                        "Confirme se você iniciou o compartilhamento de tela e se reconhece o aplicativo"));
             } else if (b) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,
@@ -143,6 +155,7 @@ public final class ThreatCorrelationEngine {
             boolean b = boot.getOrDefault(p, false);
             boolean n = notification.getOrDefault(p, false);
             boolean r = remote.getOrDefault(p, false);
+            boolean capture = screenCapture.getOrDefault(p, false);
 
             if (a && n && b && !r && !o) {
                 derived.add(new ScanFinding(
@@ -167,6 +180,15 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote possui serviço de acessibilidade ativo e acesso ativo às notificações.",
                         p, 4,
                         "Confirme que o aplicativo é reconhecido e que ambos os acessos são necessários"));
+            }
+
+            if (a && capture && !r && !o && !b && !n) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Acessibilidade combinada com captura de tela",
+                        "O mesmo pacote possui serviço de acessibilidade ativo e declara capacidade de MediaProjection. A declaração de captura não prova uma sessão ativa, mas a combinação amplia o acesso potencial ao conteúdo da interface.",
+                        p, 4,
+                        "Confirme se ambas as funções pertencem a um aplicativo reconhecido e foram autorizadas conscientemente"));
             }
         }
 

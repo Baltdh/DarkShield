@@ -193,6 +193,7 @@ public final class StaticApkAnalyzer {
         List<String> suspicious = new ArrayList<>();
         List<String> suspiciousResourceMarkers = new ArrayList<>();
         List<String> suspiciousContent = new ArrayList<>();
+        BehaviorSignals behaviorSignals = new BehaviorSignals();
         long contentScanned = 0L;
         boolean contentSampleReadFailure = false;
 
@@ -249,6 +250,7 @@ public final class StaticApkAnalyzer {
                         }
                         contentScanned += sample.length;
                         collectContentMarkers(name, sample, suspiciousContent);
+                        behaviorSignals.merge(detectBehaviorSignals(sample));
                     }
                 }
             }
@@ -334,6 +336,8 @@ public final class StaticApkAnalyzer {
                         packageName, 2,
                         "Revise a origem do APK e compare o certificado/versão com a distribuição oficial"));
             }
+
+            addBehaviorFindings(out, packageName, behaviorSignals);
 
             if (dex == 0) {
                 out.add(new ScanFinding(
@@ -534,6 +538,89 @@ public final class StaticApkAnalyzer {
                 addCappedMarker(
                         hits, entryName + ":" + marker, MAX_SUSPICIOUS_CONTENT_HITS);
             }
+        }
+    }
+
+    static BehaviorSignals detectBehaviorSignals(byte[] sample) {
+        if (sample == null || sample.length == 0) return new BehaviorSignals();
+        String text = new String(sample, StandardCharsets.ISO_8859_1)
+                .toLowerCase(Locale.ROOT);
+
+        BehaviorSignals signals = new BehaviorSignals();
+        signals.dynamicCodeLoading = containsAny(text,
+                "dalvik/system/dexclassloader",
+                "dalvik/system/inmemorydexclassloader",
+                "dalvik/system/delegatelastclassloader",
+                "dalvik/system/dexfile");
+        signals.networkFetch = containsAny(text,
+                "java/net/httpurlconnection",
+                "java/net/url",
+                "okhttp3/",
+                "android/app/downloadmanager");
+        signals.shellExecution = text.contains("java/lang/processbuilder")
+                || (text.contains("java/lang/runtime") && text.contains("exec"))
+                || text.contains("/system/bin/sh");
+        signals.webViewJavascriptBridge = text.contains("android/webkit/webview")
+                && text.contains("addjavascriptinterface");
+        return signals;
+    }
+
+    private static boolean containsAny(String text, String... markers) {
+        for (String marker : markers) {
+            if (text.contains(marker)) return true;
+        }
+        return false;
+    }
+
+    private static void addBehaviorFindings(
+            List<ScanFinding> out, String packageName, BehaviorSignals signals) {
+        if (signals.dynamicCodeLoading && signals.networkFetch) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.LOW,
+                    "Código dinâmico combinado com rede",
+                    "A amostra executável contém referências a carregadores DEX e APIs de obtenção de conteúdo pela rede. Essa combinação é compatível com atualização modular legítima, mas também aparece na técnica MITRE ATT&CK Mobile T1407; a análise estática não confirma que código seja baixado ou executado.",
+                    packageName, 2,
+                    "Confirme a origem do aplicativo e compare certificado, versão e distribuição oficial"));
+        } else if (signals.dynamicCodeLoading) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Carregamento dinâmico de código referenciado",
+                    "A amostra executável referencia carregadores DEX. Plugins, frameworks e atualizações modulares podem usar esse recurso legitimamente; não há evidência isolada de download ou execução maliciosa.",
+                    packageName, 0,
+                    "Revise apenas se houver outros sinais ou se a origem do APK for desconhecida"));
+        }
+
+        if (signals.shellExecution) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.LOW,
+                    "Execução de comandos referenciada",
+                    "A amostra executável referencia APIs/caminhos capazes de iniciar comandos do sistema. Ferramentas de diagnóstico, terminais e apps com root podem usar isso legitimamente; o marcador não prova que um comando tenha sido executado.",
+                    packageName, 1,
+                    "Confirme se a função do aplicativo justifica executar comandos locais"));
+        }
+
+        if (signals.webViewJavascriptBridge && signals.networkFetch) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Ponte WebView combinada com rede",
+                    "A amostra referencia addJavascriptInterface e APIs de rede. Essa arquitetura é comum em apps híbridos, mas conteúdo remoto não confiável pode ampliar a superfície de ataque.",
+                    packageName, 0,
+                    "Mantenha o aplicativo atualizado e confirme sua origem; este sinal é apenas contextual"));
+        }
+    }
+
+    static final class BehaviorSignals {
+        boolean dynamicCodeLoading;
+        boolean networkFetch;
+        boolean shellExecution;
+        boolean webViewJavascriptBridge;
+
+        void merge(BehaviorSignals other) {
+            if (other == null) return;
+            dynamicCodeLoading |= other.dynamicCodeLoading;
+            networkFetch |= other.networkFetch;
+            shellExecution |= other.shellExecution;
+            webViewJavascriptBridge |= other.webViewJavascriptBridge;
         }
     }
 

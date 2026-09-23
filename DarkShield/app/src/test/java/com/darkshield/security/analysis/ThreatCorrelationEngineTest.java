@@ -96,6 +96,17 @@ public class ThreatCorrelationEngineTest {
         assertTrue(out.get(0).title.contains("notificações"));
     }
 
+    @Test public void correlatesRemoteAccessWithDeclaredScreenCapture() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
+                f("Capacidade de captura de tela declarada", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertTrue(out.get(0).title.contains("captura de tela"));
+        assertTrue(out.get(0).detail.contains("depende de consentimento"));
+    }
+
     @Test public void correlatesRemoteAccessWithBootPersistence() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
@@ -164,6 +175,24 @@ public class ThreatCorrelationEngineTest {
         assertEquals(1, out.size());
         assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
         assertTrue(out.get(0).title.contains("acessibilidade"));
+    }
+
+    @Test public void correlatesActiveAccessibilityWithDeclaredScreenCapture() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),
+                f("Capacidade de captura de tela declarada", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertTrue(out.get(0).title.contains("captura de tela"));
+    }
+
+    @Test public void declaredAdministratorDoesNotActAsActiveAdministrator() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
+                f("Administrador do dispositivo declarado", ScanFinding.Level.INFO)));
+
+        assertTrue(out.isEmpty());
     }
 
     @Test public void correlatesAccessibilityNotificationsAndBootWithoutRemoteMarker() {

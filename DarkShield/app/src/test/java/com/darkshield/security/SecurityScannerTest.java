@@ -1,5 +1,6 @@
 package com.darkshield.security;
 
+import android.content.pm.ServiceInfo;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -81,6 +82,22 @@ public class SecurityScannerTest {
         // Accessibility declaration is deliberately not an input to this helper.
         // The active-service collector and correlation engine handle it later.
         assertFalse(SecurityScanner.shouldElevateRemoteMarker(0, false));
+    }
+
+    @Test public void identifiesMediaProjectionForegroundServiceBit() {
+        assertTrue(SecurityScanner.isMediaProjectionForegroundService(
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION));
+        assertTrue(SecurityScanner.isMediaProjectionForegroundService(
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION | 1));
+        assertFalse(SecurityScanner.isMediaProjectionForegroundService(0));
+    }
+
+    @Test public void identifiesOnlyDeviceAdminReceiverPermission() {
+        assertTrue(SecurityScanner.isDeviceAdminReceiverPermission(
+                "android.permission.BIND_DEVICE_ADMIN"));
+        assertFalse(SecurityScanner.isDeviceAdminReceiverPermission(
+                "android.permission.BIND_ACCESSIBILITY_SERVICE"));
+        assertFalse(SecurityScanner.isDeviceAdminReceiverPermission(null));
     }
 
     @Test public void securityPatchAgeDaysCalculatesExactAge() {

@@ -719,6 +719,77 @@ public class StaticApkAnalyzerTest {
         assertTrue(apk.delete());
     }
 
+    @Test public void dynamicCodeLoaderCombinedWithNetworkIsFlaggedHeuristically() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "classes.dex",
+                    ("Ldalvik/system/DexClassLoader;"
+                            + "Ljava/net/HttpURLConnection;").getBytes("ISO-8859-1"));
+        }
+
+        ScanFinding hit = StaticApkAnalyzer.analyze(
+                apk.getAbsolutePath(), "com.example.test").stream()
+                .filter(x -> x.title.equals("Código dinâmico combinado com rede"))
+                .findFirst().orElse(null);
+
+        assertTrue(hit != null);
+        assertEquals(ScanFinding.Level.LOW, hit.level);
+        assertEquals(2, hit.points);
+        assertTrue(hit.detail.contains("T1407"));
+        assertTrue(hit.detail.contains("não confirma"));
+        assertTrue(apk.delete());
+    }
+
+    @Test public void dynamicCodeLoaderWithoutNetworkRemainsInformational() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "classes.dex",
+                    "Ldalvik/system/InMemoryDexClassLoader;".getBytes("ISO-8859-1"));
+        }
+
+        ScanFinding hit = StaticApkAnalyzer.analyze(
+                apk.getAbsolutePath(), "com.example.test").stream()
+                .filter(x -> x.title.equals("Carregamento dinâmico de código referenciado"))
+                .findFirst().orElse(null);
+
+        assertTrue(hit != null);
+        assertEquals(ScanFinding.Level.INFO, hit.level);
+        assertEquals(0, hit.points);
+        assertTrue(apk.delete());
+    }
+
+    @Test public void networkApiAloneDoesNotImplyDynamicCodeLoading() throws Exception {
+        StaticApkAnalyzer.BehaviorSignals signals = StaticApkAnalyzer.detectBehaviorSignals(
+                "Ljava/net/HttpURLConnection;".getBytes("ISO-8859-1"));
+
+        assertTrue(signals.networkFetch);
+        assertTrue(!signals.dynamicCodeLoading);
+        assertTrue(!signals.shellExecution);
+    }
+
+    @Test public void detectsShellAndWebViewBridgeAsSeparateContext() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "classes.dex",
+                    ("Ljava/lang/ProcessBuilder;"
+                            + "Landroid/webkit/WebView;addJavascriptInterface"
+                            + "Lokhttp3/OkHttpClient;").getBytes("ISO-8859-1"));
+        }
+
+        List<ScanFinding> findings = StaticApkAnalyzer.analyze(
+                apk.getAbsolutePath(), "com.example.test");
+        assertTrue(findings.stream().anyMatch(x ->
+                x.title.equals("Execução de comandos referenciada")
+                        && x.level == ScanFinding.Level.LOW));
+        assertTrue(findings.stream().anyMatch(x ->
+                x.title.equals("Ponte WebView combinada com rede")
+                        && x.level == ScanFinding.Level.INFO));
+        assertTrue(apk.delete());
+    }
+
     @Test public void corruptedZipProducesControlledFinding() throws Exception {
         File apk = File.createTempFile("darkshield-test", ".apk");
         try {

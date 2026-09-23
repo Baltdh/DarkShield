@@ -344,6 +344,8 @@ public final class SecurityScanner {
                     "Confirme se iniciar após o boot é esperado para este aplicativo"));
         }
 
+        inspectDeclaredCapabilities(p, ps, system, out);
+
         if (hasAccessibilityService(p)) {
             ScanFinding.Level lvl = system ? ScanFinding.Level.INFO : ScanFinding.Level.MEDIUM;
             int points = system ? 0 : 5;
@@ -785,6 +787,105 @@ public final class SecurityScanner {
             if ("android.permission.BIND_VPN_SERVICE".equals(s.permission)) return true;
         }
         return false;
+    }
+
+    /**
+     * Reports capabilities that require an explicit Android component declaration.
+     * A declaration is not equivalent to active use, so these findings remain
+     * informational unless another observed signal corroborates them.
+     */
+    private void inspectDeclaredCapabilities(
+            PackageInfo p,
+            Set<String> requestedPermissions,
+            boolean system,
+            List<ScanFinding> out) {
+        if (system) return;
+
+        boolean notificationListener = false;
+        boolean inputMethod = false;
+        boolean autofill = false;
+        boolean mediaProjection = requestedPermissions.contains(
+                "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION");
+
+        if (p.services != null) {
+            for (ServiceInfo service : p.services) {
+                if (service == null) continue;
+                String permission = service.permission;
+                if ("android.permission.BIND_NOTIFICATION_LISTENER_SERVICE".equals(permission)) {
+                    notificationListener = true;
+                } else if ("android.permission.BIND_INPUT_METHOD".equals(permission)) {
+                    inputMethod = true;
+                } else if ("android.permission.BIND_AUTOFILL_SERVICE".equals(permission)) {
+                    autofill = true;
+                }
+
+                if (Build.VERSION.SDK_INT >= 29
+                        && isMediaProjectionForegroundService(
+                                service.getForegroundServiceType())) {
+                    mediaProjection = true;
+                }
+            }
+        }
+
+        boolean deviceAdmin = false;
+        if (p.receivers != null) {
+            for (android.content.pm.ActivityInfo receiver : p.receivers) {
+                if (receiver != null && isDeviceAdminReceiverPermission(receiver.permission)) {
+                    deviceAdmin = true;
+                    break;
+                }
+            }
+        }
+
+        if (mediaProjection) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.LOW,
+                    "Capacidade de captura de tela declarada",
+                    "O aplicativo declara serviço/permissão de MediaProjection. O Android exige consentimento do usuário para cada sessão, mas uma sessão autorizada pode capturar conteúdo exibido na tela.",
+                    p.packageName, 1,
+                    "Autorize compartilhamento ou gravação de tela somente quando você iniciar e reconhecer a função"));
+        }
+        if (notificationListener) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Listener de notificações declarado",
+                    "O aplicativo declara um serviço que pode receber acesso às notificações se você o habilitar; esta declaração não significa que o acesso esteja ativo.",
+                    p.packageName, 0,
+                    "Revise o acesso apenas se o aplicativo aparecer como ativo nas Configurações"));
+        }
+        if (inputMethod) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Método de entrada declarado",
+                    "O aplicativo pode oferecer um teclado. A declaração não significa que ele seja o teclado ativo.",
+                    p.packageName, 0,
+                    "Use apenas teclados reconhecidos e confirme qual está definido como padrão"));
+        }
+        if (autofill) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Serviço de preenchimento automático declarado",
+                    "O aplicativo pode oferecer preenchimento automático de formulários e credenciais, caso seja escolhido pelo usuário.",
+                    p.packageName, 0,
+                    "Confirme nas Configurações qual serviço de preenchimento automático está ativo"));
+        }
+        if (deviceAdmin) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Administrador do dispositivo declarado",
+                    "O aplicativo declara um receptor de administrador do dispositivo. Isso não significa que o privilégio esteja ativo.",
+                    p.packageName, 0,
+                    "Revise apenas se o aplicativo também aparecer como administrador ativo"));
+        }
+    }
+
+    static boolean isMediaProjectionForegroundService(int foregroundServiceType) {
+        return (foregroundServiceType
+                & ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION) != 0;
+    }
+
+    static boolean isDeviceAdminReceiverPermission(String permission) {
+        return "android.permission.BIND_DEVICE_ADMIN".equals(permission);
     }
 
     private boolean isIgnoringBatteryOptimizations(String packageName) {
