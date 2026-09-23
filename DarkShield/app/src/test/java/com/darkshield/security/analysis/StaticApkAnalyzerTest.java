@@ -14,6 +14,89 @@ import static org.junit.Assert.assertTrue;
 
 public class StaticApkAnalyzerTest {
 
+    @Test public void installedAppIncludesCodeFromFeatureSplit() throws Exception {
+        File base = File.createTempFile("darkshield-base", ".apk");
+        File feature = File.createTempFile("darkshield-feature", ".apk");
+        try {
+            try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(base))) {
+                add(zip, "AndroidManifest.xml", new byte[]{1});
+                add(zip, "classes.dex", new byte[]{1});
+            }
+            try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(feature))) {
+                add(zip, "AndroidManifest.xml", new byte[]{1});
+                add(zip, "classes.dex", "frida".getBytes("UTF-8"));
+            }
+
+            List<ScanFinding> findings = StaticApkAnalyzer.analyzeInstalled(
+                    base.getAbsolutePath(), new String[]{feature.getAbsolutePath()}, "com.example.test");
+            assertTrue(findings.stream().anyMatch(x -> x.title.equals(
+                    "Marcadores suspeitos no conteúdo de DEX/bibliotecas")
+                    && x.detail.contains(feature.getName())));
+            assertEquals(2, findings.stream().filter(x -> x.title.equals("SHA-256 do APK")).count());
+            assertTrue(findings.stream().anyMatch(x -> x.title.equals("Cobertura dos APKs divididos")
+                    && x.detail.contains("1 parte(s) com código analisada(s)")));
+            assertTrue(StaticApkAnalyzer.getLastTiming().contentBytesScanned >= 6L);
+        } finally {
+            assertTrue(base.delete());
+            assertTrue(feature.delete());
+        }
+    }
+
+    @Test public void resourceSplitIsSkippedAndUnreadableSplitIsReported() throws Exception {
+        File base = File.createTempFile("darkshield-base", ".apk");
+        File resources = File.createTempFile("darkshield-resources", ".apk");
+        try {
+            try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(base))) {
+                add(zip, "AndroidManifest.xml", new byte[]{1});
+                add(zip, "classes.dex", new byte[]{1});
+            }
+            try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(resources))) {
+                add(zip, "AndroidManifest.xml", new byte[]{1});
+                add(zip, "res/raw/frida.txt", new byte[]{1});
+            }
+
+            List<ScanFinding> findings = StaticApkAnalyzer.analyzeInstalled(
+                    base.getAbsolutePath(), new String[]{resources.getAbsolutePath(),
+                            "/definitely/missing/split.apk"}, "com.example.test");
+            assertEquals(1, findings.stream().filter(x -> x.title.equals("SHA-256 do APK")).count());
+            assertTrue(findings.stream().anyMatch(x -> x.title.equals("Cobertura dos APKs divididos")
+                    && x.detail.contains("1 sem DEX/bibliotecas")
+                    && x.detail.contains("1 parte(s) sem análise completa")));
+        } finally {
+            assertTrue(base.delete());
+            assertTrue(resources.delete());
+        }
+    }
+
+    @Test public void splitBudgetLeavesExplicitIncompleteCoverage() throws Exception {
+        File base = File.createTempFile("darkshield-base", ".apk");
+        File[] splits = new File[5];
+        try {
+            try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(base))) {
+                add(zip, "AndroidManifest.xml", new byte[]{1});
+                add(zip, "classes.dex", new byte[]{1});
+            }
+            String[] paths = new String[splits.length];
+            for (int i = 0; i < splits.length; i++) {
+                splits[i] = File.createTempFile("darkshield-split-" + i, ".apk");
+                paths[i] = splits[i].getAbsolutePath();
+                try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(splits[i]))) {
+                    add(zip, "AndroidManifest.xml", new byte[]{1});
+                    add(zip, "classes.dex", new byte[]{(byte) i});
+                }
+            }
+            List<ScanFinding> findings = StaticApkAnalyzer.analyzeInstalled(
+                    base.getAbsolutePath(), paths, "com.example.test");
+            assertEquals(5, findings.stream().filter(x -> x.title.equals("SHA-256 do APK")).count());
+            assertTrue(findings.stream().anyMatch(x -> x.title.equals("Cobertura dos APKs divididos")
+                    && x.detail.contains("4 parte(s) com código analisada(s)")
+                    && x.detail.contains("1 parte(s) sem análise completa")));
+        } finally {
+            assertTrue(base.delete());
+            for (File split : splits) if (split != null) assertTrue(split.delete());
+        }
+    }
+
     @Test public void analyzesApkStructureAndHash() throws Exception {
         File apk = File.createTempFile("darkshield-test", ".apk");
         try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {

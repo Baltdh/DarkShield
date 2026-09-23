@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
@@ -17,6 +18,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.style.ClickableSpan;
 import android.view.View;
+import android.view.Window;
 import android.widget.ArrayAdapter;
 import android.widget.Toast;
 import android.widget.Button;
@@ -70,6 +72,7 @@ public class MainActivity extends android.app.Activity {
 
     @Override public void onCreate(Bundle b) {
         super.onCreate(b);
+        protectWindow(getWindow());
         setContentView(R.layout.activity_main);
         score = findViewById(R.id.score);
         summary = findViewById(R.id.summary);
@@ -103,6 +106,19 @@ public class MainActivity extends android.app.Activity {
         share.setEnabled(false);
         copy.setEnabled(false);
         summary.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+    }
+
+    private void protectWindow(Window window) {
+        if (window == null) return;
+        if (Build.VERSION.SDK_INT >= 31) window.setHideOverlayWindows(true);
+        window.getDecorView().setFilterTouchesWhenObscured(true);
+    }
+
+    private void showProtectedDialog(android.app.AlertDialog dialog) {
+        protectWindow(dialog.getWindow());
+        dialog.show();
+        Button confirm = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE);
+        if (confirm != null) confirm.setFilterTouchesWhenObscured(true);
     }
 
     @Override protected void onDestroy() {
@@ -361,6 +377,7 @@ public class MainActivity extends android.app.Activity {
             row.setPadding(0, pad / 3, 0, pad / 3);
 
             CheckBox select = new CheckBox(this);
+            select.setFilterTouchesWhenObscured(true);
             select.setText(action.title);
             select.setTextSize(14);
             select.setTextColor(0xFFFFFFFF);
@@ -376,11 +393,13 @@ public class MainActivity extends android.app.Activity {
             row.addView(reason);
 
             Button open = new Button(this);
+            open.setFilterTouchesWhenObscured(true);
             open.setText("REVISAR NO ANDROID");
             open.setOnClickListener(v -> openRemediation(action));
             row.addView(open);
             if (canRequestUninstall(action.packageName)) {
                 Button remove = new Button(this);
+                remove.setFilterTouchesWhenObscured(true);
                 remove.setText("SOLICITAR DESINSTALAÇÃO");
                 remove.setOnClickListener(v -> confirmUninstall(action.packageName));
                 row.addView(remove);
@@ -419,7 +438,7 @@ public class MainActivity extends android.app.Activity {
                     dialog.dismiss();
                     launchNextCorrection();
                 }));
-        dialog.show();
+        showProtectedDialog(dialog);
     }
 
     private void launchNextCorrection() {
@@ -432,12 +451,13 @@ public class MainActivity extends android.app.Activity {
     private void offerNextCorrection() {
         if (isFinishing() || isDestroyed() || queuedCorrections.isEmpty()) return;
         RemediationPlanner.Action next = queuedCorrections.peek();
-        new android.app.AlertDialog.Builder(this)
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
                 .setTitle("Próxima providência")
                 .setMessage("Verifique no Android se concluiu a ação anterior.\n\n" + next.title)
                 .setPositiveButton("ABRIR PRÓXIMA", (d, which) -> launchNextCorrection())
                 .setNegativeButton("ENCERRAR", (d, which) -> queuedCorrections.clear())
-                .show();
+                .create();
+        showProtectedDialog(dialog);
     }
 
     private boolean openRemediation(RemediationPlanner.Action action) {
@@ -580,6 +600,7 @@ public class MainActivity extends android.app.Activity {
         content.addView(includeSystem);
 
         ListView list = new ListView(this);
+        list.setFilterTouchesWhenObscured(true);
         ArrayAdapter<ManagedApp> adapter = new ArrayAdapter<ManagedApp>(
                 this, android.R.layout.simple_list_item_2, android.R.id.text1,
                 new ArrayList<>()) {
@@ -635,22 +656,23 @@ public class MainActivity extends android.app.Activity {
                 showAppOptions(app);
             }
         });
-        dialog.show();
+        showProtectedDialog(dialog);
     }
 
     private void showAppOptions(ManagedApp app) {
         String[] options = canRequestUninstall(app.packageName)
                 ? new String[]{"Revisar permissões e dados", "Solicitar desinstalação"}
                 : new String[]{"Abrir detalhes (desativar / remover atualizações, se disponível)"};
-        new android.app.AlertDialog.Builder(this)
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
                 .setTitle(app.name)
                 .setMessage(app.packageName)
-                .setItems(options, (dialog, which) -> {
+                .setItems(options, (ignoredDialog, which) -> {
                     if (which == 1) confirmUninstall(app.packageName);
                     else openAppDetails(app.packageName);
                 })
-                .setNegativeButton("VOLTAR", (dialog, which) -> showInstalledApps())
-                .show();
+                .setNegativeButton("VOLTAR", (ignoredDialog, which) -> showInstalledApps())
+                .create();
+        showProtectedDialog(dialog);
     }
 
     private void confirmUninstall(String packageName) {
@@ -665,13 +687,13 @@ public class MainActivity extends android.app.Activity {
             name = getPackageManager().getApplicationLabel(
                     getPackageManager().getApplicationInfo(packageName, 0)).toString();
         } catch (PackageManager.NameNotFoundException | SecurityException ignored) {}
-        new android.app.AlertDialog.Builder(this)
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
                 .setTitle("Solicitar desinstalação")
                 .setMessage(name + "\n" + packageName
                         + "\n\nA remoção pode apagar os dados deste aplicativo. O Android pedirá sua confirmação. "
                         + "Se ele for administrador do dispositivo, desative esse acesso antes.")
                 .setNegativeButton("CANCELAR", null)
-                .setPositiveButton("CONTINUAR", (dialog, which) -> {
+                .setPositiveButton("CONTINUAR", (ignoredDialog, which) -> {
                     if (!canRequestUninstall(packageName)) {
                         Toast.makeText(this, "O aplicativo mudou. Revise os detalhes.",
                                 Toast.LENGTH_LONG).show();
@@ -688,7 +710,8 @@ public class MainActivity extends android.app.Activity {
                         openAppDetails(packageName);
                     }
                 })
-                .show();
+                .create();
+        showProtectedDialog(dialog);
     }
 
     private void openAppDetails(String packageName) {

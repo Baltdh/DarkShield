@@ -440,7 +440,8 @@ public final class SecurityScanner {
         }
 
         if (!system && ai.sourceDir != null && !ai.sourceDir.isEmpty()) {
-            out.addAll(StaticApkAnalyzer.analyze(ai.sourceDir, p.packageName));
+            out.addAll(StaticApkAnalyzer.analyzeInstalled(
+                    ai.sourceDir, ai.splitSourceDirs, p.packageName));
         }
     }
 
