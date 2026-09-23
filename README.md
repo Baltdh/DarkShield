@@ -102,7 +102,9 @@ A versão 0.7.0 acrescenta uma camada local de conhecimento de ameaças baseada 
 
 A arquitetura também foi preparada para uma futura fonte de inteligência por hash/assinatura. Não há chave de API, amostras de malware ou feed externo embutidos no APK. Isso evita transformar uma dependência externa em um veredito falso ou vazar dados do dispositivo.
 
-A Central de correções seguras somente abre telas oficiais do Android para revisão pelo usuário. Ela não desinstala aplicativos nem altera configurações silenciosamente.
+A Central de correções seguras permite selecionar vários acessos apontados na varredura. Ela abre uma tela oficial do Android por vez e oferece o próximo item quando o usuário volta, sem declarar que a correção anterior foi concluída. Os tipos distintos de acesso do mesmo aplicativo aparecem separadamente; os achados mais graves vêm primeiro.
+
+O botão **Gerenciar / remover aplicativos** lista os apps instalados, permite buscar por nome ou pacote e, se desejado, mostrar também os aplicativos de sistema. Para apps instalados pelo usuário, **Solicitar desinstalação** abre o desinstalador oficial após uma confirmação no DarkShield; o Android exige a confirmação final. Para apps do sistema, a interface abre seus detalhes para desativação ou remoção de atualizações, caso o dispositivo permita. Um administrador ativo pode precisar ser desativado nas configurações antes da desinstalação. `REQUEST_DELETE_PACKAGES` no manifesto permite solicitar a remoção, mas não concede a capacidade de remover silenciosamente ou de revogar privilégios de outros apps.
 
 Fontes de estudo usadas para o modelo:
 - MITRE ATT&CK Mobile: técnicas e exemplos de malware Android.

@@ -7,6 +7,8 @@
         android:name="android.permission.QUERY_ALL_PACKAGES"
         tools:ignore="QueryAllPackagesPermission" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- Allows launching Android's uninstall confirmation for an app selected by the user. -->
+    <uses-permission android:name="android.permission.REQUEST_DELETE_PACKAGES" />
     <application android:usesCleartextTraffic="false" android:allowBackup="false" android:theme="@style/Theme.DarkShield" android:label="DarkShield" android:icon="@drawable/ic_shield" android:supportsRtl="true">
         <activity android:name=".MainActivity" android:exported="true">
             <intent-filter>
