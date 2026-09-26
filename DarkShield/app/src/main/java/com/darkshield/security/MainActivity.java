@@ -1,5 +1,7 @@
 package com.darkshield.security;
 
+import com.darkshield.security.analysis.PostExploitCorrelationEngine;
+
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
@@ -283,6 +285,7 @@ public class MainActivity extends android.app.Activity {
                 getApplicationContext(), findings));
         enrichedFindings.addAll(DevicePostureBaselineStore.compareAndUpdate(
                 getApplicationContext(), findings));
+        enrichedFindings.addAll(PostExploitCorrelationEngine.correlate(enrichedFindings));
         findings = enrichedFindings;
 
         ScanReport scanReport = new ScanReport(findings);
