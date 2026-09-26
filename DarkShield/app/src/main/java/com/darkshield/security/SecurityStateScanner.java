@@ -54,11 +54,51 @@ public final class SecurityStateScanner {
                 "Estado de patch — kernel",
                 "Versão de segurança do kernel observada localmente");
 
+        VulnerabilityReportCache.Snapshot cachedReport =
+                VulnerabilityReportCache.load(context.getApplicationContext());
+        if (cachedReport == null) {
+            findings.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Base OSV local",
+                    "Nenhum relatório de vulnerabilidades OSV validado está armazenado. "
+                            + "A leitura por componente continua disponível, mas conformidade com CVEs não é avaliada.",
+                    null, 0, null));
+        } else {
+            try {
+                state.loadVulnerabilityReport(cachedReport.json);
+                boolean fullyUpdated = state.isDeviceFullyUpdated();
+                long ageDays = Math.max(
+                        0L,
+                        (System.currentTimeMillis() - cachedReport.savedAtMillis)
+                                / (24L * 60L * 60L * 1000L));
+                findings.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Conformidade com relatório OSV em cache",
+                        (fullyUpdated
+                                ? "Os componentes consultáveis estão alinhados aos níveis publicados no relatório OSV armazenado"
+                                : "Um ou mais componentes consultáveis não estão alinhados aos níveis publicados no relatório OSV armazenado")
+                                + ". Cache salvo há aproximadamente " + ageDays + " dia(s)"
+                                + (cachedReport.isStale(System.currentTimeMillis())
+                                        ? " e marcado como desatualizado para renovação."
+                                        : "."),
+                        null, 0,
+                        fullyUpdated
+                                ? null
+                                : "Procure atualizações do sistema e atualize a base OSV antes de concluir que há exposição a uma CVE específica"));
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                findings.add(unavailable(
+                        "Conformidade com relatório OSV em cache",
+                        "O relatório armazenado não pôde ser aplicado à avaliação atual"));
+            }
+        }
+
         findings.add(new ScanFinding(
                 ScanFinding.Level.INFO,
                 "Cobertura do estado de segurança",
-                "A leitura por componente é local e não consulta CVEs publicadas nem garante que todas as atualizações disponíveis estejam instaladas. "
-                        + "A verificação de CVEs exige uma base OSV carregada separadamente.",
+                cachedReport == null
+                        ? "A leitura por componente é local. CVEs publicadas não são avaliadas sem um relatório OSV validado."
+                        : "A leitura por componente é local; a comparação de atualização usa o relatório OSV validado em cache. "
+                                + "Esse resultado mede estado de patch e não prova exploração ou comprometimento.",
                 null, 0, null));
 
         return findings;
