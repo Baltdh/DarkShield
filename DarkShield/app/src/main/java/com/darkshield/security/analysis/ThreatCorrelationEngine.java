@@ -99,7 +99,9 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote apresenta indicadores de acesso remoto, acessibilidade e sobreposição. A combinação merece revisão; isso não constitui prova automática de malware.",
                         p, 7,
                         "Verifique origem, serviço de acessibilidade, sobreposição e finalidade do aplicativo")
-                        .withTags(ScanFinding.EvidenceTag.CORRELATION));
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION));
             } else if (a || o || (declared && o)) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,
@@ -107,7 +109,9 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote apresenta indicador de acesso remoto combinado com um mecanismo adicional de interação privilegiada.",
                         p, 4,
                         "Confirme se o aplicativo é reconhecido e se esses acessos são esperados")
-                        .withTags(ScanFinding.EvidenceTag.CORRELATION));
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION));
             } else if (n) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,
@@ -115,7 +119,9 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote apresenta indicador de acesso remoto e acesso ativo às notificações.",
                         p, 4,
                         "Confirme se o aplicativo é reconhecido e se a leitura de notificações é necessária")
-                        .withTags(ScanFinding.EvidenceTag.CORRELATION));
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION));
             } else if (capture) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,
@@ -123,7 +129,9 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote apresenta indicador de acesso remoto e declara capacidade de MediaProjection. A captura ainda depende de consentimento do usuário e essa combinação pode ser legítima em apps de suporte remoto.",
                         p, 4,
                         "Confirme se você iniciou o compartilhamento de tela e se reconhece o aplicativo")
-                        .withTags(ScanFinding.EvidenceTag.CORRELATION));
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION));
             } else if (b) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,
@@ -131,7 +139,9 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote apresenta indicador de acesso remoto e declara inicialização automática após o boot.",
                         p, 4,
                         "Confirme se o aplicativo é reconhecido e se iniciar com o sistema é realmente necessário")
-                        .withTags(ScanFinding.EvidenceTag.CORRELATION));
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION));
             } else if (i) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,
@@ -139,7 +149,9 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote apresenta indicador de acesso remoto e capacidade operacional para solicitar instalação de APKs.",
                         p, 4,
                         "Confirme se o aplicativo é reconhecido e se a instalação de APKs faz parte da função esperada")
-                        .withTags(ScanFinding.EvidenceTag.CORRELATION));
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION));
             } else if (w || f) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,
@@ -147,7 +159,9 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote apresenta indicador de acesso remoto e uma autorização especial ativa para modificar configurações ou acessar amplamente os arquivos.",
                         p, 4,
                         "Confirme se o aplicativo é reconhecido e se esse acesso especial é necessário")
-                        .withTags(ScanFinding.EvidenceTag.CORRELATION));
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION));
             } else if (s > 0) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,
@@ -155,7 +169,9 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote apresenta indicador de acesso remoto e pelo menos uma capacidade sensível.",
                         p, 4,
                         "Revise a finalidade e as permissões concedidas ao aplicativo")
-                        .withTags(ScanFinding.EvidenceTag.CORRELATION));
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION));
             }
         }
 
@@ -174,7 +190,9 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote mantém serviço de acessibilidade ativo, acesso ativo às notificações e inicialização automática. Essa combinação merece revisão mesmo sem um marcador nominal de acesso remoto.",
                         p, 7,
                         "Confirme a origem do aplicativo e verifique se as três capacidades são realmente necessárias")
-                        .withTags(ScanFinding.EvidenceTag.CORRELATION));
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION));
             } else if (a && o && b && !r) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.HIGH,
@@ -182,7 +200,9 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote declara/expõe um serviço de acessibilidade, acesso de sobreposição e inicialização automática. Essa combinação merece revisão mesmo sem um marcador nominal de acesso remoto.",
                         p, 7,
                         "Confirme a origem do aplicativo e verifique se as três capacidades são realmente necessárias")
-                        .withTags(ScanFinding.EvidenceTag.CORRELATION));
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION));
             }
 
             if (a && n && !r && !o && !b) {
@@ -192,7 +212,9 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote possui serviço de acessibilidade ativo e acesso ativo às notificações.",
                         p, 4,
                         "Confirme que o aplicativo é reconhecido e que ambos os acessos são necessários")
-                        .withTags(ScanFinding.EvidenceTag.CORRELATION));
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION));
             }
 
             if (a && capture && !r && !o && !b && !n) {
@@ -202,7 +224,9 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote possui serviço de acessibilidade ativo e declara capacidade de MediaProjection. A declaração de captura não prova uma sessão ativa, mas a combinação amplia o acesso potencial ao conteúdo da interface.",
                         p, 4,
                         "Confirme se ambas as funções pertencem a um aplicativo reconhecido e foram autorizadas conscientemente")
-                        .withTags(ScanFinding.EvidenceTag.CORRELATION));
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION));
             }
         }
 
@@ -214,7 +238,9 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote apresenta indicador de acesso remoto e administrador do dispositivo ativo. A combinação merece revisão porque reúne controle remoto heurístico com uma capacidade de gerenciamento privilegiada; isso não constitui prova automática de malware.",
                         p, 7,
                         "Confirme a origem do aplicativo e se o administrador do dispositivo foi autorizado conscientemente")
-                        .withTags(ScanFinding.EvidenceTag.CORRELATION));
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION));
             }
 
             if (accessibility.getOrDefault(p, false)) {
@@ -224,7 +250,9 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote possui administrador do dispositivo e serviço de acessibilidade ativos/declarados.",
                         p, 7,
                         "Confirme que ambas as capacidades foram autorizadas conscientemente")
-                        .withTags(ScanFinding.EvidenceTag.CORRELATION));
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION));
             }
         }
 
