@@ -45,7 +45,7 @@ public class MainActivity extends android.app.Activity {
     private TextView scanProgressStage;
     private View progressContainer;
     private Button scan, cancelScan, remediation, manageApps, securitySettings,
-            networkSettings, updateVulnerabilityDb, scanHistory, share, copy;
+            networkSettings, updateVulnerabilityDb, scanHistory, exportJson, share, copy;
     private ScanReport lastScanReport;
     private ScanTimingTracker scanTimingTracker;
     private String lastReport = "";
@@ -96,6 +96,7 @@ public class MainActivity extends android.app.Activity {
         networkSettings = findViewById(R.id.network_settings);
         updateVulnerabilityDb = findViewById(R.id.update_vulnerability_db);
         scanHistory = findViewById(R.id.scan_history);
+        exportJson = findViewById(R.id.export_json);
         share = findViewById(R.id.share);
         copy = findViewById(R.id.copy);
 
@@ -107,11 +108,13 @@ public class MainActivity extends android.app.Activity {
         networkSettings.setOnClickListener(v -> reviewNetworkSettings());
         updateVulnerabilityDb.setOnClickListener(v -> refreshVulnerabilityDatabase());
         scanHistory.setOnClickListener(v -> showScanHistory());
+        exportJson.setOnClickListener(v -> exportRedactedJson());
         share.setOnClickListener(v -> shareReport());
         copy.setOnClickListener(v -> copyReport());
         restoreLastScanTimestamp();
         share.setEnabled(false);
         copy.setEnabled(false);
+        exportJson.setEnabled(false);
         summary.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
     }
 
@@ -159,6 +162,7 @@ public class MainActivity extends android.app.Activity {
         scan.setText("VERIFICANDO…");
         share.setEnabled(false);
         copy.setEnabled(false);
+        exportJson.setEnabled(false);
         remediation.setEnabled(false);
         progressContainer.setVisibility(View.VISIBLE);
         scanProgress.setPercent(0);
@@ -363,6 +367,7 @@ public class MainActivity extends android.app.Activity {
         scan.setEnabled(true);
         share.setEnabled(true);
         copy.setEnabled(true);
+        exportJson.setEnabled(true);
         remediation.setEnabled(!RemediationPlanner.plan(findings).isEmpty());
     }
 
@@ -913,6 +918,31 @@ public class MainActivity extends android.app.Activity {
                         + "de malware ou invasão.\n"
         );
         return b.toString();
+    }
+
+    private void exportRedactedJson() {
+        if (lastScanReport == null) {
+            Toast.makeText(this, "Execute uma verificação primeiro.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        String json = ReportJsonExporter.redacted(
+                lastScanReport,
+                ScanHistoryStore.load(getApplicationContext()),
+                System.currentTimeMillis());
+
+        Intent send = new Intent(Intent.ACTION_SEND);
+        send.setType("application/json");
+        send.putExtra(Intent.EXTRA_SUBJECT, "DarkShield — Relatório JSON redigido");
+        send.putExtra(Intent.EXTRA_TEXT, json);
+        try {
+            startActivity(Intent.createChooser(send, "Compartilhar JSON redigido"));
+        } catch (Exception e) {
+            Toast.makeText(
+                    this,
+                    "Não foi possível abrir um aplicativo para exportar o JSON.",
+                    Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void shareReport() {
