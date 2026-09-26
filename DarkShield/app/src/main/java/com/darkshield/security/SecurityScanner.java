@@ -207,7 +207,7 @@ public final class SecurityScanner {
                     "Permissão de sobreposição concedida",
                     label, p.packageName, 2,
                     "Revisar em Configurações > Apps > Acesso especial")
-                    .withTags(ScanFinding.EvidenceTag.ACTIVE_ACCESS));
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.ACTIVE_ACCESS));
         } else if (ps.contains("android.permission.SYSTEM_ALERT_WINDOW")) {
             out.add(new ScanFinding(
                     ScanFinding.Level.INFO, "Sobreposição declarada",
@@ -223,7 +223,7 @@ public final class SecurityScanner {
                         "O aplicativo declarou WRITE_SETTINGS e possui a autorização especial para modificar configurações do sistema",
                         p.packageName, 3,
                         "Confirme se essa autorização é necessária e foi concedida conscientemente")
-                        .withTags(ScanFinding.EvidenceTag.ACTIVE_ACCESS));
+                        .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.ACTIVE_ACCESS));
             } else {
                 out.add(new ScanFinding(
                         ScanFinding.Level.INFO,
@@ -242,7 +242,7 @@ public final class SecurityScanner {
                         "O aplicativo declarou MANAGE_EXTERNAL_STORAGE e possui Acesso a todos os arquivos",
                         p.packageName, 3,
                         "Confirme se o acesso amplo ao armazenamento é necessário e reconhecido")
-                        .withTags(
+                        .withEvidence(ScanFinding.EvidenceSource.OBSERVED, 
                                 ScanFinding.EvidenceTag.ACTIVE_ACCESS,
                                 ScanFinding.EvidenceTag.SENSITIVE_DATA));
             } else {
@@ -262,7 +262,7 @@ public final class SecurityScanner {
                     ScanFinding.Level.LOW, "Acesso a microfone/câmera",
                     label + " solicita " + mediaCount + " recurso(s) de áudio/vídeo",
                     p.packageName, 1, "Confirme se essa função é necessária")
-                    .withTags(ScanFinding.EvidenceTag.SENSITIVE_DATA));
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.SENSITIVE_DATA));
         }
 
         if (isPermissionGranted("android.permission.READ_SMS", p.packageName)
@@ -272,7 +272,7 @@ public final class SecurityScanner {
                     ScanFinding.Level.MEDIUM, "Acesso a SMS",
                     "O aplicativo possui acesso operacional a mensagens SMS",
                     p.packageName, 4, "Revisar a permissão e a finalidade do aplicativo")
-                    .withTags(ScanFinding.EvidenceTag.SENSITIVE_DATA));
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.SENSITIVE_DATA));
         }
 
         if (isPermissionGranted("android.permission.READ_CALL_LOG", p.packageName)
@@ -281,7 +281,7 @@ public final class SecurityScanner {
                     ScanFinding.Level.MEDIUM, "Acesso ao histórico de chamadas",
                     "O aplicativo possui acesso operacional ao registro de chamadas",
                     p.packageName, 4, "Revise a permissão caso a função não exija chamadas")
-                    .withTags(ScanFinding.EvidenceTag.SENSITIVE_DATA));
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.SENSITIVE_DATA));
         }
 
         boolean contacts = isPermissionGranted("android.permission.READ_CONTACTS", p.packageName)
@@ -292,7 +292,7 @@ public final class SecurityScanner {
                     "O aplicativo possui acesso operacional à agenda de contatos",
                     p.packageName, 0,
                     "Confirme se a função do aplicativo realmente precisa dos seus contatos")
-                    .withTags(ScanFinding.EvidenceTag.SENSITIVE_DATA));
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.SENSITIVE_DATA));
         }
 
         boolean location = isPermissionGranted("android.permission.ACCESS_FINE_LOCATION", p.packageName)
@@ -303,7 +303,7 @@ public final class SecurityScanner {
                     "O aplicativo possui acesso operacional à localização do dispositivo",
                     p.packageName, 0,
                     "Revise a permissão e prefira localização aproximada quando suficiente")
-                    .withTags(ScanFinding.EvidenceTag.SENSITIVE_DATA));
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.SENSITIVE_DATA));
         }
 
         if (isPermissionGranted("android.permission.READ_PHONE_STATE", p.packageName)) {
@@ -312,7 +312,7 @@ public final class SecurityScanner {
                     "O aplicativo possui acesso operacional a informações do estado da telefonia",
                     p.packageName, 0,
                     "Confirme se essa permissão é necessária para a função esperada")
-                    .withTags(ScanFinding.EvidenceTag.SENSITIVE_DATA));
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.SENSITIVE_DATA));
         }
 
         if (isPermissionGranted("android.permission.PACKAGE_USAGE_STATS", p.packageName)) {
@@ -321,7 +321,7 @@ public final class SecurityScanner {
                     "O aplicativo possui acesso operacional às estatísticas de uso de outros aplicativos e do dispositivo",
                     p.packageName, 3,
                     "Revise o acesso em Configurações > Acesso especial > Acesso aos dados de uso")
-                    .withTags(
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, 
                             ScanFinding.EvidenceTag.ACTIVE_ACCESS,
                             ScanFinding.EvidenceTag.SENSITIVE_DATA));
         }
@@ -340,7 +340,7 @@ public final class SecurityScanner {
                             ? "Confirme se o aplicativo realmente precisa permanecer fora das otimizações"
                             : null);
             if (exempt) {
-                batteryFinding = batteryFinding.withTags(
+                batteryFinding = batteryFinding.withEvidence(ScanFinding.EvidenceSource.OBSERVED, 
                         ScanFinding.EvidenceTag.ACTIVE_ACCESS,
                         ScanFinding.EvidenceTag.PERSISTENCE);
             }
@@ -353,7 +353,7 @@ public final class SecurityScanner {
                     "O aplicativo tem acesso operacional à capacidade de solicitar instalações",
                     p.packageName, 4,
                     "Verifique se a instalação de APKs faz parte da função esperada")
-                    .withTags(
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, 
                             ScanFinding.EvidenceTag.ACTIVE_ACCESS,
                             ScanFinding.EvidenceTag.INSTALL_TRUST));
         }
@@ -365,7 +365,9 @@ public final class SecurityScanner {
                     label + " declara receber o evento de inicialização do Android",
                     p.packageName, 1,
                     "Confirme se iniciar após o boot é esperado para este aplicativo")
-                    .withTags(ScanFinding.EvidenceTag.PERSISTENCE));
+                    .withEvidence(
+                            ScanFinding.EvidenceSource.DECLARED,
+                            ScanFinding.EvidenceTag.PERSISTENCE));
         }
 
         inspectDeclaredCapabilities(p, ps, system, out);
@@ -388,7 +390,9 @@ public final class SecurityScanner {
                     "Nome do app/pacote contém um marcador associado a suporte ou acesso remoto; isso sozinho não prova malware",
                     p.packageName, corroborated ? 4 : 1,
                     "Confirme se você instalou e reconhece este aplicativo")
-                    .withTags(ScanFinding.EvidenceTag.REMOTE_CONTROL));
+                    .withEvidence(
+                            ScanFinding.EvidenceSource.HEURISTIC,
+                            ScanFinding.EvidenceTag.REMOTE_CONTROL));
         }
 
         if (!system) {
@@ -1176,7 +1180,7 @@ public final class SecurityScanner {
                     system
                             ? "Revise apenas se não reconhecer o componente"
                             : "Abra Acessibilidade e confirme se você o ativou conscientemente")
-                    .withTags(ScanFinding.EvidenceTag.ACTIVE_ACCESS));
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.ACTIVE_ACCESS));
         }
     }
 
@@ -1217,7 +1221,7 @@ public final class SecurityScanner {
                         pkg,
                         system ? 1 : 3,
                         "Confirme se este aplicativo precisa ler notificações do dispositivo")
-                        .withTags(
+                        .withEvidence(ScanFinding.EvidenceSource.OBSERVED, 
                                 ScanFinding.EvidenceTag.ACTIVE_ACCESS,
                                 ScanFinding.EvidenceTag.SENSITIVE_DATA));
             }
@@ -1272,7 +1276,7 @@ public final class SecurityScanner {
                             "Administrador do dispositivo ativo",
                             n.flattenToShortString(), pkg, system ? 1 : 8,
                             "Revise em Configurações > Segurança/Administradores do dispositivo")
-                            .withTags(ScanFinding.EvidenceTag.ACTIVE_ACCESS));
+                            .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.ACTIVE_ACCESS));
 
                     if (deviceOwner || profileOwner) {
                         out.add(new ScanFinding(
@@ -1289,7 +1293,7 @@ public final class SecurityScanner {
                                                 : "O pacote está registrado como Profile Owner",
                                 pkg, system ? 0 : 4,
                                 "Confirme se este gerenciamento corporativo ou de perfil foi autorizado por você")
-                                .withTags(ScanFinding.EvidenceTag.ACTIVE_ACCESS));
+                                .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.ACTIVE_ACCESS));
                     }
                 }
             }
