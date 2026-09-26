@@ -10,7 +10,7 @@ def hasReleaseSigning = releaseSigningValues.every { it != null && !it.isEmpty()
 
 android {
     namespace 'com.darkshield.security'
-    compileSdk 35
+    compileSdk 36
     defaultConfig {
         applicationId 'com.darkshield.security'
         minSdk 26
