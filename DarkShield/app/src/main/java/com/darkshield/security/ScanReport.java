@@ -227,7 +227,12 @@ public final class ScanReport {
                     .append(assessment.confidence)
                     .append(" • risco estrutural ")
                     .append(assessment.riskScore)
-                    .append("/100");
+                    .append("/100")
+                    .append(" • ")
+                    .append(assessment.independentEvidenceCount)
+                    .append(" evidência(s) independente(s), ")
+                    .append(assessment.strongEvidenceCount)
+                    .append(" forte(s)");
             if (assessment.analysisPartial) out.append(" • análise parcial");
             shown++;
             if (shown >= 5) break;
