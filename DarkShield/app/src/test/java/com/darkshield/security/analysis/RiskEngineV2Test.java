@@ -49,7 +49,9 @@ public class RiskEngineV2Test {
         assertEquals(ScanFinding.Level.HIGH, assessment.level);
         assertEquals(RiskEngineV2.Confidence.HIGH, assessment.confidence);
         assertTrue(assessment.riskScore >= 65);
-        assertTrue(assessment.categoryCount >= 4);
+        // CORRELATION is a synthesis of the underlying signals, not a fourth
+        // independent security category.
+        assertEquals(3, assessment.categoryCount);
     }
 
     @Test
