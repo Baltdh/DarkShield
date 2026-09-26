@@ -309,6 +309,8 @@ public class MainActivity extends android.app.Activity {
                 getApplicationContext(), findings));
         enrichedFindings.addAll(PackageIdentityBaselineStore.compareAndUpdate(
                 getApplicationContext(), findings));
+        enrichedFindings.addAll(AppPresenceBaselineStore.compareAndUpdate(
+                getApplicationContext(), findings));
         enrichedFindings.addAll(DevicePostureBaselineStore.compareAndUpdate(
                 getApplicationContext(), findings));
         enrichedFindings.addAll(SystemIntegrityBaselineStore.compareAndUpdate(
@@ -1078,6 +1080,7 @@ public class MainActivity extends android.app.Activity {
                 .setPositiveButton("REDEFINIR", (ignored, which) -> {
                     SecurityBaselineStore.clear(getApplicationContext());
                     PackageIdentityBaselineStore.clear(getApplicationContext());
+                    AppPresenceBaselineStore.clear(getApplicationContext());
                     DevicePostureBaselineStore.clear(getApplicationContext());
                     SystemIntegrityBaselineStore.clear(getApplicationContext());
                     nextAction.setText(
