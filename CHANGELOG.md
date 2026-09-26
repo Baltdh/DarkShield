@@ -2,6 +2,12 @@
 
 ## 0.7.2
 
+- estrutura os achados com tags e proveniência de evidência (`OBSERVED`, `DECLARED`, `HEURISTIC`, `DERIVED`, `ANALYSIS_LIMIT`) para reduzir dependência de títulos/textos na correlação;
+- atualiza o `RiskEngineV2` para separar evidências independentes, fortes e derivadas ao calcular confiança;
+- adiciona atualização manual da base OSV pela URL oficial fornecida pelo AndroidX Security State, aceitando apenas HTTPS, com limites de tamanho/timeout e validação antes de substituir o cache;
+- protege o cache OSV com gravação atômica, SHA-256 para detecção de corrupção e expiração lógica de sete dias;
+- adiciona uma linha de base privada de privilégios observados e sinaliza novos acessos desde a última verificação como mudança a revisar, sem tratá-los automaticamente como malware;
+- adiciona histórico local resumido das últimas 20 verificações, com limpeza manual e sem armazenar o relatório técnico completo;
 - adiciona `EvidenceGraph` e `RiskEngineV2` como camada paralela para correlacionar evidências por pacote, separar risco de confiança e reduzir dependência de soma simples de permissões;
 - exibe no relatório uma seção experimental de correlação por evidências sem substituir o score heurístico legado;
 - integra `androidx.security:security-state:1.1.0` para leitura local separada do estado de patch do Android System, módulos Mainline e kernel, sem afirmar conformidade com CVEs sem relatório OSV;
