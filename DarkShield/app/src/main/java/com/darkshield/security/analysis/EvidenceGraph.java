@@ -80,6 +80,41 @@ public final class EvidenceGraph {
             }
             return count;
         }
+
+        public int independentEvidenceCount() {
+            int count = 0;
+            for (ScanFinding finding : evidence) {
+                if (finding == null) continue;
+                if (finding.evidenceSource != ScanFinding.EvidenceSource.DERIVED) count++;
+            }
+            return count;
+        }
+
+        public int strongEvidenceCount() {
+            int count = 0;
+            for (ScanFinding finding : evidence) {
+                if (finding == null) continue;
+                ScanFinding.EvidenceSource source = finding.evidenceSource;
+                if (source == ScanFinding.EvidenceSource.OBSERVED
+                        || source == ScanFinding.EvidenceSource.UNKNOWN) {
+                    count++;
+                }
+            }
+            return count;
+        }
+
+        public int weakEvidenceCount() {
+            int count = 0;
+            for (ScanFinding finding : evidence) {
+                if (finding == null) continue;
+                ScanFinding.EvidenceSource source = finding.evidenceSource;
+                if (source == ScanFinding.EvidenceSource.DECLARED
+                        || source == ScanFinding.EvidenceSource.HEURISTIC) {
+                    count++;
+                }
+            }
+            return count;
+        }
     }
 
     private static final class MutableNode {
