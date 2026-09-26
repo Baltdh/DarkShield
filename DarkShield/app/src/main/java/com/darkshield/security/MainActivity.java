@@ -45,7 +45,7 @@ public class MainActivity extends android.app.Activity {
     private TextView scanProgressStage;
     private View progressContainer;
     private Button scan, cancelScan, remediation, manageApps, securitySettings,
-            networkSettings, share, copy;
+            networkSettings, updateVulnerabilityDb, share, copy;
     private ScanReport lastScanReport;
     private ScanTimingTracker scanTimingTracker;
     private String lastReport = "";
@@ -94,6 +94,7 @@ public class MainActivity extends android.app.Activity {
         manageApps = findViewById(R.id.manage_apps);
         securitySettings = findViewById(R.id.settings);
         networkSettings = findViewById(R.id.network_settings);
+        updateVulnerabilityDb = findViewById(R.id.update_vulnerability_db);
         share = findViewById(R.id.share);
         copy = findViewById(R.id.copy);
 
@@ -103,6 +104,7 @@ public class MainActivity extends android.app.Activity {
         manageApps.setOnClickListener(v -> showInstalledApps());
         securitySettings.setOnClickListener(v -> openSecuritySettings());
         networkSettings.setOnClickListener(v -> reviewNetworkSettings());
+        updateVulnerabilityDb.setOnClickListener(v -> refreshVulnerabilityDatabase());
         share.setOnClickListener(v -> shareReport());
         copy.setOnClickListener(v -> copyReport());
         restoreLastScanTimestamp();
@@ -947,6 +949,42 @@ public class MainActivity extends android.app.Activity {
                     "Não foi possível abrir as configurações de segurança.",
                     Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void refreshVulnerabilityDatabase() {
+        updateVulnerabilityDb.setEnabled(false);
+        updateVulnerabilityDb.setText("ATUALIZANDO BASE…");
+        nextAction.setText("Atualizando e validando a base OSV de vulnerabilidades Android.");
+
+        inventoryExec.submit(() -> {
+            VulnerabilityReportUpdater.Result result =
+                    VulnerabilityReportUpdater.refresh(getApplicationContext());
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                updateVulnerabilityDb.setEnabled(true);
+                updateVulnerabilityDb.setText("ATUALIZAR BASE DE VULNERABILIDADES");
+                if (result.success) {
+                    long ageSeconds = result.snapshot == null
+                            ? 0L
+                            : Math.max(0L,
+                                    (System.currentTimeMillis() - result.snapshot.savedAtMillis)
+                                            / 1000L);
+                    nextAction.setText(
+                            "Base OSV validada e armazenada. Execute uma nova verificação "
+                                    + "para comparar o estado de patches. Cache salvo há "
+                                    + ageSeconds + " segundo(s).");
+                    Toast.makeText(
+                            this,
+                            "Base de vulnerabilidades atualizada.",
+                            Toast.LENGTH_SHORT).show();
+                } else {
+                    nextAction.setText(
+                            "A base OSV não foi alterada. " + result.message
+                                    + " A verificação local continua disponível.");
+                    Toast.makeText(this, result.message, Toast.LENGTH_LONG).show();
+                }
+            });
+        });
     }
 
     private void reviewNetworkSettings() {
