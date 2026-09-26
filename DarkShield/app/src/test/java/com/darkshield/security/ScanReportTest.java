@@ -372,6 +372,8 @@ public class ScanReportTest {
         assertTrue(summary.contains("com.example.chain"));
         assertTrue(summary.contains("confiança HIGH"));
         assertTrue(summary.contains("risco estrutural"));
+        assertTrue(summary.contains("evidência(s) independente(s)"));
+        assertTrue(summary.contains("forte(s)"));
         assertEquals(45, report.getScore());
     }
 
