@@ -294,6 +294,7 @@ public class MainActivity extends android.app.Activity {
                 ? 0xFFFF6B6B
                 : risk >= 40 ? 0xFFFFC857 : 0xFF66E3A4);
         String packageSummary = scanReport.packageSummary();
+        String evidenceSummaryV2 = scanReport.riskAssessmentSummaryV2();
         ScanTimingTracker.Entry slowestPackage = scanTimingTracker == null ? null : scanTimingTracker.slowest();
         String timingSummary = slowestPackage == null
                 ? ""
@@ -314,6 +315,11 @@ public class MainActivity extends android.app.Activity {
             summaryBuilder.append("Pacotes com sinais para revisão:\n").append(packageSummary);
             summaryBuilder.append("\n\n");
             addPackageLinks(summaryBuilder, packageStart, scanReport);
+        }
+        if (!evidenceSummaryV2.isEmpty()) {
+            summaryBuilder.append("Correlação por evidências (experimental):\n")
+                    .append(evidenceSummaryV2)
+                    .append("\n\n");
         }
         summaryBuilder.append(
                 "A pontuação é heurística: um achado não prova invasão ou malware."
@@ -881,6 +887,12 @@ public class MainActivity extends android.app.Activity {
         String packageSummary = report.packageSummary();
         if (!packageSummary.isEmpty()) {
             b.append("\nPacotes com sinais para revisão:\n").append(packageSummary).append("\n");
+        }
+        String evidenceSummaryV2 = report.riskAssessmentSummaryV2();
+        if (!evidenceSummaryV2.isEmpty()) {
+            b.append("\nCorrelação por evidências (experimental):\n")
+                    .append(evidenceSummaryV2)
+                    .append("\n");
         }
         b.append("\n").append(renderReportDetails(details, informational)).append("\n");
         b.append(
