@@ -1,5 +1,7 @@
 package com.darkshield.security;
 
+import com.darkshield.security.analysis.RiskEngineV2;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -203,6 +205,10 @@ public final class ScanReport {
             out.append(finding.line());
         }
         return out.toString();
+    }
+
+    public List<RiskEngineV2.Assessment> riskAssessmentsV2() {
+        return RiskEngineV2.assess(findings);
     }
 
     public static final class PackageSummary {
