@@ -8,6 +8,13 @@
 - protege o cache OSV com gravação atômica, SHA-256 para detecção de corrupção e expiração lógica de sete dias;
 - adiciona uma linha de base privada de privilégios observados e sinaliza novos acessos desde a última verificação como mudança a revisar, sem tratá-los automaticamente como malware;
 - adiciona histórico local resumido das últimas 20 verificações, com limpeza manual e sem armazenar o relatório técnico completo;
+- amplia o histórico local com pontos independentes, pontos derivados e limitações de análise, mantendo leitura compatível do formato legado;
+- adiciona baseline temporal de integridade do sistema para detectar surgimento de binário `su`, marcadores de gerenciamento de root, `test-keys` e builds `eng/userdebug`;
+- rastreia desaparecimento e reaparecimento de aplicativos entre verificações completas, preservando assinatura anterior, versão e instalador para diferenciar reinstalação comum de reaparecimento com identidade incompatível;
+- conta quantas verificações completas um pacote permaneceu ausente e mantém compatibilidade com o formato anterior do baseline;
+- correlaciona reaparecimento com novos privilégios e com a combinação persistência + indicador de acesso remoto;
+- limita a contribuição de achados `DERIVED` tanto no `RiskEngineV2` quanto no score legado, impedindo que múltiplas correlações fabriquem evidência independente ou elevem sozinhas o status global para alto/crítico;
+- separa pontos brutos independentes e derivados no relatório, histórico e JSON redigido;
 - adiciona baseline de identidade por pacote com `versionCode`, origem de instalação, certificado atual e linhagem de assinatura, diferenciando rotação legítima de chave de troca incompatível de certificado;
 - adiciona baseline de postura do dispositivo para ADB, Opções do desenvolvedor, patch de segurança, teclado/SMS/chamadas padrão e Modo Proteção Avançada;
 - adiciona correlação pós-exploração entre mudanças de identidade, novos privilégios, ADB, teclado padrão e regressão do Modo Proteção Avançada sem tratar correlação como prova independente;
