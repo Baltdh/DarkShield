@@ -288,6 +288,15 @@
             android:contentDescription="Abrir histórico local resumido das últimas verificações"
             android:textSize="13sp" />
 
+        <Button
+            android:id="@+id/reset_baselines"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:text="REDEFINIR LINHAS DE BASE"
+            android:contentDescription="Apagar apenas as referências locais usadas para comparar mudanças entre verificações"
+            android:textSize="13sp" />
+
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
@@ -321,7 +330,7 @@
             android:layout_height="48dp"
             android:layout_marginTop="8dp"
             android:text="EXPORTAR JSON REDIGIDO"
-            android:contentDescription="Compartilhar relatório JSON redigido sem package names ou detalhes técnicos sensíveis"
+            android:contentDescription="Salvar relatório JSON redigido sem package names ou detalhes técnicos sensíveis"
             android:textSize="13sp" />
 
         <TextView
