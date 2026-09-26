@@ -465,52 +465,39 @@ public final class SecurityScanner {
         SigningIdentity signingIdentity = signingIdentity(p);
         String cert = signingIdentity.currentCsv();
         if (!cert.isEmpty()) {
-            out.add(new ScanFinding(
+            ScanFinding signatureFinding = new ScanFinding(
                     ScanFinding.Level.INFO, "Assinatura SHA-256",
-                    cert, p.packageName, 0, null));
-        }
+                    cert, p.packageName, 0, null);
 
-        if (!system) {
-            long versionCode = Build.VERSION.SDK_INT >= 28
-                    ? p.getLongVersionCode()
-                    : p.versionCode;
-            Map<String, String> identityAttributes = new LinkedHashMap<>();
-            identityAttributes.put(
-                    PackageIdentityBaselineStore.ATTR_VERSION_CODE,
-                    Long.toString(Math.max(0L, versionCode)));
-            identityAttributes.put(
-                    PackageIdentityBaselineStore.ATTR_INSTALLER,
-                    installer == null ? "" : installer);
-            identityAttributes.put(
-                    PackageIdentityBaselineStore.ATTR_FIRST_INSTALL,
-                    Long.toString(Math.max(0L, p.firstInstallTime)));
-            identityAttributes.put(
-                    PackageIdentityBaselineStore.ATTR_LAST_UPDATE,
-                    Long.toString(Math.max(0L, p.lastUpdateTime)));
-            identityAttributes.put(
-                    PackageIdentityBaselineStore.ATTR_CURRENT_SIGNERS,
-                    signingIdentity.currentCsv());
-            identityAttributes.put(
-                    PackageIdentityBaselineStore.ATTR_SIGNING_LINEAGE,
-                    signingIdentity.lineageCsv());
+            if (!system) {
+                long versionCode = Build.VERSION.SDK_INT >= 28
+                        ? p.getLongVersionCode()
+                        : p.versionCode;
+                Map<String, String> identityAttributes = new LinkedHashMap<>();
+                identityAttributes.put(
+                        PackageIdentityBaselineStore.ATTR_VERSION_CODE,
+                        Long.toString(Math.max(0L, versionCode)));
+                identityAttributes.put(
+                        PackageIdentityBaselineStore.ATTR_INSTALLER,
+                        installer == null ? "" : installer);
+                identityAttributes.put(
+                        PackageIdentityBaselineStore.ATTR_FIRST_INSTALL,
+                        Long.toString(Math.max(0L, p.firstInstallTime)));
+                identityAttributes.put(
+                        PackageIdentityBaselineStore.ATTR_LAST_UPDATE,
+                        Long.toString(Math.max(0L, p.lastUpdateTime)));
+                identityAttributes.put(
+                        PackageIdentityBaselineStore.ATTR_CURRENT_SIGNERS,
+                        signingIdentity.currentCsv());
+                identityAttributes.put(
+                        PackageIdentityBaselineStore.ATTR_SIGNING_LINEAGE,
+                        signingIdentity.lineageCsv());
 
-            out.add(new ScanFinding(
-                    ScanFinding.Level.INFO,
-                    "Identidade técnica do pacote",
-                    "VersionCode " + versionCode
-                            + "; instalador "
-                            + (installer == null || installer.trim().isEmpty()
-                                    ? "não identificado"
-                                    : installer)
-                            + "; certificados atuais "
-                            + (signingIdentity.current.isEmpty()
-                                    ? "não disponíveis"
-                                    : signingIdentity.current.size()),
-                    p.packageName,
-                    0,
-                    null)
-                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED)
-                    .withAttributes(identityAttributes));
+                signatureFinding = signatureFinding
+                        .withEvidence(ScanFinding.EvidenceSource.OBSERVED)
+                        .withAttributes(identityAttributes);
+            }
+            out.add(signatureFinding);
         }
 
         if (!system && ai.sourceDir != null && !ai.sourceDir.isEmpty()) {
