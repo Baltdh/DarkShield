@@ -150,4 +150,83 @@ public class RiskCalculatorTest {
                 finding(ScanFinding.Level.MEDIUM, 10, " "),
                 finding(ScanFinding.Level.MEDIUM, 10, "	"))));
     }
+    @Test public void derivedPointsAreBoundedPerPackage() {
+        ScanFinding observed = new ScanFinding(
+                ScanFinding.Level.LOW,
+                "observed",
+                "x",
+                "com.example.app",
+                1,
+                null)
+                .withEvidence(
+                        ScanFinding.EvidenceSource.OBSERVED,
+                        ScanFinding.EvidenceTag.PERSISTENCE);
+        ScanFinding derivedOne = new ScanFinding(
+                ScanFinding.Level.HIGH,
+                "derived-one",
+                "x",
+                "com.example.app",
+                50,
+                null)
+                .withEvidence(
+                        ScanFinding.EvidenceSource.DERIVED,
+                        ScanFinding.EvidenceTag.CORRELATION);
+        ScanFinding derivedTwo = new ScanFinding(
+                ScanFinding.Level.HIGH,
+                "derived-two",
+                "x",
+                "com.example.app",
+                50,
+                null)
+                .withEvidence(
+                        ScanFinding.EvidenceSource.DERIVED,
+                        ScanFinding.EvidenceTag.CORRELATION);
+
+        assertEquals(9, RiskCalculator.score(Arrays.asList(
+                observed, derivedOne, derivedTwo)));
+    }
+
+    @Test public void derivedOnlyFindingDoesNotClaimHighOverallRisk() {
+        ScanFinding derived = new ScanFinding(
+                ScanFinding.Level.HIGH,
+                "temporal change",
+                "x",
+                "com.example.app",
+                50,
+                null)
+                .withEvidence(
+                        ScanFinding.EvidenceSource.DERIVED,
+                        ScanFinding.EvidenceTag.CORRELATION);
+
+        assertEquals(6, RiskCalculator.score(Arrays.asList(derived)));
+        assertEquals(
+                "MUDANÇA PARA REVISAR",
+                RiskCalculator.status(Arrays.asList(derived)));
+    }
+
+    @Test public void globalDerivedPointsAreBounded() {
+        ScanFinding first = new ScanFinding(
+                ScanFinding.Level.HIGH,
+                "derived-global-one",
+                "x",
+                null,
+                50,
+                null)
+                .withEvidence(
+                        ScanFinding.EvidenceSource.DERIVED,
+                        ScanFinding.EvidenceTag.CORRELATION);
+        ScanFinding second = new ScanFinding(
+                ScanFinding.Level.HIGH,
+                "derived-global-two",
+                "x",
+                null,
+                50,
+                null)
+                .withEvidence(
+                        ScanFinding.EvidenceSource.DERIVED,
+                        ScanFinding.EvidenceTag.CORRELATION);
+
+        assertEquals(6, RiskCalculator.score(Arrays.asList(first, second)));
+    }
+
 }
