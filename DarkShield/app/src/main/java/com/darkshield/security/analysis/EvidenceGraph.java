@@ -62,6 +62,18 @@ public final class EvidenceGraph {
             return (int) Math.min(Integer.MAX_VALUE, total);
         }
 
+        public int independentPositivePoints() {
+            long total = 0L;
+            for (ScanFinding finding : evidence) {
+                if (finding == null
+                        || finding.evidenceSource == ScanFinding.EvidenceSource.DERIVED) {
+                    continue;
+                }
+                total += Math.max(0, finding.points);
+            }
+            return (int) Math.min(Integer.MAX_VALUE, total);
+        }
+
         public ScanFinding.Level strongestLevel() {
             ScanFinding.Level strongest = ScanFinding.Level.INFO;
             for (ScanFinding finding : evidence) {
@@ -77,6 +89,27 @@ public final class EvidenceGraph {
             int count = 0;
             for (Kind kind : kinds) {
                 if (kind != Kind.OTHER && kind != Kind.ANALYSIS_GAP) count++;
+            }
+            return count;
+        }
+
+        public int independentSecurityKindCount() {
+            EnumSet<Kind> independentKinds = EnumSet.noneOf(Kind.class);
+            for (ScanFinding finding : evidence) {
+                if (finding == null
+                        || finding.evidenceSource == ScanFinding.EvidenceSource.DERIVED) {
+                    continue;
+                }
+                independentKinds.addAll(classify(finding));
+            }
+
+            int count = 0;
+            for (Kind kind : independentKinds) {
+                if (kind != Kind.OTHER
+                        && kind != Kind.ANALYSIS_GAP
+                        && kind != Kind.CORRELATION) {
+                    count++;
+                }
             }
             return count;
         }
