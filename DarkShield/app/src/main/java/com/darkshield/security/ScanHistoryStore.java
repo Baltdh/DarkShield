@@ -21,6 +21,9 @@ public final class ScanHistoryStore {
         public final int low;
         public final int reviewCount;
         public final int totalFindings;
+        public final int independentRawPoints;
+        public final int derivedRawPoints;
+        public final int analysisGaps;
 
         Entry(
                 long timestampMillis,
@@ -31,6 +34,32 @@ public final class ScanHistoryStore {
                 int low,
                 int reviewCount,
                 int totalFindings) {
+            this(
+                    timestampMillis,
+                    score,
+                    critical,
+                    high,
+                    medium,
+                    low,
+                    reviewCount,
+                    totalFindings,
+                    0,
+                    0,
+                    0);
+        }
+
+        Entry(
+                long timestampMillis,
+                int score,
+                int critical,
+                int high,
+                int medium,
+                int low,
+                int reviewCount,
+                int totalFindings,
+                int independentRawPoints,
+                int derivedRawPoints,
+                int analysisGaps) {
             this.timestampMillis = Math.max(0L, timestampMillis);
             this.score = clamp(score, 0, 100);
             this.critical = Math.max(0, critical);
@@ -39,6 +68,9 @@ public final class ScanHistoryStore {
             this.low = Math.max(0, low);
             this.reviewCount = Math.max(0, reviewCount);
             this.totalFindings = Math.max(0, totalFindings);
+            this.independentRawPoints = Math.max(0, independentRawPoints);
+            this.derivedRawPoints = Math.max(0, derivedRawPoints);
+            this.analysisGaps = Math.max(0, analysisGaps);
         }
     }
 
@@ -55,7 +87,10 @@ public final class ScanHistoryStore {
                 report.count(ScanFinding.Level.MEDIUM),
                 report.count(ScanFinding.Level.LOW),
                 report.countRequiringReview(),
-                report.getFindings().size());
+                report.getFindings().size(),
+                report.getIndependentRawPoints(),
+                report.getDerivedRawPoints(),
+                report.countAnalysisGaps());
 
         List<Entry> entries = new ArrayList<>(load(context));
         entries.add(0, entry);
@@ -104,7 +139,10 @@ public final class ScanHistoryStore {
                     .append(entry.medium).append('|')
                     .append(entry.low).append('|')
                     .append(entry.reviewCount).append('|')
-                    .append(entry.totalFindings);
+                    .append(entry.totalFindings).append('|')
+                    .append(entry.independentRawPoints).append('|')
+                    .append(entry.derivedRawPoints).append('|')
+                    .append(entry.analysisGaps);
             written++;
         }
         return out.toString();
@@ -118,17 +156,32 @@ public final class ScanHistoryStore {
         for (String line : lines) {
             if (entries.size() >= MAX_ENTRIES) break;
             String[] fields = line.split("\\|", -1);
-            if (fields.length != 8) continue;
+            if (fields.length != 8 && fields.length != 11) continue;
             try {
-                entries.add(new Entry(
-                        Long.parseLong(fields[0]),
-                        Integer.parseInt(fields[1]),
-                        Integer.parseInt(fields[2]),
-                        Integer.parseInt(fields[3]),
-                        Integer.parseInt(fields[4]),
-                        Integer.parseInt(fields[5]),
-                        Integer.parseInt(fields[6]),
-                        Integer.parseInt(fields[7])));
+                if (fields.length == 11) {
+                    entries.add(new Entry(
+                            Long.parseLong(fields[0]),
+                            Integer.parseInt(fields[1]),
+                            Integer.parseInt(fields[2]),
+                            Integer.parseInt(fields[3]),
+                            Integer.parseInt(fields[4]),
+                            Integer.parseInt(fields[5]),
+                            Integer.parseInt(fields[6]),
+                            Integer.parseInt(fields[7]),
+                            Integer.parseInt(fields[8]),
+                            Integer.parseInt(fields[9]),
+                            Integer.parseInt(fields[10])));
+                } else {
+                    entries.add(new Entry(
+                            Long.parseLong(fields[0]),
+                            Integer.parseInt(fields[1]),
+                            Integer.parseInt(fields[2]),
+                            Integer.parseInt(fields[3]),
+                            Integer.parseInt(fields[4]),
+                            Integer.parseInt(fields[5]),
+                            Integer.parseInt(fields[6]),
+                            Integer.parseInt(fields[7])));
+                }
             } catch (NumberFormatException ignored) {
                 // Ignore corrupt history rows and preserve valid entries.
             }
