@@ -395,8 +395,8 @@ public final class SecurityScanner {
                             ScanFinding.EvidenceTag.REMOTE_CONTROL));
         }
 
+        String installer = !system ? getInstaller(p.packageName) : null;
         if (!system) {
-            String installer = getInstaller(p.packageName);
             if (installer == null || installer.trim().isEmpty()) {
                 out.add(new ScanFinding(
                         ScanFinding.Level.INFO, "Origem de instalação não identificada",
@@ -462,11 +462,55 @@ public final class SecurityScanner {
                     "Confirme se a VPN é esperada e reconhecida"));
         }
 
-        String cert = signingSha256(p);
-        if (cert != null) {
+        SigningIdentity signingIdentity = signingIdentity(p);
+        String cert = signingIdentity.currentCsv();
+        if (!cert.isEmpty()) {
             out.add(new ScanFinding(
                     ScanFinding.Level.INFO, "Assinatura SHA-256",
                     cert, p.packageName, 0, null));
+        }
+
+        if (!system) {
+            long versionCode = Build.VERSION.SDK_INT >= 28
+                    ? p.getLongVersionCode()
+                    : p.versionCode;
+            Map<String, String> identityAttributes = new LinkedHashMap<>();
+            identityAttributes.put(
+                    PackageIdentityBaselineStore.ATTR_VERSION_CODE,
+                    Long.toString(Math.max(0L, versionCode)));
+            identityAttributes.put(
+                    PackageIdentityBaselineStore.ATTR_INSTALLER,
+                    installer == null ? "" : installer);
+            identityAttributes.put(
+                    PackageIdentityBaselineStore.ATTR_FIRST_INSTALL,
+                    Long.toString(Math.max(0L, p.firstInstallTime)));
+            identityAttributes.put(
+                    PackageIdentityBaselineStore.ATTR_LAST_UPDATE,
+                    Long.toString(Math.max(0L, p.lastUpdateTime)));
+            identityAttributes.put(
+                    PackageIdentityBaselineStore.ATTR_CURRENT_SIGNERS,
+                    signingIdentity.currentCsv());
+            identityAttributes.put(
+                    PackageIdentityBaselineStore.ATTR_SIGNING_LINEAGE,
+                    signingIdentity.lineageCsv());
+
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Identidade técnica do pacote",
+                    "VersionCode " + versionCode
+                            + "; instalador "
+                            + (installer == null || installer.trim().isEmpty()
+                                    ? "não identificado"
+                                    : installer)
+                            + "; certificados atuais "
+                            + (signingIdentity.current.isEmpty()
+                                    ? "não disponíveis"
+                                    : signingIdentity.current.size()),
+                    p.packageName,
+                    0,
+                    null)
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED)
+                    .withAttributes(identityAttributes));
         }
 
         if (!system && ai.sourceDir != null && !ai.sourceDir.isEmpty()) {
@@ -1305,38 +1349,78 @@ public final class SecurityScanner {
         }
     }
 
-    private String signingSha256(PackageInfo p) {
+    static final class SigningIdentity {
+        final List<String> current;
+        final List<String> lineage;
+
+        SigningIdentity(List<String> current, List<String> lineage) {
+            this.current = immutableSorted(current);
+            this.lineage = immutableSorted(lineage);
+        }
+
+        String currentCsv() {
+            return String.join(",", current);
+        }
+
+        String lineageCsv() {
+            return String.join(",", lineage);
+        }
+
+        private static List<String> immutableSorted(List<String> values) {
+            List<String> copy = new ArrayList<>();
+            if (values != null) {
+                for (String value : values) {
+                    if (value == null || value.trim().isEmpty()) continue;
+                    copy.add(value.trim().toUpperCase(Locale.ROOT));
+                }
+            }
+            Collections.sort(copy);
+            return Collections.unmodifiableList(copy);
+        }
+    }
+
+    private SigningIdentity signingIdentity(PackageInfo p) {
+        List<String> current = new ArrayList<>();
+        List<String> lineage = new ArrayList<>();
         try {
-            android.content.pm.Signature[] sigs;
+            android.content.pm.Signature[] currentSignatures;
+            android.content.pm.Signature[] lineageSignatures;
+
             if (Build.VERSION.SDK_INT >= 28) {
-                if (p.signingInfo == null) return null;
-                sigs = p.signingInfo.hasMultipleSigners()
-                        ? p.signingInfo.getApkContentsSigners()
+                if (p.signingInfo == null) {
+                    return new SigningIdentity(current, lineage);
+                }
+                currentSignatures = p.signingInfo.getApkContentsSigners();
+                lineageSignatures = p.signingInfo.hasMultipleSigners()
+                        ? currentSignatures
                         : p.signingInfo.getSigningCertificateHistory();
             } else {
-                sigs = p.signatures;
+                currentSignatures = p.signatures;
+                lineageSignatures = p.signatures;
             }
-            if (sigs == null || sigs.length == 0) return null;
 
-            List<String> hashes = new ArrayList<>(sigs.length);
-            if (Build.VERSION.SDK_INT >= 28
-                    && !p.signingInfo.hasMultipleSigners()) {
-                // Signing certificate history is ordered from original to current.
-                hashes.add(sha256(sigs[sigs.length - 1].toByteArray()));
-            } else {
-                // Multiple signers have set semantics; sort for deterministic reporting.
-                for (android.content.pm.Signature sig : sigs) {
-                    if (sig == null) continue;
-                    String hash = sha256(sig.toByteArray());
-                    if (hash != null) hashes.add(hash);
-                }
-                Collections.sort(hashes);
-            }
-            if (hashes.isEmpty()) return null;
-            return String.join(", ", hashes);
-        } catch (Exception e) {
-            return null;
+            addSignatureHashes(current, currentSignatures);
+            addSignatureHashes(lineage, lineageSignatures);
+        } catch (Exception ignored) {
+            // Identity findings remain informational when signing data is unavailable.
         }
+        return new SigningIdentity(current, lineage);
+    }
+
+    private void addSignatureHashes(
+            List<String> destination,
+            android.content.pm.Signature[] signatures) {
+        if (destination == null || signatures == null) return;
+        for (android.content.pm.Signature signature : signatures) {
+            if (signature == null) continue;
+            String hash = sha256(signature.toByteArray());
+            if (hash != null && !destination.contains(hash)) destination.add(hash);
+        }
+    }
+
+    private String signingSha256(PackageInfo p) {
+        String current = signingIdentity(p).currentCsv();
+        return current.isEmpty() ? null : current;
     }
 
     private String sha256(byte[] bytes) {
