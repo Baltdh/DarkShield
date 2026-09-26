@@ -561,7 +561,10 @@ public final class SecurityScanner {
                 system ? 0 : 2,
                 system
                         ? null
-                        : "Confirme se você reconhece e confia no teclado; métodos de entrada podem processar o texto digitado"));
+                        : "Confirme se você reconhece e confia no teclado; métodos de entrada podem processar o texto digitado")
+                .withAttribute(
+                        DevicePostureBaselineStore.ATTR_DEFAULT_IME,
+                        pkg));
     }
 
     private void checkDefaultCommunicationApps(List<ScanFinding> out) {
@@ -574,7 +577,8 @@ public final class SecurityScanner {
                 defaultSms,
                 "Aplicativo padrão de SMS",
                 "O aplicativo padrão de SMS pode processar mensagens recebidas e enviadas",
-                "Confirme se você reconhece o aplicativo definido como padrão para SMS");
+                "Confirme se você reconhece o aplicativo definido como padrão para SMS",
+                DevicePostureBaselineStore.ATTR_DEFAULT_SMS);
 
         String defaultDialer = null;
         try {
@@ -587,7 +591,8 @@ public final class SecurityScanner {
                 defaultDialer,
                 "Aplicativo padrão de chamadas",
                 "O aplicativo padrão de chamadas pode controlar a experiência de telefonia do dispositivo",
-                "Confirme se você reconhece o aplicativo definido como padrão para chamadas");
+                "Confirme se você reconhece o aplicativo definido como padrão para chamadas",
+                DevicePostureBaselineStore.ATTR_DEFAULT_DIALER);
     }
 
     private void addDefaultHandlerFinding(
@@ -595,7 +600,8 @@ public final class SecurityScanner {
             String packageName,
             String title,
             String detail,
-            String action) {
+            String action,
+            String attributeKey) {
         if (packageName == null || packageName.trim().isEmpty()) {
             out.add(new ScanFinding(
                     ScanFinding.Level.INFO, title,
@@ -611,7 +617,8 @@ public final class SecurityScanner {
                 detail,
                 packageName,
                 0,
-                system ? null : action));
+                system ? null : action)
+                .withAttribute(attributeKey, packageName));
     }
 
     private void checkSystemIntegrity(List<ScanFinding> out) {
@@ -1069,14 +1076,20 @@ public final class SecurityScanner {
                 "Opções do desenvolvedor",
                 dev == 1 ? "Ativadas" : "Desativadas",
                 null, 0,
-                null));
+                null)
+                .withAttribute(
+                        DevicePostureBaselineStore.ATTR_DEV_OPTIONS,
+                        Integer.toString(dev == 1 ? 1 : 0)));
 
         out.add(new ScanFinding(
                 adb == 1 ? ScanFinding.Level.MEDIUM : ScanFinding.Level.INFO,
                 "Depuração USB (ADB)",
                 adb == 1 ? "Ativada" : "Desativada",
                 null, adb == 1 ? 4 : 0,
-                adb == 1 ? "Desative quando não estiver usando ADB" : null));
+                adb == 1 ? "Desative quando não estiver usando ADB" : null)
+                .withAttribute(
+                        DevicePostureBaselineStore.ATTR_ADB,
+                        Integer.toString(adb == 1 ? 1 : 0)));
 
         checkDevicePosture(out);
         checkDefaultInputMethod(out);
@@ -1107,13 +1120,19 @@ public final class SecurityScanner {
         }
 
         String patch = Build.VERSION.SECURITY_PATCH;
-        out.add(new ScanFinding(
+        ScanFinding patchFinding = new ScanFinding(
                 ScanFinding.Level.INFO,
                 "Nível do patch de segurança",
                 patch == null || patch.trim().isEmpty()
                         ? "O sistema não informou a data do patch de segurança"
                         : patch,
-                null, 0, null));
+                null, 0, null);
+        if (patch != null && !patch.trim().isEmpty()) {
+            patchFinding = patchFinding.withAttribute(
+                    DevicePostureBaselineStore.ATTR_SECURITY_PATCH,
+                    patch.trim());
+        }
+        out.add(patchFinding);
         addSecurityPatchAgeFinding(out, patch);
         out.addAll(SecurityStateScanner.scan(c));
     }
