@@ -311,6 +311,8 @@ public class MainActivity extends android.app.Activity {
                 getApplicationContext(), findings));
         enrichedFindings.addAll(DevicePostureBaselineStore.compareAndUpdate(
                 getApplicationContext(), findings));
+        enrichedFindings.addAll(SystemIntegrityBaselineStore.compareAndUpdate(
+                getApplicationContext(), findings));
         enrichedFindings.addAll(PostExploitCorrelationEngine.correlate(enrichedFindings));
         findings = enrichedFindings;
 
@@ -1077,6 +1079,7 @@ public class MainActivity extends android.app.Activity {
                     SecurityBaselineStore.clear(getApplicationContext());
                     PackageIdentityBaselineStore.clear(getApplicationContext());
                     DevicePostureBaselineStore.clear(getApplicationContext());
+                    SystemIntegrityBaselineStore.clear(getApplicationContext());
                     nextAction.setText(
                             "Linhas de base redefinidas. Execute uma nova verificação para recalibrar o monitoramento de mudanças.");
                     Toast.makeText(
