@@ -362,7 +362,9 @@ public class MainActivity extends android.app.Activity {
                         + "   Médio: " + medium + "   Baixo: " + low
                         + "\n" + scanReport.countRequiringReview()
                         + " item(ns) exigem revisão; " + findings.size() + " registro(s) no total.\n"
-                        + "Pontos heurísticos: " + scanReport.getRawPoints()
+                        + "Pontos independentes: " + scanReport.getIndependentRawPoints()
+                        + " • derivados: " + scanReport.getDerivedRawPoints()
+                        + " (limitados no score)"
                         + " → score exibido: " + risk + "/100."
                         + timingSummary + "\n\n";
         SpannableStringBuilder summaryBuilder = new SpannableStringBuilder(summaryText);
@@ -935,7 +937,12 @@ public class MainActivity extends android.app.Activity {
         b.append("DarkShield — Relatório de segurança\n");
         b.append("Status: ").append(status).append("\n");
         b.append("Score heurístico: ").append(risk).append("/100\n");
-        b.append("Pontos heurísticos brutos: ").append(report.getRawPoints()).append("\n");
+        b.append("Pontos independentes brutos: ")
+                .append(report.getIndependentRawPoints())
+                .append("\n");
+        b.append("Pontos derivados brutos: ")
+                .append(report.getDerivedRawPoints())
+                .append(" (contribuição limitada no score)\n");
         b.append("Crítico: ").append(report.count(ScanFinding.Level.CRITICAL))
                 .append(" | Alto: ").append(report.count(ScanFinding.Level.HIGH))
                 .append(" | Médio: ").append(report.count(ScanFinding.Level.MEDIUM))
