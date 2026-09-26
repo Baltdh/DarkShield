@@ -269,6 +269,12 @@ public class MainActivity extends android.app.Activity {
             return;
         }
         if (isFinishing() || isDestroyed()) return;
+
+        List<ScanFinding> enrichedFindings = new ArrayList<>(findings);
+        enrichedFindings.addAll(SecurityBaselineStore.compareAndUpdate(
+                getApplicationContext(), findings));
+        findings = enrichedFindings;
+
         ScanReport scanReport = new ScanReport(findings);
         lastScanReport = scanReport;
         int critical = scanReport.count(ScanFinding.Level.CRITICAL);
