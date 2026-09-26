@@ -49,7 +49,8 @@ public class MainActivity extends android.app.Activity {
     private TextView scanProgressStage;
     private View progressContainer;
     private Button scan, cancelScan, remediation, manageApps, securitySettings,
-            networkSettings, updateVulnerabilityDb, scanHistory, exportJson, share, copy;
+            networkSettings, updateVulnerabilityDb, scanHistory, resetBaselines,
+            exportJson, share, copy;
     private ScanReport lastScanReport;
     private ScanTimingTracker scanTimingTracker;
     private String lastReport = "";
@@ -102,6 +103,7 @@ public class MainActivity extends android.app.Activity {
         networkSettings = findViewById(R.id.network_settings);
         updateVulnerabilityDb = findViewById(R.id.update_vulnerability_db);
         scanHistory = findViewById(R.id.scan_history);
+        resetBaselines = findViewById(R.id.reset_baselines);
         exportJson = findViewById(R.id.export_json);
         share = findViewById(R.id.share);
         copy = findViewById(R.id.copy);
@@ -114,6 +116,7 @@ public class MainActivity extends android.app.Activity {
         networkSettings.setOnClickListener(v -> reviewNetworkSettings());
         updateVulnerabilityDb.setOnClickListener(v -> refreshVulnerabilityDatabase());
         scanHistory.setOnClickListener(v -> showScanHistory());
+        resetBaselines.setOnClickListener(v -> confirmResetBaselines());
         exportJson.setOnClickListener(v -> exportRedactedJson());
         share.setOnClickListener(v -> shareReport());
         copy.setOnClickListener(v -> copyReport());
@@ -1032,6 +1035,30 @@ public class MainActivity extends android.app.Activity {
                     "Não foi possível abrir as configurações de segurança.",
                     Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void confirmResetBaselines() {
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("Redefinir linhas de base?")
+                .setMessage(
+                        "Isso apaga apenas as referências locais usadas para comparar mudanças entre verificações. "
+                                + "O histórico, a base OSV e o relatório atual serão mantidos. "
+                                + "Na próxima verificação, o DarkShield criará uma nova linha de base sem gerar alertas "
+                                + "de mudança por ausência da referência anterior.")
+                .setNegativeButton("CANCELAR", null)
+                .setPositiveButton("REDEFINIR", (ignored, which) -> {
+                    SecurityBaselineStore.clear(getApplicationContext());
+                    PackageIdentityBaselineStore.clear(getApplicationContext());
+                    DevicePostureBaselineStore.clear(getApplicationContext());
+                    nextAction.setText(
+                            "Linhas de base redefinidas. Execute uma nova verificação para recalibrar o monitoramento de mudanças.");
+                    Toast.makeText(
+                            this,
+                            "Linhas de base locais redefinidas.",
+                            Toast.LENGTH_SHORT).show();
+                })
+                .create();
+        showProtectedDialog(dialog);
     }
 
     private void showScanHistory() {
