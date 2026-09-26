@@ -45,7 +45,7 @@ public class MainActivity extends android.app.Activity {
     private TextView scanProgressStage;
     private View progressContainer;
     private Button scan, cancelScan, remediation, manageApps, securitySettings,
-            networkSettings, updateVulnerabilityDb, share, copy;
+            networkSettings, updateVulnerabilityDb, scanHistory, share, copy;
     private ScanReport lastScanReport;
     private ScanTimingTracker scanTimingTracker;
     private String lastReport = "";
@@ -95,6 +95,7 @@ public class MainActivity extends android.app.Activity {
         securitySettings = findViewById(R.id.settings);
         networkSettings = findViewById(R.id.network_settings);
         updateVulnerabilityDb = findViewById(R.id.update_vulnerability_db);
+        scanHistory = findViewById(R.id.scan_history);
         share = findViewById(R.id.share);
         copy = findViewById(R.id.copy);
 
@@ -105,6 +106,7 @@ public class MainActivity extends android.app.Activity {
         securitySettings.setOnClickListener(v -> openSecuritySettings());
         networkSettings.setOnClickListener(v -> reviewNetworkSettings());
         updateVulnerabilityDb.setOnClickListener(v -> refreshVulnerabilityDatabase());
+        scanHistory.setOnClickListener(v -> showScanHistory());
         share.setOnClickListener(v -> shareReport());
         copy.setOnClickListener(v -> copyReport());
         restoreLastScanTimestamp();
@@ -339,6 +341,7 @@ public class MainActivity extends android.app.Activity {
         String timestamp = new SimpleDateFormat("dd/MM/yyyy • HH:mm", Locale.getDefault())
                 .format(new Date());
         long completedAt = System.currentTimeMillis();
+        ScanHistoryStore.record(getApplicationContext(), scanReport, completedAt);
         saveLastScanTimestamp(completedAt);
         lastScan.setText("Última verificação: " + timestamp + " • duração: " + formatDuration(durationMillis));
         nextAction.setText(risk >= 70
@@ -955,6 +958,68 @@ public class MainActivity extends android.app.Activity {
                     "Não foi possível abrir as configurações de segurança.",
                     Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void showScanHistory() {
+        List<ScanHistoryStore.Entry> entries =
+                ScanHistoryStore.load(getApplicationContext());
+        if (entries.isEmpty()) {
+            Toast.makeText(
+                    this,
+                    "Ainda não há verificações concluídas no histórico.",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        SimpleDateFormat format =
+                new SimpleDateFormat("dd/MM/yyyy • HH:mm", Locale.getDefault());
+        StringBuilder body = new StringBuilder();
+        int index = 1;
+        for (ScanHistoryStore.Entry entry : entries) {
+            if (body.length() > 0) body.append("\n\n");
+            body.append(index++)
+                    .append(". ")
+                    .append(format.format(new Date(entry.timestampMillis)))
+                    .append("\nScore: ")
+                    .append(entry.score)
+                    .append("/100 • revisão: ")
+                    .append(entry.reviewCount)
+                    .append("\nCrítico ")
+                    .append(entry.critical)
+                    .append(" • Alto ")
+                    .append(entry.high)
+                    .append(" • Médio ")
+                    .append(entry.medium)
+                    .append(" • Baixo ")
+                    .append(entry.low)
+                    .append("\nRegistros técnicos: ")
+                    .append(entry.totalFindings);
+        }
+
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
+        TextView content = new TextView(this);
+        content.setText(body.toString());
+        content.setTextColor(0xFFD9DDE7);
+        content.setTextSize(13);
+        content.setPadding(pad, pad / 2, pad, pad / 2);
+        content.setTextIsSelectable(true);
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(content);
+
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("Histórico de verificações")
+                .setView(scroll)
+                .setNegativeButton("FECHAR", null)
+                .setNeutralButton("LIMPAR HISTÓRICO", (ignored, which) -> {
+                    ScanHistoryStore.clear(getApplicationContext());
+                    Toast.makeText(
+                            this,
+                            "Histórico local limpo.",
+                            Toast.LENGTH_SHORT).show();
+                })
+                .create();
+        showProtectedDialog(dialog);
     }
 
     private void refreshVulnerabilityDatabase() {
