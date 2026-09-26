@@ -105,4 +105,35 @@ public class DevicePostureBaselineStoreTest {
         assertEquals("1", snapshot.get(DevicePostureBaselineStore.ATTR_DEV_OPTIONS));
         assertEquals("1", snapshot.get(DevicePostureBaselineStore.ATTR_ADB));
     }
+    @Test
+    public void advancedProtectionDisableIsDetected() {
+        Map<String, String> beforeValues = new HashMap<>();
+        beforeValues.put(DevicePostureBaselineStore.ATTR_ADVANCED_PROTECTION, "1");
+        Map<String, String> afterValues = new HashMap<>();
+        afterValues.put(DevicePostureBaselineStore.ATTR_ADVANCED_PROTECTION, "0");
+
+        List<ScanFinding> findings = DevicePostureBaselineStore.compare(
+                new DevicePostureBaselineStore.Snapshot(beforeValues),
+                new DevicePostureBaselineStore.Snapshot(afterValues));
+
+        assertEquals(1, findings.size());
+        assertEquals(ScanFinding.Level.MEDIUM, findings.get(0).level);
+        assertEquals(
+                "1",
+                findings.get(0).attribute(
+                        DevicePostureBaselineStore.ATTR_CHANGE_ADVANCED_PROTECTION_DISABLED));
+    }
+
+    @Test
+    public void advancedProtectionEnableIsNotTreatedAsRegression() {
+        Map<String, String> beforeValues = new HashMap<>();
+        beforeValues.put(DevicePostureBaselineStore.ATTR_ADVANCED_PROTECTION, "0");
+        Map<String, String> afterValues = new HashMap<>();
+        afterValues.put(DevicePostureBaselineStore.ATTR_ADVANCED_PROTECTION, "1");
+
+        assertTrue(DevicePostureBaselineStore.compare(
+                new DevicePostureBaselineStore.Snapshot(beforeValues),
+                new DevicePostureBaselineStore.Snapshot(afterValues)).isEmpty());
+    }
+
 }
