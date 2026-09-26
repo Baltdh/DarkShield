@@ -66,4 +66,24 @@ public class EvidenceGraphTest {
         assertTrue(node.has(EvidenceGraph.Kind.ANALYSIS_GAP));
         assertEquals(0, node.securityKindCount());
     }
+    @Test
+    public void structuredTagsTakePrecedenceOverLocalizedText() {
+        ScanFinding finding = new ScanFinding(
+                ScanFinding.Level.HIGH,
+                "Título sem palavras conhecidas",
+                "Detalhe localizado sem marcadores legados",
+                "pkg",
+                8,
+                null).withTags(
+                        ScanFinding.EvidenceTag.ACTIVE_ACCESS,
+                        ScanFinding.EvidenceTag.REMOTE_CONTROL);
+
+        EvidenceGraph.Node node = EvidenceGraph.from(Arrays.asList(finding))
+                .packageNodes().get(0);
+
+        assertTrue(node.has(EvidenceGraph.Kind.ACTIVE_ACCESS));
+        assertTrue(node.has(EvidenceGraph.Kind.REMOTE_CONTROL));
+        assertFalse(node.has(EvidenceGraph.Kind.OTHER));
+        assertEquals(2, node.securityKindCount());
+    }
 }
