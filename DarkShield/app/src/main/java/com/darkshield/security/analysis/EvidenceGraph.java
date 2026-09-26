@@ -15,6 +15,7 @@ public final class EvidenceGraph {
     public enum Kind {
         ACTIVE_ACCESS,
         PERSISTENCE,
+        REMOTE_CONTROL,
         SENSITIVE_DATA,
         INSTALL_TRUST,
         STATIC_ANALYSIS,
@@ -146,6 +147,55 @@ public final class EvidenceGraph {
     }
 
     static Set<Kind> classify(ScanFinding finding) {
+        EnumSet<Kind> structured = structuredKinds(finding);
+        if (!structured.isEmpty()) return structured;
+        return classifyLegacyText(finding);
+    }
+
+    private static EnumSet<Kind> structuredKinds(ScanFinding finding) {
+        EnumSet<Kind> result = EnumSet.noneOf(Kind.class);
+        if (finding == null || finding.evidenceTags == null || finding.evidenceTags.isEmpty()) {
+            return result;
+        }
+
+        for (ScanFinding.EvidenceTag tag : finding.evidenceTags) {
+            if (tag == null) continue;
+            switch (tag) {
+                case ACTIVE_ACCESS:
+                    result.add(Kind.ACTIVE_ACCESS);
+                    break;
+                case PERSISTENCE:
+                    result.add(Kind.PERSISTENCE);
+                    break;
+                case REMOTE_CONTROL:
+                    result.add(Kind.REMOTE_CONTROL);
+                    break;
+                case SENSITIVE_DATA:
+                    result.add(Kind.SENSITIVE_DATA);
+                    break;
+                case INSTALL_TRUST:
+                    result.add(Kind.INSTALL_TRUST);
+                    break;
+                case STATIC_ANALYSIS:
+                    result.add(Kind.STATIC_ANALYSIS);
+                    break;
+                case VULNERABILITY:
+                    result.add(Kind.VULNERABILITY);
+                    break;
+                case CORRELATION:
+                    result.add(Kind.CORRELATION);
+                    break;
+                case ANALYSIS_GAP:
+                    result.add(Kind.ANALYSIS_GAP);
+                    break;
+                default:
+                    break;
+            }
+        }
+        return result;
+    }
+
+    private static Set<Kind> classifyLegacyText(ScanFinding finding) {
         EnumSet<Kind> result = EnumSet.noneOf(Kind.class);
         if (finding == null) return result;
 
@@ -170,6 +220,14 @@ public final class EvidenceGraph {
                 || combined.contains("otimização de bateria")
                 || combined.contains("persist")) {
             result.add(Kind.PERSISTENCE);
+        }
+
+        if (combined.contains("acesso remoto")
+                || combined.contains("captura de tela")
+                || combined.contains("mediaprojection")
+                || combined.contains("controle remoto")
+                || combined.contains("remote")) {
+            result.add(Kind.REMOTE_CONTROL);
         }
 
         if (combined.contains("sms")
@@ -227,4 +285,5 @@ public final class EvidenceGraph {
         if (result.isEmpty()) result.add(Kind.OTHER);
         return result;
     }
+
 }
