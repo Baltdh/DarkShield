@@ -81,13 +81,14 @@ public final class RiskEngineV2 {
         boolean correlation = node.has(EvidenceGraph.Kind.CORRELATION);
         boolean active = node.has(EvidenceGraph.Kind.ACTIVE_ACCESS);
         boolean persistence = node.has(EvidenceGraph.Kind.PERSISTENCE);
+        boolean remote = node.has(EvidenceGraph.Kind.REMOTE_CONTROL);
         boolean sensitive = node.has(EvidenceGraph.Kind.SENSITIVE_DATA);
         boolean staticAnalysis = node.has(EvidenceGraph.Kind.STATIC_ANALYSIS);
         boolean analysisPartial = node.has(EvidenceGraph.Kind.ANALYSIS_GAP);
 
         if (correlation) score += 15;
-        if (active && persistence && sensitive) score += 15;
-        if (staticAnalysis && active && sensitive) score += 5;
+        if (active && persistence && (remote || sensitive)) score += 15;
+        if (staticAnalysis && active && (remote || sensitive)) score += 5;
         score = Math.min(100, score);
 
         Confidence confidence;
