@@ -31,6 +31,30 @@ public final class ScanReport {
         return (int) Math.min(Integer.MAX_VALUE, points);
     }
 
+    public int getIndependentRawPoints() {
+        long points = 0L;
+        for (ScanFinding finding : findings) {
+            if (finding == null
+                    || finding.evidenceSource == ScanFinding.EvidenceSource.DERIVED) {
+                continue;
+            }
+            points += Math.max(0, finding.points);
+        }
+        return (int) Math.min(Integer.MAX_VALUE, points);
+    }
+
+    public int getDerivedRawPoints() {
+        long points = 0L;
+        for (ScanFinding finding : findings) {
+            if (finding == null
+                    || finding.evidenceSource != ScanFinding.EvidenceSource.DERIVED) {
+                continue;
+            }
+            points += Math.max(0, finding.points);
+        }
+        return (int) Math.min(Integer.MAX_VALUE, points);
+    }
+
     public String getStatus() {
         return RiskCalculator.status(findings);
     }
