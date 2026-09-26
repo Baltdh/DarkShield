@@ -7,6 +7,15 @@ import java.util.Set;
 public final class ScanFinding {
     public enum Level { INFO, LOW, MEDIUM, HIGH, CRITICAL }
 
+    public enum EvidenceSource {
+        UNKNOWN,
+        OBSERVED,
+        DECLARED,
+        HEURISTIC,
+        DERIVED,
+        ANALYSIS_LIMIT
+    }
+
     public enum EvidenceTag {
         ACTIVE_ACCESS,
         PERSISTENCE,
@@ -25,6 +34,7 @@ public final class ScanFinding {
     public final String packageName;
     public final int points;
     public final String action;
+    public final EvidenceSource evidenceSource;
     public final Set<EvidenceTag> evidenceTags;
 
     public ScanFinding(
@@ -34,7 +44,8 @@ public final class ScanFinding {
             String packageName,
             int points,
             String action) {
-        this(level, title, detail, packageName, points, action, Collections.emptySet());
+        this(level, title, detail, packageName, points, action,
+                EvidenceSource.UNKNOWN, Collections.emptySet());
     }
 
     public ScanFinding(
@@ -45,12 +56,27 @@ public final class ScanFinding {
             int points,
             String action,
             Set<EvidenceTag> evidenceTags) {
+        this(level, title, detail, packageName, points, action,
+                EvidenceSource.UNKNOWN, evidenceTags);
+    }
+
+    public ScanFinding(
+            Level level,
+            String title,
+            String detail,
+            String packageName,
+            int points,
+            String action,
+            EvidenceSource evidenceSource,
+            Set<EvidenceTag> evidenceTags) {
         this.level = level;
         this.title = title;
         this.detail = detail;
         this.packageName = packageName;
         this.points = points;
         this.action = action;
+        this.evidenceSource = evidenceSource == null
+                ? EvidenceSource.UNKNOWN : evidenceSource;
         if (evidenceTags == null || evidenceTags.isEmpty()) {
             this.evidenceTags = Collections.emptySet();
         } else {
@@ -69,7 +95,22 @@ public final class ScanFinding {
         }
         if (merged.equals(evidenceTags)) return this;
         return new ScanFinding(
-                level, title, detail, packageName, points, action, merged);
+                level, title, detail, packageName, points, action, evidenceSource, merged);
+    }
+
+    public ScanFinding withEvidence(EvidenceSource source, EvidenceTag... tags) {
+        ScanFinding tagged = withTags(tags);
+        EvidenceSource resolved = source == null ? EvidenceSource.UNKNOWN : source;
+        if (tagged.evidenceSource == resolved) return tagged;
+        return new ScanFinding(
+                tagged.level,
+                tagged.title,
+                tagged.detail,
+                tagged.packageName,
+                tagged.points,
+                tagged.action,
+                resolved,
+                tagged.evidenceTags);
     }
 
     public boolean hasEvidenceTag(EvidenceTag tag) {
