@@ -83,4 +83,26 @@ public class ScanFindingTest {
         assertTrue(extended.evidenceSource == ScanFinding.EvidenceSource.OBSERVED);
         assertTrue(extended.hasEvidenceTag(ScanFinding.EvidenceTag.SENSITIVE_DATA));
     }
+    @Test public void withAttributesPreservesEvidenceAndIsImmutable() {
+        ScanFinding finding = new ScanFinding(
+                ScanFinding.Level.INFO, "Identidade", "detalhe",
+                "com.example", 0, null)
+                .withEvidence(
+                        ScanFinding.EvidenceSource.OBSERVED,
+                        ScanFinding.EvidenceTag.INSTALL_TRUST)
+                .withAttribute("identity.version", "42");
+
+        assertTrue(finding.hasEvidenceTag(ScanFinding.EvidenceTag.INSTALL_TRUST));
+        assertTrue(finding.evidenceSource == ScanFinding.EvidenceSource.OBSERVED);
+        assertTrue("42".equals(finding.attribute("identity.version")));
+
+        boolean immutable = false;
+        try {
+            finding.attributes.put("x", "y");
+        } catch (UnsupportedOperationException expected) {
+            immutable = true;
+        }
+        assertTrue(immutable);
+    }
+
 }
