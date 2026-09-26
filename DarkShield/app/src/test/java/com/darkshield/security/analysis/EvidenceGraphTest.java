@@ -109,4 +109,26 @@ public class EvidenceGraphTest {
         assertEquals(1, node.strongEvidenceCount());
         assertEquals(1, node.weakEvidenceCount());
     }
+    @Test
+    public void derivedEvidenceDoesNotIncreaseIndependentPointsOrCategories() {
+        EvidenceGraph.Node node = EvidenceGraph.from(Arrays.asList(
+                new ScanFinding(ScanFinding.Level.HIGH, "Observed", "x", "pkg", 8, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.OBSERVED,
+                                ScanFinding.EvidenceTag.ACTIVE_ACCESS),
+                new ScanFinding(ScanFinding.Level.LOW, "Declared", "y", "pkg", 1, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DECLARED,
+                                ScanFinding.EvidenceTag.PERSISTENCE),
+                new ScanFinding(ScanFinding.Level.HIGH, "Derived", "z", "pkg", 40, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.INSTALL_TRUST,
+                                ScanFinding.EvidenceTag.CORRELATION)))
+                .packageNodes().get(0);
+
+        assertEquals(49, node.positivePoints());
+        assertEquals(9, node.independentPositivePoints());
+        assertEquals(2, node.independentSecurityKindCount());
+    }
 }
