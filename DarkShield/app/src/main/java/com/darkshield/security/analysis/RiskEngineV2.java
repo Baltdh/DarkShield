@@ -15,6 +15,8 @@ public final class RiskEngineV2 {
         public final Confidence confidence;
         public final int riskScore;
         public final int evidenceCount;
+        public final int independentEvidenceCount;
+        public final int strongEvidenceCount;
         public final int categoryCount;
         public final boolean analysisPartial;
 
@@ -24,6 +26,8 @@ public final class RiskEngineV2 {
                 Confidence confidence,
                 int riskScore,
                 int evidenceCount,
+                int independentEvidenceCount,
+                int strongEvidenceCount,
                 int categoryCount,
                 boolean analysisPartial) {
             this.packageName = packageName;
@@ -31,13 +35,16 @@ public final class RiskEngineV2 {
             this.confidence = confidence;
             this.riskScore = riskScore;
             this.evidenceCount = evidenceCount;
+            this.independentEvidenceCount = independentEvidenceCount;
+            this.strongEvidenceCount = strongEvidenceCount;
             this.categoryCount = categoryCount;
             this.analysisPartial = analysisPartial;
         }
 
         public String summary() {
             return level + " • confiança " + confidence
-                    + " • " + evidenceCount + " evidência(s)"
+                    + " • " + independentEvidenceCount + " evidência(s) independente(s)"
+                    + " (" + strongEvidenceCount + " forte(s))"
                     + " em " + categoryCount + " categoria(s)"
                     + (analysisPartial ? " • análise parcial" : "");
         }
@@ -72,6 +79,8 @@ public final class RiskEngineV2 {
         int positivePoints = node.positivePoints();
         int categoryCount = node.securityKindCount();
         int evidenceCount = node.evidenceCount();
+        int independentEvidenceCount = node.independentEvidenceCount();
+        int strongEvidenceCount = node.strongEvidenceCount();
 
         int score = Math.min(45, positivePoints * 3);
         if (categoryCount > 1) {
@@ -92,10 +101,12 @@ public final class RiskEngineV2 {
         score = Math.min(100, score);
 
         Confidence confidence;
-        if ((correlation && evidenceCount >= 3 && categoryCount >= 3)
-                || (evidenceCount >= 4 && categoryCount >= 4)) {
+        if ((correlation && strongEvidenceCount >= 2 && categoryCount >= 3)
+                || (strongEvidenceCount >= 3 && categoryCount >= 4)) {
             confidence = Confidence.HIGH;
-        } else if (evidenceCount >= 2 && categoryCount >= 2) {
+        } else if (independentEvidenceCount >= 2
+                && strongEvidenceCount >= 1
+                && categoryCount >= 2) {
             confidence = Confidence.MEDIUM;
         } else {
             confidence = Confidence.LOW;
@@ -125,6 +136,8 @@ public final class RiskEngineV2 {
                 confidence,
                 score,
                 evidenceCount,
+                independentEvidenceCount,
+                strongEvidenceCount,
                 categoryCount,
                 analysisPartial);
     }
