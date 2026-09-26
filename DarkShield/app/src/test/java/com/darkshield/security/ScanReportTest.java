@@ -377,4 +377,17 @@ public class ScanReportTest {
         assertEquals(45, report.getScore());
     }
 
+    @Test public void countAnalysisGapsTracksStructuredLimits() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.LOW,
+                        "Falha parcial", "x", "pkg", 1, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.ANALYSIS_LIMIT,
+                                ScanFinding.EvidenceTag.ANALYSIS_GAP),
+                new ScanFinding(ScanFinding.Level.INFO,
+                        "Informação normal", "x", null, 0, null)));
+
+        assertEquals(1, report.countAnalysisGaps());
+        assertTrue(report.hasAnalysisGaps());
+    }
 }
