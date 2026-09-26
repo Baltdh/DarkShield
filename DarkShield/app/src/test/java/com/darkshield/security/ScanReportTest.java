@@ -390,4 +390,23 @@ public class ScanReportTest {
         assertEquals(1, report.countAnalysisGaps());
         assertTrue(report.hasAnalysisGaps());
     }
+    @Test public void rawPointBreakdownSeparatesDerivedEvidence() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(
+                        ScanFinding.Level.MEDIUM, "observed", "x",
+                        "pkg", 5, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.OBSERVED,
+                                ScanFinding.EvidenceTag.ACTIVE_ACCESS),
+                new ScanFinding(
+                        ScanFinding.Level.HIGH, "derived", "y",
+                        "pkg", 7, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION)));
+
+        assertEquals(12, report.getRawPoints());
+        assertEquals(5, report.getIndependentRawPoints());
+        assertEquals(7, report.getDerivedRawPoints());
+    }
 }
