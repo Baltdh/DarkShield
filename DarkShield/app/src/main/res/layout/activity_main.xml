@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root_scroll"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:fillViewport="true"
+    android:clipToPadding="false"
     android:background="#090B10">
 
     <LinearLayout
@@ -244,12 +246,57 @@
             android:enabled="false" />
 
         <Button
+            android:id="@+id/manage_apps"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:contentDescription="Escolher aplicativos para revisar ou solicitar desinstalação"
+            android:text="GERENCIAR / REMOVER APLICATIVOS"
+            android:textSize="13sp" />
+
+        <Button
             android:id="@+id/settings"
             android:layout_width="match_parent"
             android:layout_height="48dp"
             android:layout_marginTop="8dp"
             android:text="ABRIR CONFIGURAÇÕES DE SEGURANÇA"
             android:contentDescription="Abrir as configurações de segurança do Android"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/network_settings"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:text="REVISAR REDE E DNS PRIVADO"
+            android:contentDescription="Revisar configurações de rede e DNS privado do Android"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/update_vulnerability_db"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:text="ATUALIZAR BASE DE VULNERABILIDADES"
+            android:contentDescription="Atualizar e validar a base OSV usada para verificar o estado de patches"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/scan_history"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:text="HISTÓRICO DE VERIFICAÇÕES"
+            android:contentDescription="Abrir histórico local resumido das últimas verificações"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/reset_baselines"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:text="REDEFINIR LINHAS DE BASE"
+            android:contentDescription="Apagar apenas as referências locais usadas para comparar mudanças entre verificações"
             android:textSize="13sp" />
 
         <LinearLayout
@@ -278,6 +325,15 @@
                 android:textSize="12sp"
                 android:contentDescription="Copiar relatório de segurança" />
         </LinearLayout>
+
+        <Button
+            android:id="@+id/export_json"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:text="EXPORTAR JSON REDIGIDO"
+            android:contentDescription="Salvar relatório JSON redigido sem package names ou detalhes técnicos sensíveis"
+            android:textSize="13sp" />
 
         <TextView
             android:layout_width="match_parent"

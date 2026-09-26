@@ -10,10 +10,12 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Locale;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -26,6 +28,9 @@ public final class StaticApkAnalyzer {
     private static final long MAX_TOTAL_CONTENT_SCAN_BYTES = 8L * 1024L * 1024L;
     private static final long MAX_COMPRESSED_TAIL_SKIP_BYTES = 2L * 1024L * 1024L;
     private static final int MAX_CACHE_ENTRIES = 256;
+    private static final int MAX_SPLITS_INSPECTED = 16;
+    private static final int MAX_CODE_SPLITS_ANALYZED = 4;
+    private static final long MAX_CODE_SPLIT_BYTES = 128L * 1024L * 1024L;
     private static final ThreadLocal<TimingSnapshot> LAST_TIMING = new ThreadLocal<>();
 
     // Process-local cache only: findings are reused when the same installed APK
@@ -48,6 +53,98 @@ public final class StaticApkAnalyzer {
     };
 
     private StaticApkAnalyzer() {}
+
+    /**
+     * The base APK is not the entire installed app: feature splits can carry
+     * DEX and native libraries. Inspect split ZIP directories without reading
+     * their contents, then analyze code-bearing splits within a shared budget.
+     */
+    public static List<ScanFinding> analyzeInstalled(
+            String baseApkPath, String[] splitApkPaths, String packageName) {
+        long startedAt = System.nanoTime();
+        List<ScanFinding> out = analyze(baseApkPath, packageName);
+        TimingSnapshot combined = LAST_TIMING.get();
+        if (splitApkPaths == null || splitApkPaths.length == 0) return out;
+
+        int analyzed = 0;
+        int resourceOnly = 0;
+        int unavailable = 0;
+        int inspected = 0;
+        long analyzedBytes = 0L;
+        Set<String> seen = new HashSet<>();
+        seen.add(baseApkPath);
+        for (String path : splitApkPaths) {
+            if (Thread.currentThread().isInterrupted()) throw new ScanInterruptedException();
+            if (path == null || !seen.add(path)) continue;
+            if (++inspected > MAX_SPLITS_INSPECTED) {
+                unavailable += splitApkPaths.length - inspected + 1;
+                break;
+            }
+            File split = new File(path);
+            if (!split.isFile() || !split.canRead()) {
+                unavailable++;
+                continue;
+            }
+            boolean hasCode = false;
+            boolean reachedEntryLimit = false;
+            try (ZipFile zip = new ZipFile(split)) {
+                java.util.Enumeration<? extends ZipEntry> entries = zip.entries();
+                int count = 0;
+                while (entries.hasMoreElements()) {
+                    if (Thread.currentThread().isInterrupted()) throw new ScanInterruptedException();
+                    if (++count > MAX_ENTRIES) {
+                        reachedEntryLimit = true;
+                        break;
+                    }
+                    String name = entries.nextElement().getName().toLowerCase(Locale.ROOT);
+                    if (isExecutableEntry(name)) {
+                        hasCode = true;
+                        break;
+                    }
+                }
+            } catch (ScanInterruptedException e) {
+                throw e;
+            } catch (IOException | SecurityException e) {
+                unavailable++;
+                continue;
+            }
+            if (!hasCode) {
+                if (reachedEntryLimit) unavailable++;
+                else resourceOnly++;
+                continue;
+            }
+            if (analyzed >= MAX_CODE_SPLITS_ANALYZED
+                    || split.length() > MAX_CODE_SPLIT_BYTES - analyzedBytes) {
+                unavailable++;
+                continue;
+            }
+            analyzedBytes += split.length();
+            for (ScanFinding finding : analyze(path, packageName)) {
+                out.add(new ScanFinding(finding.level, finding.title,
+                        "APK dividido " + split.getName() + ": " + finding.detail,
+                        finding.packageName, finding.points, finding.action));
+            }
+            combined = TimingSnapshot.combine(combined, LAST_TIMING.get(),
+                    elapsedMillis(startedAt));
+            analyzed++;
+        }
+        if (combined != null) {
+            LAST_TIMING.set(TimingSnapshot.combine(combined, null, elapsedMillis(startedAt)));
+        }
+        if (analyzed > 0 || unavailable > 0) {
+            out.add(new ScanFinding(ScanFinding.Level.INFO,
+                    "Cobertura dos APKs divididos",
+                    analyzed + " parte(s) com código analisada(s); " + resourceOnly
+                            + " sem DEX/bibliotecas identificados pelo nome; " + unavailable
+                            + " parte(s) sem análise completa. A seleção é limitada a "
+                            + MAX_SPLITS_INSPECTED + " partes inspecionadas, "
+                            + MAX_CODE_SPLITS_ANALYZED + " partes com código e "
+                            + (MAX_CODE_SPLIT_BYTES / (1024 * 1024)) + " MiB por aplicativo.",
+                    packageName, 0,
+                    unavailable > 0 ? "Revise separadamente as partes não analisadas" : null));
+        }
+        return out;
+    }
 
     public static List<ScanFinding> analyze(String apkPath, String packageName) {
         long analysisStartedAt = System.nanoTime();
@@ -96,6 +193,7 @@ public final class StaticApkAnalyzer {
         List<String> suspicious = new ArrayList<>();
         List<String> suspiciousResourceMarkers = new ArrayList<>();
         List<String> suspiciousContent = new ArrayList<>();
+        BehaviorSignals behaviorSignals = new BehaviorSignals();
         long contentScanned = 0L;
         boolean contentSampleReadFailure = false;
 
@@ -152,6 +250,7 @@ public final class StaticApkAnalyzer {
                         }
                         contentScanned += sample.length;
                         collectContentMarkers(name, sample, suspiciousContent);
+                        behaviorSignals.merge(detectBehaviorSignals(sample));
                     }
                 }
             }
@@ -171,7 +270,10 @@ public final class StaticApkAnalyzer {
                         "Manifesto do APK ausente",
                         "AndroidManifest.xml não foi encontrado na estrutura ZIP",
                         packageName, 3,
-                        "Verifique se o arquivo analisado é realmente um APK válido"));
+                        "Verifique se o arquivo analisado é realmente um APK válido")
+                        .withEvidence(
+                        ScanFinding.EvidenceSource.ANALYSIS_LIMIT,
+                        ScanFinding.EvidenceTag.ANALYSIS_GAP));
             }
 
             if (!suspicious.isEmpty()) {
@@ -189,7 +291,10 @@ public final class StaticApkAnalyzer {
                         "Marcadores estáticos encontrados: " + detail
                                 + ". Isso é um indicador heurístico e não prova comportamento malicioso.",
                         packageName, 2,
-                        "Revise o app e, quando necessário, compare com a origem oficial do APK"));
+                        "Revise o app e, quando necessário, compare com a origem oficial do APK")
+                        .withEvidence(
+                        ScanFinding.EvidenceSource.HEURISTIC,
+                        ScanFinding.EvidenceTag.STATIC_ANALYSIS));
             }
 
             if (!suspiciousResourceMarkers.isEmpty()) {
@@ -235,8 +340,13 @@ public final class StaticApkAnalyzer {
                         "Foram encontrados textos associados a instrumentação dentro da amostra analisada de DEX/bibliotecas ou outro payload executável reconhecido por assinatura (início/final, quando a leitura da cauda permaneceu dentro do limite): "
                                 + detail + ". Isso é um indicador heurístico e não prova comportamento malicioso.",
                         packageName, 2,
-                        "Revise a origem do APK e compare o certificado/versão com a distribuição oficial"));
+                        "Revise a origem do APK e compare o certificado/versão com a distribuição oficial")
+                        .withEvidence(
+                        ScanFinding.EvidenceSource.HEURISTIC,
+                        ScanFinding.EvidenceTag.STATIC_ANALYSIS));
             }
+
+            addBehaviorFindings(out, packageName, behaviorSignals);
 
             if (dex == 0) {
                 out.add(new ScanFinding(
@@ -311,6 +421,17 @@ public final class StaticApkAnalyzer {
                                        long contentBytesScanned, long totalMillis) {
             return new TimingSnapshot(false, zipMillis, hashMillis,
                     contentBytesScanned, totalMillis);
+        }
+
+        static TimingSnapshot combine(TimingSnapshot left, TimingSnapshot right, long totalMillis) {
+            if (left == null) return right;
+            if (right == null) {
+                return new TimingSnapshot(left.cacheHit, left.zipMillis, left.hashMillis,
+                        left.contentBytesScanned, totalMillis);
+            }
+            return new TimingSnapshot(left.cacheHit && right.cacheHit,
+                    left.zipMillis + right.zipMillis, left.hashMillis + right.hashMillis,
+                    left.contentBytesScanned + right.contentBytesScanned, totalMillis);
         }
     }
 
@@ -429,6 +550,95 @@ public final class StaticApkAnalyzer {
         }
     }
 
+    static BehaviorSignals detectBehaviorSignals(byte[] sample) {
+        if (sample == null || sample.length == 0) return new BehaviorSignals();
+        String text = new String(sample, StandardCharsets.ISO_8859_1)
+                .toLowerCase(Locale.ROOT);
+
+        BehaviorSignals signals = new BehaviorSignals();
+        signals.dynamicCodeLoading = containsAny(text,
+                "dalvik/system/dexclassloader",
+                "dalvik/system/inmemorydexclassloader",
+                "dalvik/system/delegatelastclassloader",
+                "dalvik/system/dexfile");
+        signals.networkFetch = containsAny(text,
+                "java/net/httpurlconnection",
+                "java/net/url",
+                "okhttp3/",
+                "android/app/downloadmanager");
+        signals.shellExecution = text.contains("java/lang/processbuilder")
+                || (text.contains("java/lang/runtime") && text.contains("exec"))
+                || text.contains("/system/bin/sh");
+        signals.webViewJavascriptBridge = text.contains("android/webkit/webview")
+                && text.contains("addjavascriptinterface");
+        return signals;
+    }
+
+    private static boolean containsAny(String text, String... markers) {
+        for (String marker : markers) {
+            if (text.contains(marker)) return true;
+        }
+        return false;
+    }
+
+    private static void addBehaviorFindings(
+            List<ScanFinding> out, String packageName, BehaviorSignals signals) {
+        if (signals.dynamicCodeLoading && signals.networkFetch) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.LOW,
+                    "Código dinâmico combinado com rede",
+                    "A amostra executável contém referências a carregadores DEX e APIs de obtenção de conteúdo pela rede. Essa combinação é compatível com atualização modular legítima, mas também aparece na técnica MITRE ATT&CK Mobile T1407; a análise estática não confirma que código seja baixado ou executado.",
+                    packageName, 2,
+                    "Confirme a origem do aplicativo e compare certificado, versão e distribuição oficial")
+                    .withEvidence(
+                        ScanFinding.EvidenceSource.HEURISTIC,
+                        ScanFinding.EvidenceTag.STATIC_ANALYSIS));
+        } else if (signals.dynamicCodeLoading) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Carregamento dinâmico de código referenciado",
+                    "A amostra executável referencia carregadores DEX. Plugins, frameworks e atualizações modulares podem usar esse recurso legitimamente; não há evidência isolada de download ou execução maliciosa.",
+                    packageName, 0,
+                    "Revise apenas se houver outros sinais ou se a origem do APK for desconhecida"));
+        }
+
+        if (signals.shellExecution) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.LOW,
+                    "Execução de comandos referenciada",
+                    "A amostra executável referencia APIs/caminhos capazes de iniciar comandos do sistema. Ferramentas de diagnóstico, terminais e apps com root podem usar isso legitimamente; o marcador não prova que um comando tenha sido executado.",
+                    packageName, 1,
+                    "Confirme se a função do aplicativo justifica executar comandos locais")
+                    .withEvidence(
+                        ScanFinding.EvidenceSource.HEURISTIC,
+                        ScanFinding.EvidenceTag.STATIC_ANALYSIS));
+        }
+
+        if (signals.webViewJavascriptBridge && signals.networkFetch) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Ponte WebView combinada com rede",
+                    "A amostra referencia addJavascriptInterface e APIs de rede. Essa arquitetura é comum em apps híbridos, mas conteúdo remoto não confiável pode ampliar a superfície de ataque.",
+                    packageName, 0,
+                    "Mantenha o aplicativo atualizado e confirme sua origem; este sinal é apenas contextual"));
+        }
+    }
+
+    static final class BehaviorSignals {
+        boolean dynamicCodeLoading;
+        boolean networkFetch;
+        boolean shellExecution;
+        boolean webViewJavascriptBridge;
+
+        void merge(BehaviorSignals other) {
+            if (other == null) return;
+            dynamicCodeLoading |= other.dynamicCodeLoading;
+            networkFetch |= other.networkFetch;
+            shellExecution |= other.shellExecution;
+            webViewJavascriptBridge |= other.webViewJavascriptBridge;
+        }
+    }
+
     private static void addCappedMarker(List<String> markers, String candidate, int cap) {
         if (markers.size() < cap) {
             markers.add(candidate);
@@ -542,7 +752,10 @@ public final class StaticApkAnalyzer {
                 "Falha na análise estática",
                 detail,
                 packageName, 1,
-                "Repita a análise com um APK legível e íntegro");
+                "Repita a análise com um APK legível e íntegro")
+                .withEvidence(
+                        ScanFinding.EvidenceSource.ANALYSIS_LIMIT,
+                        ScanFinding.EvidenceTag.ANALYSIS_GAP);
     }
 
     private static String sha256(File file) {

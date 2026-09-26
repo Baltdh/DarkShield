@@ -1,14 +1,15 @@
 package com.darkshield.security;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 
 /**
- * Converts findings into safe, user-confirmed remediation targets.
- * It never changes settings or removes an app by itself.
+ * Converts findings into Android settings screens the user can review.
  */
 public final class RemediationPlanner {
     public enum Kind {
@@ -19,6 +20,10 @@ public final class RemediationPlanner {
         UNKNOWN_SOURCES,
         USAGE_ACCESS,
         SECURITY,
+        BATTERY,
+        VPN,
+        DEFAULT_APPS,
+        INPUT_METHOD,
         APP_DETAILS
     }
 
@@ -27,14 +32,12 @@ public final class RemediationPlanner {
         public final String title;
         public final String reason;
         public final Kind kind;
-        public final boolean uninstallCandidate;
 
-        Action(String packageName, String title, String reason, Kind kind, boolean uninstallCandidate) {
+        Action(String packageName, String title, String reason, Kind kind) {
             this.packageName = packageName;
             this.title = title;
             this.reason = reason;
             this.kind = kind;
-            this.uninstallCandidate = uninstallCandidate;
         }
     }
 
@@ -45,16 +48,17 @@ public final class RemediationPlanner {
         Set<String> seen = new HashSet<>();
         if (findings == null) return result;
 
-        for (ScanFinding f : findings) {
+        List<ScanFinding> ordered = new ArrayList<>(findings);
+        ordered.removeAll(Collections.singleton(null));
+        ordered.sort(Comparator.comparingInt((ScanFinding f) ->
+                f.level == null ? -1 : f.level.ordinal()).reversed());
+        for (ScanFinding f : ordered) {
             if (f == null || f.level == null || f.level == ScanFinding.Level.INFO
                     || f.packageName == null || f.packageName.trim().isEmpty()) {
                 continue;
             }
 
             String pkg = f.packageName.trim();
-            String key = f.level + "|" + pkg;
-            if (!seen.add(key)) continue;
-
             String title = f.title == null ? "" : f.title.toLowerCase(Locale.ROOT);
             Kind kind;
             if (title.contains("acessibilidade")) {
@@ -72,19 +76,27 @@ public final class RemediationPlanner {
                 kind = Kind.USAGE_ACCESS;
             } else if (title.contains("administrador")) {
                 kind = Kind.SECURITY;
+            } else if (title.contains("otimização de bateria")) {
+                kind = Kind.BATTERY;
+            } else if (title.contains("vpn")) {
+                kind = Kind.VPN;
+            } else if (title.contains("aplicativo padrão")) {
+                kind = Kind.DEFAULT_APPS;
+            } else if (title.contains("teclado")) {
+                kind = Kind.INPUT_METHOD;
             } else {
                 kind = Kind.APP_DETAILS;
             }
 
-            boolean uninstallCandidate = f.level == ScanFinding.Level.CRITICAL
-                    || f.level == ScanFinding.Level.HIGH;
+            // Keep different grants for the same package; collapse repeated general
+            // findings into a single application-details action.
+            if (!seen.add(pkg + "|" + kind)) continue;
             result.add(new Action(
                     pkg,
-                    "Revisar " + pkg,
+                    "Revisar " + (f.title == null ? "aplicativo" : f.title) + " • " + pkg,
                     f.detail == null ? "Indicador que merece revisão." : f.detail,
-                    kind,
-                    uninstallCandidate));
-            if (result.size() >= 8) break;
+                    kind));
+            if (result.size() >= 40) break;
         }
         return result;
     }

@@ -34,6 +34,25 @@ public class ThreatKnowledgeBaseTest {
         assertTrue(annotation.contains("T1517"));
     }
 
+    @Test public void screenCaptureAnnotationIncludesConsentCaveat() {
+        String annotation = ThreatKnowledgeBase.annotate(
+                "Acesso remoto combinado com captura de tela");
+
+        assertNotNull(annotation);
+        assertTrue(annotation.contains("T1513"));
+        assertTrue(annotation.contains("consentimento"));
+        assertTrue(annotation.contains("não prova"));
+    }
+
+    @Test public void dynamicCodeAnnotationDoesNotClaimExecution() {
+        String annotation = ThreatKnowledgeBase.annotate(
+                "Código dinâmico combinado com rede");
+
+        assertNotNull(annotation);
+        assertTrue(annotation.contains("T1407"));
+        assertTrue(annotation.contains("não confirmam"));
+    }
+
     @Test public void administratorAnnotationCoversDeviceAdmin() {
         String annotation = ThreatKnowledgeBase.annotate(
                 "Administrador do dispositivo ativo");

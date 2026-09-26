@@ -1,5 +1,6 @@
 package com.darkshield.security;
 
+import android.content.pm.ServiceInfo;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -8,6 +9,20 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class SecurityScannerTest {
+    @Test public void privateDnsReportDistinguishesNetworkStateWithoutScoringIt() {
+        ScanFinding inactive = SecurityScanner.privateDnsFinding(false, null);
+        ScanFinding automatic = SecurityScanner.privateDnsFinding(true, null);
+        ScanFinding provider = SecurityScanner.privateDnsFinding(true, "dns.example\nALERTA FALSO");
+
+        assertEquals(ScanFinding.Level.INFO, inactive.level);
+        assertEquals(0, inactive.points);
+        assertTrue(inactive.detail.contains("não está ativo nesta rede"));
+        assertTrue(automatic.detail.contains("modo oportunista"));
+        assertTrue(provider.detail.contains("dns.example ALERTA FALSO"));
+        assertFalse(provider.detail.contains("\n"));
+        assertEquals(0, provider.points);
+    }
+
     @Test public void unprotectedExportedProviderRequiresNoPermissions() {
         assertTrue(SecurityScanner.isUnprotectedExportedProvider(
                 true, null, null));
@@ -55,6 +70,36 @@ public class SecurityScannerTest {
         assertFalse(SecurityScanner.isUnprotectedExportedProvider(
                 false, null, null));
     }
+
+    @Test public void remoteMarkerRequiresOperationalCorroboration() {
+        assertFalse(SecurityScanner.shouldElevateRemoteMarker(0, false));
+        assertFalse(SecurityScanner.shouldElevateRemoteMarker(1, false));
+        assertTrue(SecurityScanner.shouldElevateRemoteMarker(2, false));
+        assertTrue(SecurityScanner.shouldElevateRemoteMarker(0, true));
+    }
+
+    @Test public void declaredAccessibilityIsNotOperationalCorroboration() {
+        // Accessibility declaration is deliberately not an input to this helper.
+        // The active-service collector and correlation engine handle it later.
+        assertFalse(SecurityScanner.shouldElevateRemoteMarker(0, false));
+    }
+
+    @Test public void identifiesMediaProjectionForegroundServiceBit() {
+        assertTrue(SecurityScanner.isMediaProjectionForegroundService(
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION));
+        assertTrue(SecurityScanner.isMediaProjectionForegroundService(
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION | 1));
+        assertFalse(SecurityScanner.isMediaProjectionForegroundService(0));
+    }
+
+    @Test public void identifiesOnlyDeviceAdminReceiverPermission() {
+        assertTrue(SecurityScanner.isDeviceAdminReceiverPermission(
+                "android.permission.BIND_DEVICE_ADMIN"));
+        assertFalse(SecurityScanner.isDeviceAdminReceiverPermission(
+                "android.permission.BIND_ACCESSIBILITY_SERVICE"));
+        assertFalse(SecurityScanner.isDeviceAdminReceiverPermission(null));
+    }
+
     @Test public void securityPatchAgeDaysCalculatesExactAge() {
         assertEquals(180,
                 SecurityScanner.securityPatchAgeDays(

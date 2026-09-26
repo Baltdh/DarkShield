@@ -1,12 +1,14 @@
 # Android / Gradle build output
 .gradle/
+**/.gradle/
 **/build/
 local.properties
 
-# IDE
+# IDE and local machine state
 .idea/
 *.iml
 .vscode/
+captures/
 
 # Signing material — never commit
 *.jks
