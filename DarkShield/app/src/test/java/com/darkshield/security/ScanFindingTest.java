@@ -53,4 +53,19 @@ public class ScanFindingTest {
         assertTrue(line.startsWith("[null] null"));
         assertTrue(line.contains("    null"));
     }
+    @Test public void withTagsKeepsLegacyConstructorCompatible() {
+        ScanFinding legacy = new ScanFinding(
+                ScanFinding.Level.MEDIUM, "title", "detail",
+                "com.example", 3, "action");
+        assertTrue(legacy.evidenceTags.isEmpty());
+
+        ScanFinding tagged = legacy.withTags(
+                ScanFinding.EvidenceTag.ACTIVE_ACCESS,
+                ScanFinding.EvidenceTag.REMOTE_CONTROL);
+
+        assertTrue(legacy.evidenceTags.isEmpty());
+        assertTrue(tagged.hasEvidenceTag(ScanFinding.EvidenceTag.ACTIVE_ACCESS));
+        assertTrue(tagged.hasEvidenceTag(ScanFinding.EvidenceTag.REMOTE_CONTROL));
+        assertTrue(tagged.evidenceTags.size() == 2);
+    }
 }
