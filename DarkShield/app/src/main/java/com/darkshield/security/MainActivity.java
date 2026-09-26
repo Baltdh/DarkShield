@@ -1133,6 +1133,12 @@ public class MainActivity extends android.app.Activity {
                     .append(entry.medium)
                     .append(" • Baixo ")
                     .append(entry.low)
+                    .append("\nPontos independentes ")
+                    .append(entry.independentRawPoints)
+                    .append(" • derivados ")
+                    .append(entry.derivedRawPoints)
+                    .append(" • limitações ")
+                    .append(entry.analysisGaps)
                     .append("\nRegistros técnicos: ")
                     .append(entry.totalFindings);
         }
