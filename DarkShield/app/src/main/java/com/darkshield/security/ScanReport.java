@@ -53,6 +53,22 @@ public final class ScanReport {
         return total;
     }
 
+    public int countAnalysisGaps() {
+        int total = 0;
+        for (ScanFinding finding : findings) {
+            if (finding == null) continue;
+            if (finding.evidenceSource == ScanFinding.EvidenceSource.ANALYSIS_LIMIT
+                    || finding.hasEvidenceTag(ScanFinding.EvidenceTag.ANALYSIS_GAP)) {
+                total++;
+            }
+        }
+        return total;
+    }
+
+    public boolean hasAnalysisGaps() {
+        return countAnalysisGaps() > 0;
+    }
+
     public List<PackageSummary> packageSummaries() {
         java.util.Map<String, PackageSummary> byPackage = new java.util.HashMap<>();
         for (ScanFinding finding : findings) {
