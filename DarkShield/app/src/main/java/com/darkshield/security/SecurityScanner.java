@@ -627,6 +627,27 @@ public final class SecurityScanner {
         boolean debuggableBuild = SystemIntegrityChecker.hasDebuggableBuild();
         boolean rootMarker = SystemIntegrityChecker.hasRootManagementMarker();
 
+        Map<String, String> integrityAttributes = new LinkedHashMap<>();
+        integrityAttributes.put(
+                SystemIntegrityBaselineStore.ATTR_ROOT_BINARY,
+                rootBinary ? "1" : "0");
+        integrityAttributes.put(
+                SystemIntegrityBaselineStore.ATTR_TEST_KEYS,
+                testKeys ? "1" : "0");
+        integrityAttributes.put(
+                SystemIntegrityBaselineStore.ATTR_DEBUGGABLE_BUILD,
+                debuggableBuild ? "1" : "0");
+        integrityAttributes.put(
+                SystemIntegrityBaselineStore.ATTR_ROOT_MANAGER,
+                rootMarker ? "1" : "0");
+        out.add(new ScanFinding(
+                ScanFinding.Level.INFO,
+                "Estado técnico de integridade",
+                "Referência local para comparar mudanças de root e tipo de build entre verificações.",
+                null, 0, null)
+                .withEvidence(ScanFinding.EvidenceSource.OBSERVED)
+                .withAttributes(integrityAttributes));
+
         if (rootBinary) {
             out.add(new ScanFinding(
                     ScanFinding.Level.HIGH, "Binário de root detectado",
