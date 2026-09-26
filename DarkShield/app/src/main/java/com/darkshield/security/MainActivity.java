@@ -39,6 +39,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends android.app.Activity {
     private TextView score, summary, report, lastScan, nextAction, coverageHint;
@@ -53,6 +55,8 @@ public class MainActivity extends android.app.Activity {
     private String lastReport = "";
     private static final String PREFS = "darkshield_ui";
     private static final String KEY_LAST_SCAN_MILLIS = "last_scan_millis";
+    private static final int REQUEST_EXPORT_REDACTED_JSON = 7001;
+    private String pendingRedactedJson;
     private final ExecutorService exec = Executors.newSingleThreadExecutor();
     private final ExecutorService inventoryExec = Executors.newSingleThreadExecutor();
     private final ArrayDeque<RemediationPlanner.Action> queuedCorrections = new ArrayDeque<>();
@@ -931,22 +935,55 @@ public class MainActivity extends android.app.Activity {
             return;
         }
 
-        String json = ReportJsonExporter.redacted(
+        pendingRedactedJson = ReportJsonExporter.redacted(
                 lastScanReport,
                 ScanHistoryStore.load(getApplicationContext()),
                 System.currentTimeMillis());
 
-        Intent send = new Intent(Intent.ACTION_SEND);
-        send.setType("application/json");
-        send.putExtra(Intent.EXTRA_SUBJECT, "DarkShield — Relatório JSON redigido");
-        send.putExtra(Intent.EXTRA_TEXT, json);
+        String filename = "DarkShield-redacted-"
+                + new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ROOT).format(new Date())
+                + ".json";
+
+        Intent create = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        create.addCategory(Intent.CATEGORY_OPENABLE);
+        create.setType("application/json");
+        create.putExtra(Intent.EXTRA_TITLE, filename);
         try {
-            startActivity(Intent.createChooser(send, "Compartilhar JSON redigido"));
+            startActivityForResult(create, REQUEST_EXPORT_REDACTED_JSON);
+        } catch (RuntimeException e) {
+            pendingRedactedJson = null;
+            Toast.makeText(
+                    this,
+                    "Não foi possível abrir o seletor para salvar o JSON.",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQUEST_EXPORT_REDACTED_JSON) return;
+
+        String json = pendingRedactedJson;
+        pendingRedactedJson = null;
+        if (resultCode != RESULT_OK || data == null || data.getData() == null || json == null) {
+            return;
+        }
+
+        Uri destination = data.getData();
+        try (OutputStream out = getContentResolver().openOutputStream(destination, "wt")) {
+            if (out == null) throw new IllegalStateException("Fluxo de saída indisponível");
+            out.write(json.getBytes(StandardCharsets.UTF_8));
+            out.flush();
+            Toast.makeText(
+                    this,
+                    "JSON redigido salvo.",
+                    Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
             Toast.makeText(
                     this,
-                    "Não foi possível abrir um aplicativo para exportar o JSON.",
-                    Toast.LENGTH_SHORT).show();
+                    "Não foi possível salvar o JSON redigido.",
+                    Toast.LENGTH_LONG).show();
         }
     }
 
