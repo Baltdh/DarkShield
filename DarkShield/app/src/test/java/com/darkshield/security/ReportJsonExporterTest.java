@@ -79,4 +79,25 @@ public class ReportJsonExporterTest {
         assertTrue(json.contains("darkshield.redacted-report.v1"));
         assertTrue(json.endsWith("}"));
     }
+    @Test
+    public void redactedExportIncludesAnalysisGapCount() {
+        ScanFinding gap = new ScanFinding(
+                ScanFinding.Level.LOW,
+                "Falha parcial",
+                "detalhe omitido",
+                "pkg",
+                1,
+                null)
+                .withEvidence(
+                        ScanFinding.EvidenceSource.ANALYSIS_LIMIT,
+                        ScanFinding.EvidenceTag.ANALYSIS_GAP);
+
+        String json = ReportJsonExporter.redacted(
+                new ScanReport(Collections.singletonList(gap)),
+                Collections.emptyList(),
+                1L);
+
+        assertTrue(json.contains("\"analysis_gaps\":1"));
+        assertFalse(json.contains("detalhe omitido"));
+    }
 }
