@@ -330,10 +330,15 @@ public class MainActivity extends android.app.Activity {
         updateSeverityAccessibility(countMedium, "médio", medium);
         updateSeverityAccessibility(countLow, "baixo", low);
         String status = scanReport.getStatus();
+        int analysisGaps = scanReport.countAnalysisGaps();
         coverageHint.setText("Cobertura desta verificação: " + findings.size()
                 + " registro(s) técnico(s) • " + scanReport.countRequiringReview()
                 + " item(ns) para revisão • " + scanReport.packageSummaries().size()
-                + " pacote(s) com sinais.");
+                + " pacote(s) com sinais • " + analysisGaps
+                + " limitação(ões) explícita(s) de análise."
+                + (analysisGaps > 0
+                        ? " Parte da superfície não pôde ser avaliada completamente."
+                        : " Isso não significa que todas as camadas internas do Android sejam observáveis pelo app."));
         String details = scanReport.details();
         String informational = scanReport.informationalDetails();
         score.setText(status + "  •  " + risk + "/100");
@@ -933,6 +938,9 @@ public class MainActivity extends android.app.Activity {
                 .append(" | Baixo: ").append(report.count(ScanFinding.Level.LOW)).append("\n");
         b.append("Itens para revisão: ").append(report.countRequiringReview()).append("\n");
         b.append("Registros totais: ").append(report.getFindings().size()).append("\n");
+        b.append("Limitações explícitas de análise: ")
+                .append(report.countAnalysisGaps())
+                .append("\n");
         String packageSummary = report.packageSummary();
         if (!packageSummary.isEmpty()) {
             b.append("\nPacotes com sinais para revisão:\n").append(packageSummary).append("\n");
