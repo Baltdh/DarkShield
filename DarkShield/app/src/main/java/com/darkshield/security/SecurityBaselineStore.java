@@ -76,6 +76,15 @@ public final class SecurityBaselineStore {
         return changes;
     }
 
+    public static void clear(Context context) {
+        if (context == null) return;
+        context.getApplicationContext()
+                .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .clear()
+                .apply();
+    }
+
     static Snapshot fromFindings(List<ScanFinding> findings) {
         Map<String, EnumSet<ScanFinding.EvidenceTag>> byPackage = new HashMap<>();
         if (findings == null) return new Snapshot(byPackage);
