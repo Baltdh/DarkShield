@@ -198,13 +198,16 @@ public final class SecurityScanner {
         boolean system = isSystemApp(ai);
         boolean remoteMarker = containsRemoteControlMarker(lower);
         boolean debuggable = (ai.flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+        boolean overlayGranted = isPermissionGranted(
+                "android.permission.SYSTEM_ALERT_WINDOW", p.packageName);
 
-        if (isPermissionGranted("android.permission.SYSTEM_ALERT_WINDOW", p.packageName)) {
+        if (overlayGranted) {
             out.add(new ScanFinding(
                     ScanFinding.Level.LOW,
                     "Permissão de sobreposição concedida",
                     label, p.packageName, 2,
-                    "Revisar em Configurações > Apps > Acesso especial"));
+                    "Revisar em Configurações > Apps > Acesso especial")
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.ACTIVE_ACCESS));
         } else if (ps.contains("android.permission.SYSTEM_ALERT_WINDOW")) {
             out.add(new ScanFinding(
                     ScanFinding.Level.INFO, "Sobreposição declarada",
@@ -219,7 +222,8 @@ public final class SecurityScanner {
                         "Acesso especial para modificar configurações",
                         "O aplicativo declarou WRITE_SETTINGS e possui a autorização especial para modificar configurações do sistema",
                         p.packageName, 3,
-                        "Confirme se essa autorização é necessária e foi concedida conscientemente"));
+                        "Confirme se essa autorização é necessária e foi concedida conscientemente")
+                        .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.ACTIVE_ACCESS));
             } else {
                 out.add(new ScanFinding(
                         ScanFinding.Level.INFO,
@@ -237,7 +241,10 @@ public final class SecurityScanner {
                         "Acesso a todos os arquivos concedido",
                         "O aplicativo declarou MANAGE_EXTERNAL_STORAGE e possui Acesso a todos os arquivos",
                         p.packageName, 3,
-                        "Confirme se o acesso amplo ao armazenamento é necessário e reconhecido"));
+                        "Confirme se o acesso amplo ao armazenamento é necessário e reconhecido")
+                        .withEvidence(ScanFinding.EvidenceSource.OBSERVED, 
+                                ScanFinding.EvidenceTag.ACTIVE_ACCESS,
+                                ScanFinding.EvidenceTag.SENSITIVE_DATA));
             } else {
                 out.add(new ScanFinding(
                         ScanFinding.Level.INFO,
@@ -254,7 +261,8 @@ public final class SecurityScanner {
             out.add(new ScanFinding(
                     ScanFinding.Level.LOW, "Acesso a microfone/câmera",
                     label + " solicita " + mediaCount + " recurso(s) de áudio/vídeo",
-                    p.packageName, 1, "Confirme se essa função é necessária"));
+                    p.packageName, 1, "Confirme se essa função é necessária")
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.SENSITIVE_DATA));
         }
 
         if (isPermissionGranted("android.permission.READ_SMS", p.packageName)
@@ -263,7 +271,8 @@ public final class SecurityScanner {
             out.add(new ScanFinding(
                     ScanFinding.Level.MEDIUM, "Acesso a SMS",
                     "O aplicativo possui acesso operacional a mensagens SMS",
-                    p.packageName, 4, "Revisar a permissão e a finalidade do aplicativo"));
+                    p.packageName, 4, "Revisar a permissão e a finalidade do aplicativo")
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.SENSITIVE_DATA));
         }
 
         if (isPermissionGranted("android.permission.READ_CALL_LOG", p.packageName)
@@ -271,7 +280,8 @@ public final class SecurityScanner {
             out.add(new ScanFinding(
                     ScanFinding.Level.MEDIUM, "Acesso ao histórico de chamadas",
                     "O aplicativo possui acesso operacional ao registro de chamadas",
-                    p.packageName, 4, "Revise a permissão caso a função não exija chamadas"));
+                    p.packageName, 4, "Revise a permissão caso a função não exija chamadas")
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.SENSITIVE_DATA));
         }
 
         boolean contacts = isPermissionGranted("android.permission.READ_CONTACTS", p.packageName)
@@ -281,7 +291,8 @@ public final class SecurityScanner {
                     ScanFinding.Level.INFO, "Acesso a contatos",
                     "O aplicativo possui acesso operacional à agenda de contatos",
                     p.packageName, 0,
-                    "Confirme se a função do aplicativo realmente precisa dos seus contatos"));
+                    "Confirme se a função do aplicativo realmente precisa dos seus contatos")
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.SENSITIVE_DATA));
         }
 
         boolean location = isPermissionGranted("android.permission.ACCESS_FINE_LOCATION", p.packageName)
@@ -291,7 +302,8 @@ public final class SecurityScanner {
                     ScanFinding.Level.INFO, "Acesso à localização",
                     "O aplicativo possui acesso operacional à localização do dispositivo",
                     p.packageName, 0,
-                    "Revise a permissão e prefira localização aproximada quando suficiente"));
+                    "Revise a permissão e prefira localização aproximada quando suficiente")
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.SENSITIVE_DATA));
         }
 
         if (isPermissionGranted("android.permission.READ_PHONE_STATE", p.packageName)) {
@@ -299,7 +311,8 @@ public final class SecurityScanner {
                     ScanFinding.Level.INFO, "Acesso ao estado do telefone",
                     "O aplicativo possui acesso operacional a informações do estado da telefonia",
                     p.packageName, 0,
-                    "Confirme se essa permissão é necessária para a função esperada"));
+                    "Confirme se essa permissão é necessária para a função esperada")
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.SENSITIVE_DATA));
         }
 
         if (isPermissionGranted("android.permission.PACKAGE_USAGE_STATS", p.packageName)) {
@@ -307,12 +320,15 @@ public final class SecurityScanner {
                     ScanFinding.Level.MEDIUM, "Acesso aos dados de uso",
                     "O aplicativo possui acesso operacional às estatísticas de uso de outros aplicativos e do dispositivo",
                     p.packageName, 3,
-                    "Revise o acesso em Configurações > Acesso especial > Acesso aos dados de uso"));
+                    "Revise o acesso em Configurações > Acesso especial > Acesso aos dados de uso")
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, 
+                            ScanFinding.EvidenceTag.ACTIVE_ACCESS,
+                            ScanFinding.EvidenceTag.SENSITIVE_DATA));
         }
 
         if (!system && ps.contains("android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS")) {
             boolean exempt = isIgnoringBatteryOptimizations(p.packageName);
-            out.add(new ScanFinding(
+            ScanFinding batteryFinding = new ScanFinding(
                     exempt ? ScanFinding.Level.MEDIUM : ScanFinding.Level.INFO,
                     exempt ? "Exceção de otimização de bateria ativa"
                            : "Exceção de otimização de bateria declarada",
@@ -322,7 +338,13 @@ public final class SecurityScanner {
                     p.packageName, exempt ? 3 : 0,
                     exempt
                             ? "Confirme se o aplicativo realmente precisa permanecer fora das otimizações"
-                            : null));
+                            : null);
+            if (exempt) {
+                batteryFinding = batteryFinding.withEvidence(ScanFinding.EvidenceSource.OBSERVED, 
+                        ScanFinding.EvidenceTag.ACTIVE_ACCESS,
+                        ScanFinding.EvidenceTag.PERSISTENCE);
+            }
+            out.add(batteryFinding);
         }
 
         if (isPermissionGranted("android.permission.REQUEST_INSTALL_PACKAGES", p.packageName)) {
@@ -330,7 +352,10 @@ public final class SecurityScanner {
                     ScanFinding.Level.MEDIUM, "Pode solicitar instalação de APKs",
                     "O aplicativo tem acesso operacional à capacidade de solicitar instalações",
                     p.packageName, 4,
-                    "Verifique se a instalação de APKs faz parte da função esperada"));
+                    "Verifique se a instalação de APKs faz parte da função esperada")
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, 
+                            ScanFinding.EvidenceTag.ACTIVE_ACCESS,
+                            ScanFinding.EvidenceTag.INSTALL_TRUST));
         }
 
         if (!system && ps.contains("android.permission.RECEIVE_BOOT_COMPLETED")) {
@@ -339,8 +364,13 @@ public final class SecurityScanner {
                     "Inicialização automática declarada",
                     label + " declara receber o evento de inicialização do Android",
                     p.packageName, 1,
-                    "Confirme se iniciar após o boot é esperado para este aplicativo"));
+                    "Confirme se iniciar após o boot é esperado para este aplicativo")
+                    .withEvidence(
+                            ScanFinding.EvidenceSource.DECLARED,
+                            ScanFinding.EvidenceTag.PERSISTENCE));
         }
+
+        inspectDeclaredCapabilities(p, ps, system, out);
 
         if (hasAccessibilityService(p)) {
             ScanFinding.Level lvl = system ? ScanFinding.Level.INFO : ScanFinding.Level.MEDIUM;
@@ -353,19 +383,20 @@ public final class SecurityScanner {
         }
 
         if (remoteMarker) {
-            boolean corroborated = sensitive >= 2
-                    || isPermissionGranted("android.permission.SYSTEM_ALERT_WINDOW", p.packageName)
-                    || hasAccessibilityService(p);
+            boolean corroborated = shouldElevateRemoteMarker(sensitive, overlayGranted);
             out.add(new ScanFinding(
                     corroborated ? ScanFinding.Level.MEDIUM : ScanFinding.Level.LOW,
                     "Indicador heurístico de acesso remoto",
                     "Nome do app/pacote contém um marcador associado a suporte ou acesso remoto; isso sozinho não prova malware",
                     p.packageName, corroborated ? 4 : 1,
-                    "Confirme se você instalou e reconhece este aplicativo"));
+                    "Confirme se você instalou e reconhece este aplicativo")
+                    .withEvidence(
+                            ScanFinding.EvidenceSource.HEURISTIC,
+                            ScanFinding.EvidenceTag.REMOTE_CONTROL));
         }
 
+        String installer = !system ? getInstaller(p.packageName) : null;
         if (!system) {
-            String installer = getInstaller(p.packageName);
             if (installer == null || installer.trim().isEmpty()) {
                 out.add(new ScanFinding(
                         ScanFinding.Level.INFO, "Origem de instalação não identificada",
@@ -411,8 +442,7 @@ public final class SecurityScanner {
                     "Normal em builds de desenvolvimento; confirme a origem se você não esperava um app de teste"));
         }
 
-        if (!system && Build.VERSION.SDK_INT >= 23
-                && (ai.flags & ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC) != 0) {
+        if (!system && (ai.flags & ApplicationInfo.FLAG_USES_CLEARTEXT_TRAFFIC) != 0) {
             out.add(new ScanFinding(
                     ScanFinding.Level.INFO, "Aplicativo permite tráfego sem criptografia",
                     label + " pode usar tráfego cleartext, como HTTP; isso não prova comportamento malicioso",
@@ -432,16 +462,59 @@ public final class SecurityScanner {
                     "Confirme se a VPN é esperada e reconhecida"));
         }
 
-        String cert = signingSha256(p);
-        if (cert != null) {
-            out.add(new ScanFinding(
+        SigningIdentity signingIdentity = signingIdentity(p);
+        String cert = signingIdentity.currentCsv();
+        if (!cert.isEmpty()) {
+            ScanFinding signatureFinding = new ScanFinding(
                     ScanFinding.Level.INFO, "Assinatura SHA-256",
-                    cert, p.packageName, 0, null));
+                    cert, p.packageName, 0, null);
+
+            if (!system) {
+                long versionCode = Build.VERSION.SDK_INT >= 28
+                        ? p.getLongVersionCode()
+                        : p.versionCode;
+                Map<String, String> identityAttributes = new LinkedHashMap<>();
+                identityAttributes.put(
+                        PackageIdentityBaselineStore.ATTR_VERSION_CODE,
+                        Long.toString(Math.max(0L, versionCode)));
+                identityAttributes.put(
+                        PackageIdentityBaselineStore.ATTR_INSTALLER,
+                        installer == null ? "" : installer);
+                identityAttributes.put(
+                        PackageIdentityBaselineStore.ATTR_FIRST_INSTALL,
+                        Long.toString(Math.max(0L, p.firstInstallTime)));
+                identityAttributes.put(
+                        PackageIdentityBaselineStore.ATTR_LAST_UPDATE,
+                        Long.toString(Math.max(0L, p.lastUpdateTime)));
+                identityAttributes.put(
+                        PackageIdentityBaselineStore.ATTR_CURRENT_SIGNERS,
+                        signingIdentity.currentCsv());
+                identityAttributes.put(
+                        PackageIdentityBaselineStore.ATTR_SIGNING_LINEAGE,
+                        signingIdentity.lineageCsv());
+
+                signatureFinding = signatureFinding
+                        .withEvidence(ScanFinding.EvidenceSource.OBSERVED)
+                        .withAttributes(identityAttributes);
+            }
+            out.add(signatureFinding);
         }
 
         if (!system && ai.sourceDir != null && !ai.sourceDir.isEmpty()) {
-            out.addAll(StaticApkAnalyzer.analyze(ai.sourceDir, p.packageName));
+            out.addAll(StaticApkAnalyzer.analyzeInstalled(
+                    ai.sourceDir, ai.splitSourceDirs, p.packageName));
         }
+    }
+
+    /**
+     * A name associated with remote support is only elevated by capabilities
+     * confirmed as operational. Merely declaring an accessibility service is
+     * intentionally excluded here; active accessibility is collected later and
+     * correlated by {@link ThreatCorrelationEngine}.
+     */
+    static boolean shouldElevateRemoteMarker(
+            int operationalSensitiveCount, boolean overlayGranted) {
+        return operationalSensitiveCount >= 2 || overlayGranted;
     }
 
     static String defaultInputMethodPackage(String setting) {
@@ -488,7 +561,10 @@ public final class SecurityScanner {
                 system ? 0 : 2,
                 system
                         ? null
-                        : "Confirme se você reconhece e confia no teclado; métodos de entrada podem processar o texto digitado"));
+                        : "Confirme se você reconhece e confia no teclado; métodos de entrada podem processar o texto digitado")
+                .withAttribute(
+                        DevicePostureBaselineStore.ATTR_DEFAULT_IME,
+                        pkg));
     }
 
     private void checkDefaultCommunicationApps(List<ScanFinding> out) {
@@ -501,22 +577,22 @@ public final class SecurityScanner {
                 defaultSms,
                 "Aplicativo padrão de SMS",
                 "O aplicativo padrão de SMS pode processar mensagens recebidas e enviadas",
-                "Confirme se você reconhece o aplicativo definido como padrão para SMS");
+                "Confirme se você reconhece o aplicativo definido como padrão para SMS",
+                DevicePostureBaselineStore.ATTR_DEFAULT_SMS);
 
-        if (Build.VERSION.SDK_INT >= 23) {
-            String defaultDialer = null;
-            try {
-                android.telecom.TelecomManager telecom =
-                        (android.telecom.TelecomManager) c.getSystemService(Context.TELECOM_SERVICE);
-                if (telecom != null) defaultDialer = telecom.getDefaultDialerPackage();
-            } catch (Exception ignored) {}
+        String defaultDialer = null;
+        try {
+            android.telecom.TelecomManager telecom =
+                    (android.telecom.TelecomManager) c.getSystemService(Context.TELECOM_SERVICE);
+            if (telecom != null) defaultDialer = telecom.getDefaultDialerPackage();
+        } catch (Exception ignored) {}
 
-            addDefaultHandlerFinding(out,
-                    defaultDialer,
-                    "Aplicativo padrão de chamadas",
-                    "O aplicativo padrão de chamadas pode controlar a experiência de telefonia do dispositivo",
-                    "Confirme se você reconhece o aplicativo definido como padrão para chamadas");
-        }
+        addDefaultHandlerFinding(out,
+                defaultDialer,
+                "Aplicativo padrão de chamadas",
+                "O aplicativo padrão de chamadas pode controlar a experiência de telefonia do dispositivo",
+                "Confirme se você reconhece o aplicativo definido como padrão para chamadas",
+                DevicePostureBaselineStore.ATTR_DEFAULT_DIALER);
     }
 
     private void addDefaultHandlerFinding(
@@ -524,7 +600,8 @@ public final class SecurityScanner {
             String packageName,
             String title,
             String detail,
-            String action) {
+            String action,
+            String attributeKey) {
         if (packageName == null || packageName.trim().isEmpty()) {
             out.add(new ScanFinding(
                     ScanFinding.Level.INFO, title,
@@ -540,7 +617,8 @@ public final class SecurityScanner {
                 detail,
                 packageName,
                 0,
-                system ? null : action));
+                system ? null : action)
+                .withAttribute(attributeKey, packageName));
     }
 
     private void checkSystemIntegrity(List<ScanFinding> out) {
@@ -637,6 +715,45 @@ public final class SecurityScanner {
                     "O sistema restringiu a consulta do estado de rede",
                     null, 1, null));
         }
+
+        checkPrivateDns(cm, active, out);
+    }
+
+    private void checkPrivateDns(ConnectivityManager cm, Network active,
+                                 List<ScanFinding> out) {
+        if (Build.VERSION.SDK_INT < 28) return;
+        if (active == null) {
+            out.add(new ScanFinding(ScanFinding.Level.INFO, "DNS privado da rede ativa",
+                    "Indisponível: nenhuma rede ativa foi identificada", null, 0, null));
+            return;
+        }
+        try {
+            LinkProperties properties = cm.getLinkProperties(active);
+            if (properties == null) {
+                out.add(new ScanFinding(ScanFinding.Level.INFO, "DNS privado da rede ativa",
+                        "Indisponível: o Android não forneceu os dados da rede", null, 0, null));
+                return;
+            }
+            out.add(privateDnsFinding(properties.isPrivateDnsActive(),
+                    properties.getPrivateDnsServerName()));
+        } catch (SecurityException e) {
+            out.add(new ScanFinding(ScanFinding.Level.INFO, "DNS privado da rede ativa",
+                    "Indisponível: o Android restringiu a consulta da rede", null, 0, null));
+        }
+    }
+
+    static ScanFinding privateDnsFinding(boolean active, String serverName) {
+        String server = serverName == null ? "" : serverName
+                .replaceAll("[\\p{Cntrl}]", " ").trim();
+        if (server.length() > 253) server = server.substring(0, 253) + "…";
+        String detail = !active
+                ? "DNS privado não está ativo nesta rede; isso não indica malware"
+                : server.isEmpty()
+                ? "DNS privado ativo em modo oportunista nesta rede"
+                : "DNS privado ativo com provedor: " + server;
+        return new ScanFinding(ScanFinding.Level.INFO, "DNS privado da rede ativa",
+                detail + ". VPNs e aplicativos podem usar resolução própria.", null, 0,
+                "Revise as configurações de DNS privado do Android se o provedor for desconhecido");
     }
 
     private String getNetworkProxyHost(ConnectivityManager cm, Network active) {
@@ -739,8 +856,106 @@ public final class SecurityScanner {
         return false;
     }
 
+    /**
+     * Reports capabilities that require an explicit Android component declaration.
+     * A declaration is not equivalent to active use, so these findings remain
+     * informational unless another observed signal corroborates them.
+     */
+    private void inspectDeclaredCapabilities(
+            PackageInfo p,
+            Set<String> requestedPermissions,
+            boolean system,
+            List<ScanFinding> out) {
+        if (system) return;
+
+        boolean notificationListener = false;
+        boolean inputMethod = false;
+        boolean autofill = false;
+        boolean mediaProjection = requestedPermissions.contains(
+                "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION");
+
+        if (p.services != null) {
+            for (ServiceInfo service : p.services) {
+                if (service == null) continue;
+                String permission = service.permission;
+                if ("android.permission.BIND_NOTIFICATION_LISTENER_SERVICE".equals(permission)) {
+                    notificationListener = true;
+                } else if ("android.permission.BIND_INPUT_METHOD".equals(permission)) {
+                    inputMethod = true;
+                } else if ("android.permission.BIND_AUTOFILL_SERVICE".equals(permission)) {
+                    autofill = true;
+                }
+
+                if (Build.VERSION.SDK_INT >= 29
+                        && isMediaProjectionForegroundService(
+                                service.getForegroundServiceType())) {
+                    mediaProjection = true;
+                }
+            }
+        }
+
+        boolean deviceAdmin = false;
+        if (p.receivers != null) {
+            for (android.content.pm.ActivityInfo receiver : p.receivers) {
+                if (receiver != null && isDeviceAdminReceiverPermission(receiver.permission)) {
+                    deviceAdmin = true;
+                    break;
+                }
+            }
+        }
+
+        if (mediaProjection) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Capacidade de captura de tela declarada",
+                    "O aplicativo declara serviço/permissão de MediaProjection. O Android exige consentimento do usuário para cada sessão, mas uma sessão autorizada pode capturar conteúdo exibido na tela.",
+                    p.packageName, 0,
+                    "Autorize compartilhamento ou gravação de tela somente quando você iniciar e reconhecer a função"));
+        }
+        if (notificationListener) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Listener de notificações declarado",
+                    "O aplicativo declara um serviço que pode receber acesso às notificações se você o habilitar; esta declaração não significa que o acesso esteja ativo.",
+                    p.packageName, 0,
+                    "Revise o acesso apenas se o aplicativo aparecer como ativo nas Configurações"));
+        }
+        if (inputMethod) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Método de entrada declarado",
+                    "O aplicativo pode oferecer um teclado. A declaração não significa que ele seja o teclado ativo.",
+                    p.packageName, 0,
+                    "Use apenas teclados reconhecidos e confirme qual está definido como padrão"));
+        }
+        if (autofill) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Serviço de preenchimento automático declarado",
+                    "O aplicativo pode oferecer preenchimento automático de formulários e credenciais, caso seja escolhido pelo usuário.",
+                    p.packageName, 0,
+                    "Confirme nas Configurações qual serviço de preenchimento automático está ativo"));
+        }
+        if (deviceAdmin) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Administrador do dispositivo declarado",
+                    "O aplicativo declara um receptor de administrador do dispositivo. Isso não significa que o privilégio esteja ativo.",
+                    p.packageName, 0,
+                    "Revise apenas se o aplicativo também aparecer como administrador ativo"));
+        }
+    }
+
+    static boolean isMediaProjectionForegroundService(int foregroundServiceType) {
+        return (foregroundServiceType
+                & ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION) != 0;
+    }
+
+    static boolean isDeviceAdminReceiverPermission(String permission) {
+        return "android.permission.BIND_DEVICE_ADMIN".equals(permission);
+    }
+
     private boolean isIgnoringBatteryOptimizations(String packageName) {
-        if (Build.VERSION.SDK_INT < 23) return false;
         try {
             PowerManager powerManager =
                     (PowerManager) c.getSystemService(Context.POWER_SERVICE);
@@ -776,6 +991,13 @@ public final class SecurityScanner {
 
     private boolean isPermissionGranted(String permission, String packageName) {
         try {
+            // A granted AppOp alone does not prove that a dangerous/runtime
+            // permission was granted to this package. Usage access and overlay
+            // are special app-op grants and must be handled separately.
+            boolean appOpOnly = "android.permission.SYSTEM_ALERT_WINDOW".equals(permission)
+                    || "android.permission.PACKAGE_USAGE_STATS".equals(permission);
+            if (!appOpOnly && pm.checkPermission(permission, packageName)
+                    != PackageManager.PERMISSION_GRANTED) return false;
             String op = AppOpsManager.permissionToOp(permission);
             if (op != null && appOps != null) {
                 ApplicationInfo ai = appInfoCache.get(packageName);
@@ -854,54 +1076,101 @@ public final class SecurityScanner {
                 "Opções do desenvolvedor",
                 dev == 1 ? "Ativadas" : "Desativadas",
                 null, 0,
-                null));
+                null)
+                .withAttribute(
+                        DevicePostureBaselineStore.ATTR_DEV_OPTIONS,
+                        Integer.toString(dev == 1 ? 1 : 0)));
 
         out.add(new ScanFinding(
                 adb == 1 ? ScanFinding.Level.MEDIUM : ScanFinding.Level.INFO,
                 "Depuração USB (ADB)",
                 adb == 1 ? "Ativada" : "Desativada",
                 null, adb == 1 ? 4 : 0,
-                adb == 1 ? "Desative quando não estiver usando ADB" : null));
+                adb == 1 ? "Desative quando não estiver usando ADB" : null)
+                .withAttribute(
+                        DevicePostureBaselineStore.ATTR_ADB,
+                        Integer.toString(adb == 1 ? 1 : 0)));
 
+        checkAdvancedProtection(out);
         checkDevicePosture(out);
         checkDefaultInputMethod(out);
         checkDefaultCommunicationApps(out);
     }
 
+    private void checkAdvancedProtection(List<ScanFinding> out) {
+        if (Build.VERSION.SDK_INT < 36) return;
+        try {
+            android.security.advancedprotection.AdvancedProtectionManager manager =
+                    c.getSystemService(
+                            android.security.advancedprotection.AdvancedProtectionManager.class);
+            if (manager == null) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Modo Proteção Avançada",
+                        "O serviço do sistema não está disponível neste dispositivo.",
+                        null, 0, null));
+                return;
+            }
+
+            boolean enabled = manager.isAdvancedProtectionEnabled();
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Modo Proteção Avançada",
+                    enabled
+                            ? "Ativado; o Android aplica proteções adicionais do modo de segurança reforçada."
+                            : "Desativado; isso não indica risco por si só.",
+                    null, 0, null)
+                    .withAttribute(
+                            DevicePostureBaselineStore.ATTR_ADVANCED_PROTECTION,
+                            enabled ? "1" : "0"));
+        } catch (RuntimeException e) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Modo Proteção Avançada",
+                    "Não foi possível consultar o estado neste dispositivo.",
+                    null, 0, null));
+        }
+    }
+
     private void checkDevicePosture(List<ScanFinding> out) {
-        if (Build.VERSION.SDK_INT >= 23) {
-            try {
-                KeyguardManager keyguard =
-                        (KeyguardManager) c.getSystemService(Context.KEYGUARD_SERVICE);
-                if (keyguard != null) {
-                    boolean secure = keyguard.isDeviceSecure();
-                    out.add(new ScanFinding(
-                            ScanFinding.Level.INFO,
-                            "Bloqueio de tela seguro",
-                            secure ? "Um método de bloqueio seguro está configurado"
-                                   : "Nenhum método de bloqueio seguro foi identificado",
-                            null, 0,
-                            secure ? null
-                                   : "Configure PIN, senha ou padrão para reforçar a proteção física do dispositivo"));
-                }
-            } catch (SecurityException ignored) {
+        try {
+            KeyguardManager keyguard =
+                    (KeyguardManager) c.getSystemService(Context.KEYGUARD_SERVICE);
+            if (keyguard != null) {
+                boolean secure = keyguard.isDeviceSecure();
                 out.add(new ScanFinding(
                         ScanFinding.Level.INFO,
                         "Bloqueio de tela seguro",
-                        "Não foi possível consultar o estado do bloqueio de tela",
-                        null, 0, null));
+                        secure ? "Um método de bloqueio seguro está configurado"
+                               : "Nenhum método de bloqueio seguro foi identificado",
+                        null, 0,
+                        secure ? null
+                               : "Configure PIN, senha ou padrão para reforçar a proteção física do dispositivo"));
             }
+        } catch (SecurityException ignored) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Bloqueio de tela seguro",
+                    "Não foi possível consultar o estado do bloqueio de tela",
+                    null, 0, null));
         }
 
         String patch = Build.VERSION.SECURITY_PATCH;
-        out.add(new ScanFinding(
+        ScanFinding patchFinding = new ScanFinding(
                 ScanFinding.Level.INFO,
                 "Nível do patch de segurança",
                 patch == null || patch.trim().isEmpty()
                         ? "O sistema não informou a data do patch de segurança"
                         : patch,
-                null, 0, null));
+                null, 0, null);
+        if (patch != null && !patch.trim().isEmpty()) {
+            patchFinding = patchFinding.withAttribute(
+                    DevicePostureBaselineStore.ATTR_SECURITY_PATCH,
+                    patch.trim());
+        }
+        out.add(patchFinding);
         addSecurityPatchAgeFinding(out, patch);
+        out.addAll(SecurityStateScanner.scan(c));
     }
 
     static int securityPatchAgeDays(String patch, LocalDate today) {
@@ -996,7 +1265,8 @@ public final class SecurityScanner {
                     pkg, system ? 1 : 8,
                     system
                             ? "Revise apenas se não reconhecer o componente"
-                            : "Abra Acessibilidade e confirme se você o ativou conscientemente"));
+                            : "Abra Acessibilidade e confirme se você o ativou conscientemente")
+                    .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.ACTIVE_ACCESS));
         }
     }
 
@@ -1036,7 +1306,10 @@ public final class SecurityScanner {
                         component.flattenToShortString(),
                         pkg,
                         system ? 1 : 3,
-                        "Confirme se este aplicativo precisa ler notificações do dispositivo"));
+                        "Confirme se este aplicativo precisa ler notificações do dispositivo")
+                        .withEvidence(ScanFinding.EvidenceSource.OBSERVED, 
+                                ScanFinding.EvidenceTag.ACTIVE_ACCESS,
+                                ScanFinding.EvidenceTag.SENSITIVE_DATA));
             }
 
             if (recognized == 0) {
@@ -1088,7 +1361,8 @@ public final class SecurityScanner {
                             system ? ScanFinding.Level.LOW : ScanFinding.Level.HIGH,
                             "Administrador do dispositivo ativo",
                             n.flattenToShortString(), pkg, system ? 1 : 8,
-                            "Revise em Configurações > Segurança/Administradores do dispositivo"));
+                            "Revise em Configurações > Segurança/Administradores do dispositivo")
+                            .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.ACTIVE_ACCESS));
 
                     if (deviceOwner || profileOwner) {
                         out.add(new ScanFinding(
@@ -1104,7 +1378,8 @@ public final class SecurityScanner {
                                                 ? "O pacote está registrado como Device Owner"
                                                 : "O pacote está registrado como Profile Owner",
                                 pkg, system ? 0 : 4,
-                                "Confirme se este gerenciamento corporativo ou de perfil foi autorizado por você"));
+                                "Confirme se este gerenciamento corporativo ou de perfil foi autorizado por você")
+                                .withEvidence(ScanFinding.EvidenceSource.OBSERVED, ScanFinding.EvidenceTag.ACTIVE_ACCESS));
                     }
                 }
             }
@@ -1116,38 +1391,78 @@ public final class SecurityScanner {
         }
     }
 
-    private String signingSha256(PackageInfo p) {
+    static final class SigningIdentity {
+        final List<String> current;
+        final List<String> lineage;
+
+        SigningIdentity(List<String> current, List<String> lineage) {
+            this.current = immutableSorted(current);
+            this.lineage = immutableSorted(lineage);
+        }
+
+        String currentCsv() {
+            return String.join(",", current);
+        }
+
+        String lineageCsv() {
+            return String.join(",", lineage);
+        }
+
+        private static List<String> immutableSorted(List<String> values) {
+            List<String> copy = new ArrayList<>();
+            if (values != null) {
+                for (String value : values) {
+                    if (value == null || value.trim().isEmpty()) continue;
+                    copy.add(value.trim().toUpperCase(Locale.ROOT));
+                }
+            }
+            Collections.sort(copy);
+            return Collections.unmodifiableList(copy);
+        }
+    }
+
+    private SigningIdentity signingIdentity(PackageInfo p) {
+        List<String> current = new ArrayList<>();
+        List<String> lineage = new ArrayList<>();
         try {
-            android.content.pm.Signature[] sigs;
+            android.content.pm.Signature[] currentSignatures;
+            android.content.pm.Signature[] lineageSignatures;
+
             if (Build.VERSION.SDK_INT >= 28) {
-                if (p.signingInfo == null) return null;
-                sigs = p.signingInfo.hasMultipleSigners()
-                        ? p.signingInfo.getApkContentsSigners()
+                if (p.signingInfo == null) {
+                    return new SigningIdentity(current, lineage);
+                }
+                currentSignatures = p.signingInfo.getApkContentsSigners();
+                lineageSignatures = p.signingInfo.hasMultipleSigners()
+                        ? currentSignatures
                         : p.signingInfo.getSigningCertificateHistory();
             } else {
-                sigs = p.signatures;
+                currentSignatures = p.signatures;
+                lineageSignatures = p.signatures;
             }
-            if (sigs == null || sigs.length == 0) return null;
 
-            List<String> hashes = new ArrayList<>(sigs.length);
-            if (Build.VERSION.SDK_INT >= 28
-                    && !p.signingInfo.hasMultipleSigners()) {
-                // Signing certificate history is ordered from original to current.
-                hashes.add(sha256(sigs[sigs.length - 1].toByteArray()));
-            } else {
-                // Multiple signers have set semantics; sort for deterministic reporting.
-                for (android.content.pm.Signature sig : sigs) {
-                    if (sig == null) continue;
-                    String hash = sha256(sig.toByteArray());
-                    if (hash != null) hashes.add(hash);
-                }
-                Collections.sort(hashes);
-            }
-            if (hashes.isEmpty()) return null;
-            return String.join(", ", hashes);
-        } catch (Exception e) {
-            return null;
+            addSignatureHashes(current, currentSignatures);
+            addSignatureHashes(lineage, lineageSignatures);
+        } catch (Exception ignored) {
+            // Identity findings remain informational when signing data is unavailable.
         }
+        return new SigningIdentity(current, lineage);
+    }
+
+    private void addSignatureHashes(
+            List<String> destination,
+            android.content.pm.Signature[] signatures) {
+        if (destination == null || signatures == null) return;
+        for (android.content.pm.Signature signature : signatures) {
+            if (signature == null) continue;
+            String hash = sha256(signature.toByteArray());
+            if (hash != null && !destination.contains(hash)) destination.add(hash);
+        }
+    }
+
+    private String signingSha256(PackageInfo p) {
+        String current = signingIdentity(p).currentCsv();
+        return current.isEmpty() ? null : current;
     }
 
     private String sha256(byte[] bytes) {

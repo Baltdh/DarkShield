@@ -1,6 +1,41 @@
 # DarkShield — Monitor de continuidade
 
-Atualizado: 2026-09-18 — auditoria contínua / preparação para fechamento
+Atualizado: 2026-09-23 — versão 0.7.2 defensiva validada localmente
+
+## Passagem atual — cobertura Android e integração 0.7.2
+
+- Branch: `codex/android-threat-coverage`, baseada em `4116eb1` da PR de correções e com o hardening 0.7.1 reaplicado.
+- Commit de código: `ceadfef57db998ffbf97de0441668c0ad0aca945`.
+- Versão: `0.7.2`, `versionCode 12`.
+- Pesquisa registrada em `ANDROID_THREAT_COVERAGE.md`, baseada em Android, MITRE ATT&CK Mobile e OWASP MASVS.
+
+### Concluído
+
+1. Integração:
+   - preservada a Central de correções, remoção com confirmação oficial, proteção contra overlays e análise de APKs divididos;
+   - reaplicados Wrapper verificável, CI fixado por SHA, backup desativado e correlação remota conservadora da 0.7.1.
+2. Novas defesas:
+   - MediaProjection/serviço de captura declarado;
+   - listeners de notificações, teclado e autofill declarados, separados do estado ativo;
+   - administrador declarado não é mais confundido com administrador ativo pela correlação;
+   - carregadores DEX combinados com APIs de rede, execução de shell e ponte WebView entram na análise estática limitada;
+   - sinais isolados permanecem informativos/baixos, com elevação somente por combinação.
+3. Validação:
+   - `clean test lintDebug assembleDebug assembleRelease`: sucesso, 95 tarefas;
+   - 302 execuções de testes, 0 falhas e 0 erros;
+   - lint: 0 erros e 108 avisos não bloqueantes;
+   - release R8 e debug montados;
+   - APK 0.7.2 assinado, alinhado e validado com esquemas v2/v3;
+   - SHA-256: `7d4056dd6a6ec535f09c1f65053c0a88a2fb69f45990e5ba43839735dd2e26bc`.
+
+### Próximos passos obrigatórios
+
+1. Publicar/revisar a branch sem force-push e confirmar o GitHub Actions.
+2. Instalar ou atualizar em aparelho Android real.
+3. Testar rolagem, remoção consentida, MediaProjection, overlays e uma varredura completa longa.
+4. Não chamar a versão de final estável antes do teste em dispositivo.
+
+---
 
 ## Estado atual
 

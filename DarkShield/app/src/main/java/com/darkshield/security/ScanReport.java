@@ -1,5 +1,7 @@
 package com.darkshield.security;
 
+import com.darkshield.security.analysis.RiskEngineV2;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -49,6 +51,22 @@ public final class ScanReport {
                     && finding.level != ScanFinding.Level.INFO) total++;
         }
         return total;
+    }
+
+    public int countAnalysisGaps() {
+        int total = 0;
+        for (ScanFinding finding : findings) {
+            if (finding == null) continue;
+            if (finding.evidenceSource == ScanFinding.EvidenceSource.ANALYSIS_LIMIT
+                    || finding.hasEvidenceTag(ScanFinding.EvidenceTag.ANALYSIS_GAP)) {
+                total++;
+            }
+        }
+        return total;
+    }
+
+    public boolean hasAnalysisGaps() {
+        return countAnalysisGaps() > 0;
     }
 
     public List<PackageSummary> packageSummaries() {
@@ -201,6 +219,39 @@ public final class ScanReport {
         for (ScanFinding finding : review) {
             if (out.length() > 0) out.append("\n\n");
             out.append(finding.line());
+        }
+        return out.toString();
+    }
+
+    public List<RiskEngineV2.Assessment> riskAssessmentsV2() {
+        return RiskEngineV2.assess(findings);
+    }
+
+    public String riskAssessmentSummaryV2() {
+        List<RiskEngineV2.Assessment> assessments = riskAssessmentsV2();
+        if (assessments.isEmpty()) return "";
+
+        StringBuilder out = new StringBuilder();
+        int shown = 0;
+        for (RiskEngineV2.Assessment assessment : assessments) {
+            if (assessment == null || assessment.level == ScanFinding.Level.INFO) continue;
+            if (shown > 0) out.append("\n");
+            out.append(assessment.level)
+                    .append(" • ")
+                    .append(assessment.packageName)
+                    .append(" • confiança ")
+                    .append(assessment.confidence)
+                    .append(" • risco estrutural ")
+                    .append(assessment.riskScore)
+                    .append("/100")
+                    .append(" • ")
+                    .append(assessment.independentEvidenceCount)
+                    .append(" evidência(s) independente(s), ")
+                    .append(assessment.strongEvidenceCount)
+                    .append(" forte(s)");
+            if (assessment.analysisPartial) out.append(" • análise parcial");
+            shown++;
+            if (shown >= 5) break;
         }
         return out.toString();
     }

@@ -19,6 +19,7 @@ concurrency:
 jobs:
   signed-release:
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     env:
       DARKSHIELD_KEYSTORE_PATH: ${{ github.workspace }}/.darkshield-release.keystore
       DARKSHIELD_KEYSTORE_PASSWORD: ${{ secrets.DARKSHIELD_KEYSTORE_PASSWORD }}
@@ -27,18 +28,21 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v6
+        uses: actions/setup-java@de7274f081f381c8f8158605e0321c36c376e2e6 # v6
         with:
           distribution: temurin
           java-version: "17"
 
-      - name: Set up Gradle 8.11.1
-        uses: gradle/actions/setup-gradle@v6
-        with:
-          gradle-version: "8.11.1"
+      - name: Validate Gradle Wrapper
+        uses: gradle/actions/wrapper-validation@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
+
+      - name: Set up Gradle cache
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6
 
       - name: Validate signing configuration
         env:
@@ -57,11 +61,9 @@ jobs:
         working-directory: DarkShield
         run: |
           set -euo pipefail
-          if [ -x "./gradlew" ]; then
-            ./gradlew --no-daemon --stacktrace assembleRelease
-          else
-            gradle --no-daemon --stacktrace assembleRelease
-          fi
+          test -x ./gradlew
+          test -f gradle/wrapper/gradle-wrapper.jar
+          ./gradlew --no-daemon --stacktrace assembleRelease
 
       - name: Verify signed APK and generate release metadata
         working-directory: DarkShield
@@ -95,7 +97,7 @@ jobs:
           ls -lh release/DarkShield.apk release/DarkShield.apk.sha256 release/release-metadata.txt
 
       - name: Upload signed release
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: DarkShield-signed-release
           path: |

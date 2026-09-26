@@ -352,4 +352,42 @@ public class ScanReportTest {
         assertTrue(blocks[1].contains("z-action"));
     }
 
+    @Test public void riskAssessmentSummaryV2ExposesConfidenceWithoutReplacingLegacyScore() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.HIGH,
+                        "Serviço de acessibilidade ativo", "service",
+                        "com.example.chain", 8, null),
+                new ScanFinding(ScanFinding.Level.LOW,
+                        "Inicialização automática declarada", "boot",
+                        "com.example.chain", 1, null),
+                new ScanFinding(ScanFinding.Level.MEDIUM,
+                        "Acesso a SMS", "operacional",
+                        "com.example.chain", 4, null),
+                new ScanFinding(ScanFinding.Level.HIGH,
+                        "Correlação de acessibilidade, notificações e boot",
+                        "combinação de sinais", "com.example.chain", 7, null)));
+
+        String summary = report.riskAssessmentSummaryV2();
+
+        assertTrue(summary.contains("com.example.chain"));
+        assertTrue(summary.contains("confiança HIGH"));
+        assertTrue(summary.contains("risco estrutural"));
+        assertTrue(summary.contains("evidência(s) independente(s)"));
+        assertTrue(summary.contains("forte(s)"));
+        assertEquals(45, report.getScore());
+    }
+
+    @Test public void countAnalysisGapsTracksStructuredLimits() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(ScanFinding.Level.LOW,
+                        "Falha parcial", "x", "pkg", 1, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.ANALYSIS_LIMIT,
+                                ScanFinding.EvidenceTag.ANALYSIS_GAP),
+                new ScanFinding(ScanFinding.Level.INFO,
+                        "Informação normal", "x", null, 0, null)));
+
+        assertEquals(1, report.countAnalysisGaps());
+        assertTrue(report.hasAnalysisGaps());
+    }
 }

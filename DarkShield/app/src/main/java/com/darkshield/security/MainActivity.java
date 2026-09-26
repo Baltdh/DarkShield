@@ -1,28 +1,46 @@
 package com.darkshield.security;
 
+import com.darkshield.security.analysis.PostExploitCorrelationEngine;
+
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
 import android.net.Uri;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.text.style.ClickableSpan;
 import android.view.View;
+import android.view.Window;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
 import android.widget.Button;
+import android.widget.EditText;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
+import android.widget.CheckBox;
+import java.util.ArrayList;
+import java.util.ArrayDeque;
+import java.util.Comparator;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends android.app.Activity {
     private TextView score, summary, report, lastScan, nextAction, coverageHint;
@@ -30,13 +48,21 @@ public class MainActivity extends android.app.Activity {
     private ScanProgressView scanProgress;
     private TextView scanProgressStage;
     private View progressContainer;
-    private Button scan, cancelScan, remediation, securitySettings, share, copy;
+    private Button scan, cancelScan, remediation, manageApps, securitySettings,
+            networkSettings, updateVulnerabilityDb, scanHistory, resetBaselines,
+            exportJson, share, copy;
     private ScanReport lastScanReport;
     private ScanTimingTracker scanTimingTracker;
     private String lastReport = "";
     private static final String PREFS = "darkshield_ui";
     private static final String KEY_LAST_SCAN_MILLIS = "last_scan_millis";
+    private static final int REQUEST_EXPORT_REDACTED_JSON = 7001;
+    private String pendingRedactedJson;
     private final ExecutorService exec = Executors.newSingleThreadExecutor();
+    private final ExecutorService inventoryExec = Executors.newSingleThreadExecutor();
+    private final ArrayDeque<RemediationPlanner.Action> queuedCorrections = new ArrayDeque<>();
+    private boolean awaitingCorrectionReturn;
+    private boolean correctionLeftApp;
     private java.util.concurrent.Future<?> scanTask;
     private volatile boolean cancelRequested;
     private final Handler progressHandler = new Handler(Looper.getMainLooper());
@@ -54,7 +80,9 @@ public class MainActivity extends android.app.Activity {
 
     @Override public void onCreate(Bundle b) {
         super.onCreate(b);
+        protectWindow(getWindow());
         setContentView(R.layout.activity_main);
+        applySystemBarInsets();
         score = findViewById(R.id.score);
         summary = findViewById(R.id.summary);
         report = findViewById(R.id.report);
@@ -71,26 +99,87 @@ public class MainActivity extends android.app.Activity {
         scan = findViewById(R.id.scan);
         cancelScan = findViewById(R.id.cancel_scan);
         remediation = findViewById(R.id.remediation);
+        manageApps = findViewById(R.id.manage_apps);
         securitySettings = findViewById(R.id.settings);
+        networkSettings = findViewById(R.id.network_settings);
+        updateVulnerabilityDb = findViewById(R.id.update_vulnerability_db);
+        scanHistory = findViewById(R.id.scan_history);
+        resetBaselines = findViewById(R.id.reset_baselines);
+        exportJson = findViewById(R.id.export_json);
         share = findViewById(R.id.share);
         copy = findViewById(R.id.copy);
 
         scan.setOnClickListener(v -> startScan());
         cancelScan.setOnClickListener(v -> cancelActiveScan());
         remediation.setOnClickListener(v -> showRemediationCenter());
+        manageApps.setOnClickListener(v -> showInstalledApps());
         securitySettings.setOnClickListener(v -> openSecuritySettings());
+        networkSettings.setOnClickListener(v -> reviewNetworkSettings());
+        updateVulnerabilityDb.setOnClickListener(v -> refreshVulnerabilityDatabase());
+        scanHistory.setOnClickListener(v -> showScanHistory());
+        resetBaselines.setOnClickListener(v -> confirmResetBaselines());
+        exportJson.setOnClickListener(v -> exportRedactedJson());
         share.setOnClickListener(v -> shareReport());
         copy.setOnClickListener(v -> copyReport());
         restoreLastScanTimestamp();
         share.setEnabled(false);
         copy.setEnabled(false);
+        exportJson.setEnabled(false);
         summary.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+    }
+
+    private void applySystemBarInsets() {
+        if (Build.VERSION.SDK_INT < 35) return;
+        View root = findViewById(R.id.root_scroll);
+        if (root == null) return;
+
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
+            android.graphics.Insets bars = insets.getInsets(
+                    android.view.WindowInsets.Type.systemBars());
+            view.setPadding(
+                    view.getPaddingLeft(),
+                    bars.top,
+                    view.getPaddingRight(),
+                    bars.bottom);
+            return insets;
+        });
+        root.requestApplyInsets();
+    }
+
+    private void protectWindow(Window window) {
+        if (window == null) return;
+        if (Build.VERSION.SDK_INT >= 31) window.setHideOverlayWindows(true);
+        window.getDecorView().setFilterTouchesWhenObscured(true);
+    }
+
+    private void showProtectedDialog(android.app.AlertDialog dialog) {
+        protectWindow(dialog.getWindow());
+        dialog.show();
+        Button confirm = dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE);
+        if (confirm != null) confirm.setFilterTouchesWhenObscured(true);
     }
 
     @Override protected void onDestroy() {
         progressHandler.removeCallbacks(phaseTicker);
         exec.shutdownNow();
+        inventoryExec.shutdownNow();
         super.onDestroy();
+    }
+
+    @Override protected void onPause() {
+        if (awaitingCorrectionReturn) correctionLeftApp = true;
+        super.onPause();
+    }
+
+    @Override protected void onResume() {
+        super.onResume();
+        if (awaitingCorrectionReturn && correctionLeftApp) {
+            awaitingCorrectionReturn = false;
+            correctionLeftApp = false;
+            if (!queuedCorrections.isEmpty()) {
+                new Handler(Looper.getMainLooper()).post(this::offerNextCorrection);
+            }
+        }
     }
 
     private void startScan() {
@@ -101,6 +190,7 @@ public class MainActivity extends android.app.Activity {
         scan.setText("VERIFICANDO…");
         share.setEnabled(false);
         copy.setEnabled(false);
+        exportJson.setEnabled(false);
         remediation.setEnabled(false);
         progressContainer.setVisibility(View.VISIBLE);
         scanProgress.setPercent(0);
@@ -213,6 +303,17 @@ public class MainActivity extends android.app.Activity {
             return;
         }
         if (isFinishing() || isDestroyed()) return;
+
+        List<ScanFinding> enrichedFindings = new ArrayList<>(findings);
+        enrichedFindings.addAll(SecurityBaselineStore.compareAndUpdate(
+                getApplicationContext(), findings));
+        enrichedFindings.addAll(PackageIdentityBaselineStore.compareAndUpdate(
+                getApplicationContext(), findings));
+        enrichedFindings.addAll(DevicePostureBaselineStore.compareAndUpdate(
+                getApplicationContext(), findings));
+        enrichedFindings.addAll(PostExploitCorrelationEngine.correlate(enrichedFindings));
+        findings = enrichedFindings;
+
         ScanReport scanReport = new ScanReport(findings);
         lastScanReport = scanReport;
         int critical = scanReport.count(ScanFinding.Level.CRITICAL);
@@ -229,10 +330,15 @@ public class MainActivity extends android.app.Activity {
         updateSeverityAccessibility(countMedium, "médio", medium);
         updateSeverityAccessibility(countLow, "baixo", low);
         String status = scanReport.getStatus();
+        int analysisGaps = scanReport.countAnalysisGaps();
         coverageHint.setText("Cobertura desta verificação: " + findings.size()
                 + " registro(s) técnico(s) • " + scanReport.countRequiringReview()
                 + " item(ns) para revisão • " + scanReport.packageSummaries().size()
-                + " pacote(s) com sinais.");
+                + " pacote(s) com sinais • " + analysisGaps
+                + " limitação(ões) explícita(s) de análise."
+                + (analysisGaps > 0
+                        ? " Parte da superfície não pôde ser avaliada completamente."
+                        : " Isso não significa que todas as camadas internas do Android sejam observáveis pelo app."));
         String details = scanReport.details();
         String informational = scanReport.informationalDetails();
         score.setText(status + "  •  " + risk + "/100");
@@ -240,6 +346,7 @@ public class MainActivity extends android.app.Activity {
                 ? 0xFFFF6B6B
                 : risk >= 40 ? 0xFFFFC857 : 0xFF66E3A4);
         String packageSummary = scanReport.packageSummary();
+        String evidenceSummaryV2 = scanReport.riskAssessmentSummaryV2();
         ScanTimingTracker.Entry slowestPackage = scanTimingTracker == null ? null : scanTimingTracker.slowest();
         String timingSummary = slowestPackage == null
                 ? ""
@@ -261,6 +368,11 @@ public class MainActivity extends android.app.Activity {
             summaryBuilder.append("\n\n");
             addPackageLinks(summaryBuilder, packageStart, scanReport);
         }
+        if (!evidenceSummaryV2.isEmpty()) {
+            summaryBuilder.append("Correlação por evidências (experimental):\n")
+                    .append(evidenceSummaryV2)
+                    .append("\n\n");
+        }
         summaryBuilder.append(
                 "A pontuação é heurística: um achado não prova invasão ou malware."
         );
@@ -271,6 +383,7 @@ public class MainActivity extends android.app.Activity {
         String timestamp = new SimpleDateFormat("dd/MM/yyyy • HH:mm", Locale.getDefault())
                 .format(new Date());
         long completedAt = System.currentTimeMillis();
+        ScanHistoryStore.record(getApplicationContext(), scanReport, completedAt);
         saveLastScanTimestamp(completedAt);
         lastScan.setText("Última verificação: " + timestamp + " • duração: " + formatDuration(durationMillis));
         nextAction.setText(risk >= 70
@@ -290,6 +403,7 @@ public class MainActivity extends android.app.Activity {
         scan.setEnabled(true);
         share.setEnabled(true);
         copy.setEnabled(true);
+        exportJson.setEnabled(true);
         remediation.setEnabled(!RemediationPlanner.plan(findings).isEmpty());
     }
 
@@ -306,54 +420,110 @@ public class MainActivity extends android.app.Activity {
             return;
         }
 
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
         LinearLayout container = new LinearLayout(this);
         container.setOrientation(LinearLayout.VERTICAL);
-        int pad = (int) (20 * getResources().getDisplayMetrics().density);
         container.setPadding(pad, pad / 2, pad, pad / 2);
 
         TextView intro = new TextView(this);
-        intro.setText("O DarkShield não altera aplicativos comuns sozinho. Cada ação abre a tela oficial do Android para você confirmar a correção.");
+        intro.setText("Selecione os acessos que deseja revisar. Para cada item, confirme a alteração no Android. "
+                + "Depois de voltar, o DarkShield oferecerá o próximo item selecionado.");
         intro.setTextSize(13);
         intro.setTextColor(0xFFB8BECC);
         intro.setPadding(0, 0, 0, pad / 2);
         container.addView(intro);
 
+        List<CheckBox> selections = new ArrayList<>();
         for (RemediationPlanner.Action action : actions) {
             LinearLayout row = new LinearLayout(this);
             row.setOrientation(LinearLayout.VERTICAL);
             row.setPadding(0, pad / 3, 0, pad / 3);
 
-            TextView title = new TextView(this);
-            title.setText(action.title);
-            title.setTextSize(14);
-            title.setTextColor(0xFFFFFFFF);
-            title.setTypeface(null, android.graphics.Typeface.BOLD);
-            row.addView(title);
+            CheckBox select = new CheckBox(this);
+            select.setFilterTouchesWhenObscured(true);
+            select.setText(action.title);
+            select.setTextSize(14);
+            select.setTextColor(0xFFFFFFFF);
+            select.setTag(action);
+            selections.add(select);
+            row.addView(select);
 
             TextView reason = new TextView(this);
             reason.setText(action.reason);
             reason.setTextSize(12);
-            reason.setTextColor(0xFF8F97A8);
+            reason.setTextColor(0xFFB8BECC);
+            reason.setPadding(0, 0, 0, pad / 4);
             row.addView(reason);
 
             Button open = new Button(this);
-            open.setText(action.uninstallCandidate
-                    ? "REVISAR / DESINSTALAR NO ANDROID"
-                    : "ABRIR CORREÇÃO");
+            open.setFilterTouchesWhenObscured(true);
+            open.setText("REVISAR NO ANDROID");
             open.setOnClickListener(v -> openRemediation(action));
             row.addView(open);
-
+            if (canRequestUninstall(action.packageName)) {
+                Button remove = new Button(this);
+                remove.setFilterTouchesWhenObscured(true);
+                remove.setText("SOLICITAR DESINSTALAÇÃO");
+                remove.setOnClickListener(v -> confirmUninstall(action.packageName));
+                row.addView(remove);
+            }
             container.addView(row);
         }
 
-        new android.app.AlertDialog.Builder(this)
+        ScrollView scroll = new ScrollView(this);
+        scroll.setFillViewport(true);
+        scroll.addView(container);
+        int maxHeight = (int) (getResources().getDisplayMetrics().heightPixels * 0.68f);
+        scroll.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, maxHeight));
+
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
                 .setTitle("Central de correções seguras")
-                .setView(container)
-                .setPositiveButton("FECHAR", null)
-                .show();
+                .setView(scroll)
+                .setNegativeButton("FECHAR", null)
+                .setPositiveButton("CORRIGIR SELECIONADO", null)
+                .create();
+
+        dialog.setOnShowListener(ignored -> dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(v -> {
+                    List<RemediationPlanner.Action> selected = new ArrayList<>();
+                    for (CheckBox box : selections) {
+                        if (box.isChecked()) {
+                            selected.add((RemediationPlanner.Action) box.getTag());
+                        }
+                    }
+                    if (selected.isEmpty()) {
+                        Toast.makeText(this, "Selecione pelo menos uma providência.", Toast.LENGTH_SHORT).show();
+                        return;
+                    }
+                    queuedCorrections.clear();
+                    queuedCorrections.addAll(selected);
+                    dialog.dismiss();
+                    launchNextCorrection();
+                }));
+        showProtectedDialog(dialog);
     }
 
-    private void openRemediation(RemediationPlanner.Action action) {
+    private void launchNextCorrection() {
+        RemediationPlanner.Action next = queuedCorrections.poll();
+        if (next != null && !openRemediation(next) && !queuedCorrections.isEmpty()) {
+            offerNextCorrection();
+        }
+    }
+
+    private void offerNextCorrection() {
+        if (isFinishing() || isDestroyed() || queuedCorrections.isEmpty()) return;
+        RemediationPlanner.Action next = queuedCorrections.peek();
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("Próxima providência")
+                .setMessage("Verifique no Android se concluiu a ação anterior.\n\n" + next.title)
+                .setPositiveButton("ABRIR PRÓXIMA", (d, which) -> launchNextCorrection())
+                .setNegativeButton("ENCERRAR", (d, which) -> queuedCorrections.clear())
+                .create();
+        showProtectedDialog(dialog);
+    }
+
+    private boolean openRemediation(RemediationPlanner.Action action) {
         Intent intent;
         Uri packageUri = Uri.parse("package:" + action.packageName);
         switch (action.kind) {
@@ -378,6 +548,18 @@ public class MainActivity extends android.app.Activity {
             case SECURITY:
                 intent = new Intent(Settings.ACTION_SECURITY_SETTINGS);
                 break;
+            case BATTERY:
+                intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                break;
+            case VPN:
+                intent = new Intent(Settings.ACTION_VPN_SETTINGS);
+                break;
+            case DEFAULT_APPS:
+                intent = new Intent(Settings.ACTION_MANAGE_DEFAULT_APPS_SETTINGS);
+                break;
+            case INPUT_METHOD:
+                intent = new Intent(Settings.ACTION_INPUT_METHOD_SETTINGS);
+                break;
             default:
                 intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri);
                 break;
@@ -385,15 +567,223 @@ public class MainActivity extends android.app.Activity {
 
         try {
             startActivity(intent);
+            awaitingCorrectionReturn = true;
+            return true;
         } catch (Exception first) {
             try {
                 startActivity(new Intent(
                         Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri));
+                awaitingCorrectionReturn = true;
+                return true;
             } catch (Exception second) {
                 Toast.makeText(this,
                         "O Android não disponibilizou a tela de correção para este item.",
                         Toast.LENGTH_SHORT).show();
+                return false;
             }
+        }
+    }
+
+    private static final class ManagedApp {
+        final String name;
+        final String packageName;
+        final boolean system;
+
+        ManagedApp(String name, String packageName, boolean system) {
+            this.name = name;
+            this.packageName = packageName;
+            this.system = system;
+        }
+
+        @Override public String toString() {
+            return name + "\n" + packageName + (system ? " • sistema" : "");
+        }
+    }
+
+    private static boolean isSystemApp(ApplicationInfo info) {
+        return (info.flags & (ApplicationInfo.FLAG_SYSTEM
+                | ApplicationInfo.FLAG_UPDATED_SYSTEM_APP)) != 0;
+    }
+
+    private boolean canRequestUninstall(String packageName) {
+        if (packageName == null || packageName.equals(getPackageName())) return false;
+        try {
+            return !isSystemApp(getPackageManager().getApplicationInfo(packageName, 0));
+        } catch (PackageManager.NameNotFoundException | SecurityException e) {
+            return false;
+        }
+    }
+
+    private void showInstalledApps() {
+        manageApps.setEnabled(false);
+        inventoryExec.execute(() -> {
+            List<ManagedApp> apps = new ArrayList<>();
+            String error = null;
+            try {
+                PackageManager pm = getPackageManager();
+                for (ApplicationInfo info : pm.getInstalledApplications(0)) {
+                    if (getPackageName().equals(info.packageName)) continue;
+                    CharSequence label = pm.getApplicationLabel(info);
+                    String name = label == null ? info.packageName : label.toString();
+                    apps.add(new ManagedApp(name, info.packageName, isSystemApp(info)));
+                }
+                apps.sort(Comparator.comparing((ManagedApp app) ->
+                        app.name.toLowerCase(Locale.ROOT))
+                        .thenComparing(app -> app.packageName));
+            } catch (RuntimeException e) {
+                error = "O Android não disponibilizou a lista de aplicativos.";
+            }
+            String failure = error;
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                manageApps.setEnabled(true);
+                if (failure != null || apps.isEmpty()) {
+                    Toast.makeText(this, failure == null ? "Nenhum aplicativo disponível." : failure,
+                            Toast.LENGTH_LONG).show();
+                } else {
+                    displayInstalledApps(apps);
+                }
+            });
+        });
+    }
+
+    private void displayInstalledApps(List<ManagedApp> apps) {
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        LinearLayout content = new LinearLayout(this);
+        content.setOrientation(LinearLayout.VERTICAL);
+        content.setPadding(pad, pad / 2, pad, 0);
+
+        EditText search = new EditText(this);
+        search.setSingleLine(true);
+        search.setHint("Pesquisar nome ou pacote");
+        content.addView(search);
+
+        CheckBox includeSystem = new CheckBox(this);
+        includeSystem.setText("Mostrar também aplicativos do sistema");
+        content.addView(includeSystem);
+
+        ListView list = new ListView(this);
+        list.setFilterTouchesWhenObscured(true);
+        ArrayAdapter<ManagedApp> adapter = new ArrayAdapter<ManagedApp>(
+                this, android.R.layout.simple_list_item_2, android.R.id.text1,
+                new ArrayList<>()) {
+            @Override public View getView(int position, View recycled, android.view.ViewGroup parent) {
+                View row = super.getView(position, recycled, parent);
+                ManagedApp app = getItem(position);
+                if (app != null) {
+                    ((TextView) row.findViewById(android.R.id.text1)).setText(app.name);
+                    ((TextView) row.findViewById(android.R.id.text2)).setText(
+                            app.packageName + (app.system ? " • sistema" : ""));
+                }
+                return row;
+            }
+        };
+        list.setAdapter(adapter);
+        content.addView(list, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1));
+
+        Runnable filter = () -> {
+            String query = search.getText().toString().trim().toLowerCase(Locale.ROOT);
+            adapter.clear();
+            for (ManagedApp app : apps) {
+                if ((includeSystem.isChecked() || !app.system)
+                        && (app.name.toLowerCase(Locale.ROOT).contains(query)
+                        || app.packageName.toLowerCase(Locale.ROOT).contains(query))) {
+                    adapter.add(app);
+                }
+            }
+            adapter.notifyDataSetChanged();
+        };
+        includeSystem.setOnCheckedChangeListener((button, checked) -> filter.run());
+        search.addTextChangedListener(new TextWatcher() {
+            @Override public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
+            @Override public void onTextChanged(CharSequence s, int start, int before, int count) {
+                filter.run();
+            }
+            @Override public void afterTextChanged(Editable s) {}
+        });
+        filter.run();
+
+        content.setLayoutParams(new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                (int) (getResources().getDisplayMetrics().heightPixels * 0.65f)));
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("Gerenciar aplicativos")
+                .setView(content)
+                .setPositiveButton("FECHAR", null)
+                .create();
+        list.setOnItemClickListener((parent, view, position, id) -> {
+            ManagedApp app = adapter.getItem(position);
+            if (app != null) {
+                dialog.dismiss();
+                showAppOptions(app);
+            }
+        });
+        showProtectedDialog(dialog);
+    }
+
+    private void showAppOptions(ManagedApp app) {
+        String[] options = canRequestUninstall(app.packageName)
+                ? new String[]{"Revisar permissões e dados", "Solicitar desinstalação"}
+                : new String[]{"Abrir detalhes (desativar / remover atualizações, se disponível)"};
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle(app.name)
+                .setMessage(app.packageName)
+                .setItems(options, (ignoredDialog, which) -> {
+                    if (which == 1) confirmUninstall(app.packageName);
+                    else openAppDetails(app.packageName);
+                })
+                .setNegativeButton("VOLTAR", (ignoredDialog, which) -> showInstalledApps())
+                .create();
+        showProtectedDialog(dialog);
+    }
+
+    private void confirmUninstall(String packageName) {
+        if (!canRequestUninstall(packageName)) {
+            Toast.makeText(this, "Este app não pode ser removido por essa ação. Revise os detalhes.",
+                    Toast.LENGTH_LONG).show();
+            openAppDetails(packageName);
+            return;
+        }
+        String name = packageName;
+        try {
+            name = getPackageManager().getApplicationLabel(
+                    getPackageManager().getApplicationInfo(packageName, 0)).toString();
+        } catch (PackageManager.NameNotFoundException | SecurityException ignored) {}
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("Solicitar desinstalação")
+                .setMessage(name + "\n" + packageName
+                        + "\n\nA remoção pode apagar os dados deste aplicativo. O Android pedirá sua confirmação. "
+                        + "Se ele for administrador do dispositivo, desative esse acesso antes.")
+                .setNegativeButton("CANCELAR", null)
+                .setPositiveButton("CONTINUAR", (ignoredDialog, which) -> {
+                    if (!canRequestUninstall(packageName)) {
+                        Toast.makeText(this, "O aplicativo mudou. Revise os detalhes.",
+                                Toast.LENGTH_LONG).show();
+                        openAppDetails(packageName);
+                        return;
+                    }
+                    try {
+                        // The platform uninstaller always asks for the user's decision.
+                        startActivity(new Intent(Intent.ACTION_UNINSTALL_PACKAGE,
+                                Uri.fromParts("package", packageName, null)));
+                    } catch (RuntimeException e) {
+                        Toast.makeText(this, "Não foi possível abrir a confirmação de remoção.",
+                                Toast.LENGTH_LONG).show();
+                        openAppDetails(packageName);
+                    }
+                })
+                .create();
+        showProtectedDialog(dialog);
+    }
+
+    private void openAppDetails(String packageName) {
+        try {
+            startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                    Uri.fromParts("package", packageName, null)));
+        } catch (RuntimeException e) {
+            Toast.makeText(this, "O Android não abriu os detalhes deste aplicativo.",
+                    Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -548,9 +938,18 @@ public class MainActivity extends android.app.Activity {
                 .append(" | Baixo: ").append(report.count(ScanFinding.Level.LOW)).append("\n");
         b.append("Itens para revisão: ").append(report.countRequiringReview()).append("\n");
         b.append("Registros totais: ").append(report.getFindings().size()).append("\n");
+        b.append("Limitações explícitas de análise: ")
+                .append(report.countAnalysisGaps())
+                .append("\n");
         String packageSummary = report.packageSummary();
         if (!packageSummary.isEmpty()) {
             b.append("\nPacotes com sinais para revisão:\n").append(packageSummary).append("\n");
+        }
+        String evidenceSummaryV2 = report.riskAssessmentSummaryV2();
+        if (!evidenceSummaryV2.isEmpty()) {
+            b.append("\nCorrelação por evidências (experimental):\n")
+                    .append(evidenceSummaryV2)
+                    .append("\n");
         }
         b.append("\n").append(renderReportDetails(details, informational)).append("\n");
         b.append(
@@ -558,6 +957,64 @@ public class MainActivity extends android.app.Activity {
                         + "de malware ou invasão.\n"
         );
         return b.toString();
+    }
+
+    private void exportRedactedJson() {
+        if (lastScanReport == null) {
+            Toast.makeText(this, "Execute uma verificação primeiro.", Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        pendingRedactedJson = ReportJsonExporter.redacted(
+                lastScanReport,
+                ScanHistoryStore.load(getApplicationContext()),
+                System.currentTimeMillis());
+
+        String filename = "DarkShield-redacted-"
+                + new SimpleDateFormat("yyyyMMdd-HHmmss", Locale.ROOT).format(new Date())
+                + ".json";
+
+        Intent create = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        create.addCategory(Intent.CATEGORY_OPENABLE);
+        create.setType("application/json");
+        create.putExtra(Intent.EXTRA_TITLE, filename);
+        try {
+            startActivityForResult(create, REQUEST_EXPORT_REDACTED_JSON);
+        } catch (RuntimeException e) {
+            pendingRedactedJson = null;
+            Toast.makeText(
+                    this,
+                    "Não foi possível abrir o seletor para salvar o JSON.",
+                    Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode != REQUEST_EXPORT_REDACTED_JSON) return;
+
+        String json = pendingRedactedJson;
+        pendingRedactedJson = null;
+        if (resultCode != RESULT_OK || data == null || data.getData() == null || json == null) {
+            return;
+        }
+
+        Uri destination = data.getData();
+        try (OutputStream out = getContentResolver().openOutputStream(destination, "wt")) {
+            if (out == null) throw new IllegalStateException("Fluxo de saída indisponível");
+            out.write(json.getBytes(StandardCharsets.UTF_8));
+            out.flush();
+            Toast.makeText(
+                    this,
+                    "JSON redigido salvo.",
+                    Toast.LENGTH_SHORT).show();
+        } catch (Exception e) {
+            Toast.makeText(
+                    this,
+                    "Não foi possível salvar o JSON redigido.",
+                    Toast.LENGTH_LONG).show();
+        }
     }
 
     private void shareReport() {
@@ -605,5 +1062,153 @@ public class MainActivity extends android.app.Activity {
                     "Não foi possível abrir as configurações de segurança.",
                     Toast.LENGTH_SHORT).show();
         }
+    }
+
+    private void confirmResetBaselines() {
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("Redefinir linhas de base?")
+                .setMessage(
+                        "Isso apaga apenas as referências locais usadas para comparar mudanças entre verificações. "
+                                + "O histórico, a base OSV e o relatório atual serão mantidos. "
+                                + "Na próxima verificação, o DarkShield criará uma nova linha de base sem gerar alertas "
+                                + "de mudança por ausência da referência anterior.")
+                .setNegativeButton("CANCELAR", null)
+                .setPositiveButton("REDEFINIR", (ignored, which) -> {
+                    SecurityBaselineStore.clear(getApplicationContext());
+                    PackageIdentityBaselineStore.clear(getApplicationContext());
+                    DevicePostureBaselineStore.clear(getApplicationContext());
+                    nextAction.setText(
+                            "Linhas de base redefinidas. Execute uma nova verificação para recalibrar o monitoramento de mudanças.");
+                    Toast.makeText(
+                            this,
+                            "Linhas de base locais redefinidas.",
+                            Toast.LENGTH_SHORT).show();
+                })
+                .create();
+        showProtectedDialog(dialog);
+    }
+
+    private void showScanHistory() {
+        List<ScanHistoryStore.Entry> entries =
+                ScanHistoryStore.load(getApplicationContext());
+        if (entries.isEmpty()) {
+            Toast.makeText(
+                    this,
+                    "Ainda não há verificações concluídas no histórico.",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        SimpleDateFormat format =
+                new SimpleDateFormat("dd/MM/yyyy • HH:mm", Locale.getDefault());
+        StringBuilder body = new StringBuilder();
+        int index = 1;
+        for (ScanHistoryStore.Entry entry : entries) {
+            if (body.length() > 0) body.append("\n\n");
+            body.append(index++)
+                    .append(". ")
+                    .append(format.format(new Date(entry.timestampMillis)))
+                    .append("\nScore: ")
+                    .append(entry.score)
+                    .append("/100 • revisão: ")
+                    .append(entry.reviewCount)
+                    .append("\nCrítico ")
+                    .append(entry.critical)
+                    .append(" • Alto ")
+                    .append(entry.high)
+                    .append(" • Médio ")
+                    .append(entry.medium)
+                    .append(" • Baixo ")
+                    .append(entry.low)
+                    .append("\nRegistros técnicos: ")
+                    .append(entry.totalFindings);
+        }
+
+        int pad = (int) (20 * getResources().getDisplayMetrics().density);
+        TextView content = new TextView(this);
+        content.setText(body.toString());
+        content.setTextColor(0xFFD9DDE7);
+        content.setTextSize(13);
+        content.setPadding(pad, pad / 2, pad, pad / 2);
+        content.setTextIsSelectable(true);
+
+        ScrollView scroll = new ScrollView(this);
+        scroll.addView(content);
+
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("Histórico de verificações")
+                .setView(scroll)
+                .setNegativeButton("FECHAR", null)
+                .setNeutralButton("LIMPAR HISTÓRICO", (ignored, which) -> {
+                    ScanHistoryStore.clear(getApplicationContext());
+                    Toast.makeText(
+                            this,
+                            "Histórico local limpo.",
+                            Toast.LENGTH_SHORT).show();
+                })
+                .create();
+        showProtectedDialog(dialog);
+    }
+
+    private void refreshVulnerabilityDatabase() {
+        updateVulnerabilityDb.setEnabled(false);
+        updateVulnerabilityDb.setText("ATUALIZANDO BASE…");
+        nextAction.setText("Atualizando e validando a base OSV de vulnerabilidades Android.");
+
+        inventoryExec.submit(() -> {
+            VulnerabilityReportUpdater.Result result =
+                    VulnerabilityReportUpdater.refresh(getApplicationContext());
+            runOnUiThread(() -> {
+                if (isFinishing() || isDestroyed()) return;
+                updateVulnerabilityDb.setEnabled(true);
+                updateVulnerabilityDb.setText("ATUALIZAR BASE DE VULNERABILIDADES");
+                if (result.success) {
+                    long ageSeconds = result.snapshot == null
+                            ? 0L
+                            : Math.max(0L,
+                                    (System.currentTimeMillis() - result.snapshot.savedAtMillis)
+                                            / 1000L);
+                    nextAction.setText(
+                            "Base OSV validada e armazenada. Execute uma nova verificação "
+                                    + "para comparar o estado de patches. Cache salvo há "
+                                    + ageSeconds + " segundo(s).");
+                    Toast.makeText(
+                            this,
+                            "Base de vulnerabilidades atualizada.",
+                            Toast.LENGTH_SHORT).show();
+                } else {
+                    nextAction.setText(
+                            "A base OSV não foi alterada. " + result.message
+                                    + " A verificação local continua disponível.");
+                    Toast.makeText(this, result.message, Toast.LENGTH_LONG).show();
+                }
+            });
+        });
+    }
+
+    private void reviewNetworkSettings() {
+        String explanation = Build.VERSION.SDK_INT >= 28
+                ? "No Android, procure Rede e internet > DNS privado. Confira se o provedor "
+                        + "é seu conhecido. Uma VPN ou um app pode usar outro método de resolução."
+                : "DNS privado pelo sistema só está disponível a partir do Android 9. "
+                        + "Você ainda pode revisar Wi-Fi, rede móvel e VPN nas configurações.";
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
+                .setTitle("Revisar rede e DNS privado")
+                .setMessage(explanation)
+                .setNegativeButton("VOLTAR", null)
+                .setPositiveButton("ABRIR AJUSTES DE REDE", (ignoredDialog, which) -> {
+                    try {
+                        startActivity(new Intent(Settings.ACTION_WIRELESS_SETTINGS));
+                    } catch (RuntimeException unavailable) {
+                        try {
+                            startActivity(new Intent(Settings.ACTION_SETTINGS));
+                        } catch (RuntimeException e) {
+                            Toast.makeText(this, "O Android não abriu os ajustes de rede.",
+                                    Toast.LENGTH_SHORT).show();
+                        }
+                    }
+                })
+                .create();
+        showProtectedDialog(dialog);
     }
 }

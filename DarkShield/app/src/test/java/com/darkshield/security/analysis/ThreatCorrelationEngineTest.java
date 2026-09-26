@@ -96,6 +96,17 @@ public class ThreatCorrelationEngineTest {
         assertTrue(out.get(0).title.contains("notificações"));
     }
 
+    @Test public void correlatesRemoteAccessWithDeclaredScreenCapture() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
+                f("Capacidade de captura de tela declarada", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertTrue(out.get(0).title.contains("captura de tela"));
+        assertTrue(out.get(0).detail.contains("depende de consentimento"));
+    }
+
     @Test public void correlatesRemoteAccessWithBootPersistence() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
@@ -114,6 +125,48 @@ public class ThreatCorrelationEngineTest {
         assertEquals(1, out.size());
         assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
         assertTrue(out.get(0).title.contains("instalação de APK"));
+    }
+
+    @Test public void correlatesRemoteAccessWithGrantedSettingsAccess() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
+                f("Acesso especial para modificar configurações", ScanFinding.Level.MEDIUM)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertTrue(out.get(0).title.contains("acesso especial"));
+    }
+
+    @Test public void correlatesRemoteAccessWithGrantedAllFilesAccess() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
+                f("Acesso a todos os arquivos concedido", ScanFinding.Level.MEDIUM)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertTrue(out.get(0).title.contains("acesso especial"));
+    }
+
+    @Test public void declaredSpecialAccessDoesNotCreateCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
+                f("Acesso especial para modificar configurações declarado", ScanFinding.Level.INFO),
+                f("Acesso a todos os arquivos declarado", ScanFinding.Level.INFO)));
+
+        assertTrue(out.isEmpty());
+    }
+
+    @Test public void declaredOverlayDoesNotBecomeAnActiveRemoteControlSignal() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
+                f("Sobreposição declarada", ScanFinding.Level.INFO)));
+        assertTrue(out.isEmpty());
+
+        List<ScanFinding> accessibility = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),
+                f("Sobreposição declarada", ScanFinding.Level.INFO),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW)));
+        assertTrue(accessibility.isEmpty());
     }
 
     @Test public void correlatesAccessibilityOverlayAndBootWithoutRemoteMarker() {
@@ -135,6 +188,24 @@ public class ThreatCorrelationEngineTest {
         assertEquals(1, out.size());
         assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
         assertTrue(out.get(0).title.contains("acessibilidade"));
+    }
+
+    @Test public void correlatesActiveAccessibilityWithDeclaredScreenCapture() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),
+                f("Capacidade de captura de tela declarada", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertTrue(out.get(0).title.contains("captura de tela"));
+    }
+
+    @Test public void declaredAdministratorDoesNotActAsActiveAdministrator() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
+                f("Administrador do dispositivo declarado", ScanFinding.Level.INFO)));
+
+        assertTrue(out.isEmpty());
     }
 
     @Test public void correlatesAccessibilityNotificationsAndBootWithoutRemoteMarker() {

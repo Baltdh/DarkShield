@@ -16,8 +16,14 @@ public final class ThreatKnowledgeBase {
         if (title == null) return null;
         String t = title.toLowerCase(Locale.ROOT);
 
+        if (t.contains("captura de tela")) {
+            return "MITRE ATT&CK Mobile T1513 (Screen Capture): MediaProjection normalmente exige consentimento do usuário; a declaração da capacidade não prova que uma sessão esteja ativa.";
+        }
         if (t.contains("controle remoto") || t.contains("acesso remoto")) {
             return "MITRE ATT&CK Mobile T1663 (Remote Access Software): acesso remoto legítimo também existe; esse sinal isolado não prova abuso, e a correlação com outras capacidades é o que aumenta a prioridade.";
+        }
+        if (t.contains("código dinâmico") || t.contains("carregamento dinâmico")) {
+            return "MITRE ATT&CK Mobile T1407 (Download New Code at Runtime): carregamento modular também pode ser legítimo, e referências estáticas não confirmam download nem execução.";
         }
         if (t.contains("acessibilidade")) {
             return "MITRE ATT&CK Mobile T1453 (Abuse Accessibility Features): ameaças Android conhecidas podem abusar da acessibilidade para interação e captura de dados.";

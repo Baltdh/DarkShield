@@ -14,6 +14,89 @@ import static org.junit.Assert.assertTrue;
 
 public class StaticApkAnalyzerTest {
 
+    @Test public void installedAppIncludesCodeFromFeatureSplit() throws Exception {
+        File base = File.createTempFile("darkshield-base", ".apk");
+        File feature = File.createTempFile("darkshield-feature", ".apk");
+        try {
+            try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(base))) {
+                add(zip, "AndroidManifest.xml", new byte[]{1});
+                add(zip, "classes.dex", new byte[]{1});
+            }
+            try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(feature))) {
+                add(zip, "AndroidManifest.xml", new byte[]{1});
+                add(zip, "classes.dex", "frida".getBytes("UTF-8"));
+            }
+
+            List<ScanFinding> findings = StaticApkAnalyzer.analyzeInstalled(
+                    base.getAbsolutePath(), new String[]{feature.getAbsolutePath()}, "com.example.test");
+            assertTrue(findings.stream().anyMatch(x -> x.title.equals(
+                    "Marcadores suspeitos no conteúdo de DEX/bibliotecas")
+                    && x.detail.contains(feature.getName())));
+            assertEquals(2, findings.stream().filter(x -> x.title.equals("SHA-256 do APK")).count());
+            assertTrue(findings.stream().anyMatch(x -> x.title.equals("Cobertura dos APKs divididos")
+                    && x.detail.contains("1 parte(s) com código analisada(s)")));
+            assertTrue(StaticApkAnalyzer.getLastTiming().contentBytesScanned >= 6L);
+        } finally {
+            assertTrue(base.delete());
+            assertTrue(feature.delete());
+        }
+    }
+
+    @Test public void resourceSplitIsSkippedAndUnreadableSplitIsReported() throws Exception {
+        File base = File.createTempFile("darkshield-base", ".apk");
+        File resources = File.createTempFile("darkshield-resources", ".apk");
+        try {
+            try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(base))) {
+                add(zip, "AndroidManifest.xml", new byte[]{1});
+                add(zip, "classes.dex", new byte[]{1});
+            }
+            try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(resources))) {
+                add(zip, "AndroidManifest.xml", new byte[]{1});
+                add(zip, "res/raw/frida.txt", new byte[]{1});
+            }
+
+            List<ScanFinding> findings = StaticApkAnalyzer.analyzeInstalled(
+                    base.getAbsolutePath(), new String[]{resources.getAbsolutePath(),
+                            "/definitely/missing/split.apk"}, "com.example.test");
+            assertEquals(1, findings.stream().filter(x -> x.title.equals("SHA-256 do APK")).count());
+            assertTrue(findings.stream().anyMatch(x -> x.title.equals("Cobertura dos APKs divididos")
+                    && x.detail.contains("1 sem DEX/bibliotecas")
+                    && x.detail.contains("1 parte(s) sem análise completa")));
+        } finally {
+            assertTrue(base.delete());
+            assertTrue(resources.delete());
+        }
+    }
+
+    @Test public void splitBudgetLeavesExplicitIncompleteCoverage() throws Exception {
+        File base = File.createTempFile("darkshield-base", ".apk");
+        File[] splits = new File[5];
+        try {
+            try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(base))) {
+                add(zip, "AndroidManifest.xml", new byte[]{1});
+                add(zip, "classes.dex", new byte[]{1});
+            }
+            String[] paths = new String[splits.length];
+            for (int i = 0; i < splits.length; i++) {
+                splits[i] = File.createTempFile("darkshield-split-" + i, ".apk");
+                paths[i] = splits[i].getAbsolutePath();
+                try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(splits[i]))) {
+                    add(zip, "AndroidManifest.xml", new byte[]{1});
+                    add(zip, "classes.dex", new byte[]{(byte) i});
+                }
+            }
+            List<ScanFinding> findings = StaticApkAnalyzer.analyzeInstalled(
+                    base.getAbsolutePath(), paths, "com.example.test");
+            assertEquals(5, findings.stream().filter(x -> x.title.equals("SHA-256 do APK")).count());
+            assertTrue(findings.stream().anyMatch(x -> x.title.equals("Cobertura dos APKs divididos")
+                    && x.detail.contains("4 parte(s) com código analisada(s)")
+                    && x.detail.contains("1 parte(s) sem análise completa")));
+        } finally {
+            assertTrue(base.delete());
+            for (File split : splits) if (split != null) assertTrue(split.delete());
+        }
+    }
+
     @Test public void analyzesApkStructureAndHash() throws Exception {
         File apk = File.createTempFile("darkshield-test", ".apk");
         try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
@@ -633,6 +716,77 @@ public class StaticApkAnalyzerTest {
         assertTrue(hit.detail.contains("assets/xposed-hook.odex"));
         assertTrue(hit.detail.contains("bin/magisk-tool"));
 
+        assertTrue(apk.delete());
+    }
+
+    @Test public void dynamicCodeLoaderCombinedWithNetworkIsFlaggedHeuristically() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "classes.dex",
+                    ("Ldalvik/system/DexClassLoader;"
+                            + "Ljava/net/HttpURLConnection;").getBytes("ISO-8859-1"));
+        }
+
+        ScanFinding hit = StaticApkAnalyzer.analyze(
+                apk.getAbsolutePath(), "com.example.test").stream()
+                .filter(x -> x.title.equals("Código dinâmico combinado com rede"))
+                .findFirst().orElse(null);
+
+        assertTrue(hit != null);
+        assertEquals(ScanFinding.Level.LOW, hit.level);
+        assertEquals(2, hit.points);
+        assertTrue(hit.detail.contains("T1407"));
+        assertTrue(hit.detail.contains("não confirma"));
+        assertTrue(apk.delete());
+    }
+
+    @Test public void dynamicCodeLoaderWithoutNetworkRemainsInformational() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "classes.dex",
+                    "Ldalvik/system/InMemoryDexClassLoader;".getBytes("ISO-8859-1"));
+        }
+
+        ScanFinding hit = StaticApkAnalyzer.analyze(
+                apk.getAbsolutePath(), "com.example.test").stream()
+                .filter(x -> x.title.equals("Carregamento dinâmico de código referenciado"))
+                .findFirst().orElse(null);
+
+        assertTrue(hit != null);
+        assertEquals(ScanFinding.Level.INFO, hit.level);
+        assertEquals(0, hit.points);
+        assertTrue(apk.delete());
+    }
+
+    @Test public void networkApiAloneDoesNotImplyDynamicCodeLoading() throws Exception {
+        StaticApkAnalyzer.BehaviorSignals signals = StaticApkAnalyzer.detectBehaviorSignals(
+                "Ljava/net/HttpURLConnection;".getBytes("ISO-8859-1"));
+
+        assertTrue(signals.networkFetch);
+        assertTrue(!signals.dynamicCodeLoading);
+        assertTrue(!signals.shellExecution);
+    }
+
+    @Test public void detectsShellAndWebViewBridgeAsSeparateContext() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "classes.dex",
+                    ("Ljava/lang/ProcessBuilder;"
+                            + "Landroid/webkit/WebView;addJavascriptInterface"
+                            + "Lokhttp3/OkHttpClient;").getBytes("ISO-8859-1"));
+        }
+
+        List<ScanFinding> findings = StaticApkAnalyzer.analyze(
+                apk.getAbsolutePath(), "com.example.test");
+        assertTrue(findings.stream().anyMatch(x ->
+                x.title.equals("Execução de comandos referenciada")
+                        && x.level == ScanFinding.Level.LOW));
+        assertTrue(findings.stream().anyMatch(x ->
+                x.title.equals("Ponte WebView combinada com rede")
+                        && x.level == ScanFinding.Level.INFO));
         assertTrue(apk.delete());
     }
 
