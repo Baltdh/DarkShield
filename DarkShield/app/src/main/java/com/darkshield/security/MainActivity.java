@@ -82,6 +82,7 @@ public class MainActivity extends android.app.Activity {
         super.onCreate(b);
         protectWindow(getWindow());
         setContentView(R.layout.activity_main);
+        applySystemBarInsets();
         score = findViewById(R.id.score);
         summary = findViewById(R.id.summary);
         report = findViewById(R.id.report);
@@ -125,6 +126,24 @@ public class MainActivity extends android.app.Activity {
         copy.setEnabled(false);
         exportJson.setEnabled(false);
         summary.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
+    }
+
+    private void applySystemBarInsets() {
+        if (Build.VERSION.SDK_INT < 35) return;
+        View root = findViewById(R.id.root_scroll);
+        if (root == null) return;
+
+        root.setOnApplyWindowInsetsListener((view, insets) -> {
+            android.graphics.Insets bars = insets.getInsets(
+                    android.view.WindowInsets.Type.systemBars());
+            view.setPadding(
+                    view.getPaddingLeft(),
+                    bars.top,
+                    view.getPaddingRight(),
+                    bars.bottom);
+            return insets;
+        });
+        root.requestApplyInsets();
     }
 
     private void protectWindow(Window window) {
