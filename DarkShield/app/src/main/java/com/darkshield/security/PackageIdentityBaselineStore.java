@@ -109,6 +109,15 @@ public final class PackageIdentityBaselineStore {
         return changes;
     }
 
+    public static void clear(Context context) {
+        if (context == null) return;
+        context.getApplicationContext()
+                .getSharedPreferences(PREFS, Context.MODE_PRIVATE)
+                .edit()
+                .clear()
+                .apply();
+    }
+
     static Snapshot fromFindings(List<ScanFinding> findings) {
         Map<String, Identity> identities = new HashMap<>();
         if (findings == null) return new Snapshot(identities);
