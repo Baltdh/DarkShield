@@ -136,4 +136,28 @@ public class RiskEngineV2Test {
         assertEquals(2, assessment.strongEvidenceCount);
         assertEquals(3, assessment.independentEvidenceCount);
     }
+    @Test
+    public void derivedFindingsCannotStackRiskPoints() {
+        List<RiskEngineV2.Assessment> assessments = RiskEngineV2.assess(Arrays.asList(
+                new ScanFinding(ScanFinding.Level.LOW, "Observed", "x", "pkg", 1, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.OBSERVED,
+                                ScanFinding.EvidenceTag.PERSISTENCE),
+                new ScanFinding(ScanFinding.Level.HIGH, "Derived one", "y", "pkg", 40, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION),
+                new ScanFinding(ScanFinding.Level.HIGH, "Derived two", "z", "pkg", 40, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.INSTALL_TRUST,
+                                ScanFinding.EvidenceTag.CORRELATION)));
+
+        RiskEngineV2.Assessment assessment = assessments.get(0);
+        assertEquals(ScanFinding.Level.LOW, assessment.level);
+        assertEquals(RiskEngineV2.Confidence.LOW, assessment.confidence);
+        assertEquals(1, assessment.independentEvidenceCount);
+        assertEquals(1, assessment.categoryCount);
+        assertTrue(assessment.riskScore < 35);
+    }
 }
