@@ -33,6 +33,10 @@ public final class ReportJsonExporter {
         comma(out);
         numberField(out, "raw_points", safeReport.getRawPoints());
         comma(out);
+        numberField(out, "independent_raw_points", safeReport.getIndependentRawPoints());
+        comma(out);
+        numberField(out, "derived_raw_points", safeReport.getDerivedRawPoints());
+        comma(out);
         numberField(out, "analysis_gaps", safeReport.countAnalysisGaps());
         comma(out);
         field(out, "status", safeReport.getStatus());
