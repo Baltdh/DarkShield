@@ -147,6 +147,12 @@ public final class ReportJsonExporter {
             numberField(out, "review", entry.reviewCount);
             comma(out);
             numberField(out, "total_findings", entry.totalFindings);
+            comma(out);
+            numberField(out, "independent_raw_points", entry.independentRawPoints);
+            comma(out);
+            numberField(out, "derived_raw_points", entry.derivedRawPoints);
+            comma(out);
+            numberField(out, "analysis_gaps", entry.analysisGaps);
             out.append('}');
         }
         out.append(']');
