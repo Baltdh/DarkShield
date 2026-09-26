@@ -270,7 +270,8 @@ public final class StaticApkAnalyzer {
                         "Manifesto do APK ausente",
                         "AndroidManifest.xml não foi encontrado na estrutura ZIP",
                         packageName, 3,
-                        "Verifique se o arquivo analisado é realmente um APK válido"));
+                        "Verifique se o arquivo analisado é realmente um APK válido")
+                        .withTags(ScanFinding.EvidenceTag.ANALYSIS_GAP));
             }
 
             if (!suspicious.isEmpty()) {
@@ -288,7 +289,8 @@ public final class StaticApkAnalyzer {
                         "Marcadores estáticos encontrados: " + detail
                                 + ". Isso é um indicador heurístico e não prova comportamento malicioso.",
                         packageName, 2,
-                        "Revise o app e, quando necessário, compare com a origem oficial do APK"));
+                        "Revise o app e, quando necessário, compare com a origem oficial do APK")
+                        .withTags(ScanFinding.EvidenceTag.STATIC_ANALYSIS));
             }
 
             if (!suspiciousResourceMarkers.isEmpty()) {
@@ -334,7 +336,8 @@ public final class StaticApkAnalyzer {
                         "Foram encontrados textos associados a instrumentação dentro da amostra analisada de DEX/bibliotecas ou outro payload executável reconhecido por assinatura (início/final, quando a leitura da cauda permaneceu dentro do limite): "
                                 + detail + ". Isso é um indicador heurístico e não prova comportamento malicioso.",
                         packageName, 2,
-                        "Revise a origem do APK e compare o certificado/versão com a distribuição oficial"));
+                        "Revise a origem do APK e compare o certificado/versão com a distribuição oficial")
+                        .withTags(ScanFinding.EvidenceTag.STATIC_ANALYSIS));
             }
 
             addBehaviorFindings(out, packageName, behaviorSignals);
@@ -580,7 +583,8 @@ public final class StaticApkAnalyzer {
                     "Código dinâmico combinado com rede",
                     "A amostra executável contém referências a carregadores DEX e APIs de obtenção de conteúdo pela rede. Essa combinação é compatível com atualização modular legítima, mas também aparece na técnica MITRE ATT&CK Mobile T1407; a análise estática não confirma que código seja baixado ou executado.",
                     packageName, 2,
-                    "Confirme a origem do aplicativo e compare certificado, versão e distribuição oficial"));
+                    "Confirme a origem do aplicativo e compare certificado, versão e distribuição oficial")
+                    .withTags(ScanFinding.EvidenceTag.STATIC_ANALYSIS));
         } else if (signals.dynamicCodeLoading) {
             out.add(new ScanFinding(
                     ScanFinding.Level.INFO,
@@ -596,7 +600,8 @@ public final class StaticApkAnalyzer {
                     "Execução de comandos referenciada",
                     "A amostra executável referencia APIs/caminhos capazes de iniciar comandos do sistema. Ferramentas de diagnóstico, terminais e apps com root podem usar isso legitimamente; o marcador não prova que um comando tenha sido executado.",
                     packageName, 1,
-                    "Confirme se a função do aplicativo justifica executar comandos locais"));
+                    "Confirme se a função do aplicativo justifica executar comandos locais")
+                    .withTags(ScanFinding.EvidenceTag.STATIC_ANALYSIS));
         }
 
         if (signals.webViewJavascriptBridge && signals.networkFetch) {
@@ -737,7 +742,8 @@ public final class StaticApkAnalyzer {
                 "Falha na análise estática",
                 detail,
                 packageName, 1,
-                "Repita a análise com um APK legível e íntegro");
+                "Repita a análise com um APK legível e íntegro")
+                .withTags(ScanFinding.EvidenceTag.ANALYSIS_GAP);
     }
 
     private static String sha256(File file) {
