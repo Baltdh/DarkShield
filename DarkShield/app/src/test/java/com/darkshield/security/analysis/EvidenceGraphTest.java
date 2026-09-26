@@ -86,4 +86,27 @@ public class EvidenceGraphTest {
         assertFalse(node.has(EvidenceGraph.Kind.OTHER));
         assertEquals(2, node.securityKindCount());
     }
+    @Test
+    public void provenanceCountsExcludeDerivedEvidence() {
+        List<ScanFinding> findings = Arrays.asList(
+                new ScanFinding(ScanFinding.Level.HIGH, "Observed", "x", "pkg", 8, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.OBSERVED,
+                                ScanFinding.EvidenceTag.ACTIVE_ACCESS),
+                new ScanFinding(ScanFinding.Level.LOW, "Declared", "y", "pkg", 1, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DECLARED,
+                                ScanFinding.EvidenceTag.PERSISTENCE),
+                new ScanFinding(ScanFinding.Level.HIGH, "Derived", "z", "pkg", 7, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION));
+
+        EvidenceGraph.Node node = EvidenceGraph.from(findings).packageNodes().get(0);
+
+        assertEquals(3, node.evidenceCount());
+        assertEquals(2, node.independentEvidenceCount());
+        assertEquals(1, node.strongEvidenceCount());
+        assertEquals(1, node.weakEvidenceCount());
+    }
 }
