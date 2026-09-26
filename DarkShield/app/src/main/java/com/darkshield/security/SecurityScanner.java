@@ -1091,9 +1091,45 @@ public final class SecurityScanner {
                         DevicePostureBaselineStore.ATTR_ADB,
                         Integer.toString(adb == 1 ? 1 : 0)));
 
+        checkAdvancedProtection(out);
         checkDevicePosture(out);
         checkDefaultInputMethod(out);
         checkDefaultCommunicationApps(out);
+    }
+
+    private void checkAdvancedProtection(List<ScanFinding> out) {
+        if (Build.VERSION.SDK_INT < 36) return;
+        try {
+            android.security.advancedprotection.AdvancedProtectionManager manager =
+                    c.getSystemService(
+                            android.security.advancedprotection.AdvancedProtectionManager.class);
+            if (manager == null) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Modo Proteção Avançada",
+                        "O serviço do sistema não está disponível neste dispositivo.",
+                        null, 0, null));
+                return;
+            }
+
+            boolean enabled = manager.isAdvancedProtectionEnabled();
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Modo Proteção Avançada",
+                    enabled
+                            ? "Ativado; o Android aplica proteções adicionais do modo de segurança reforçada."
+                            : "Desativado; isso não indica risco por si só.",
+                    null, 0, null)
+                    .withAttribute(
+                            DevicePostureBaselineStore.ATTR_ADVANCED_PROTECTION,
+                            enabled ? "1" : "0"));
+        } catch (SecurityException | RuntimeException e) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.INFO,
+                    "Modo Proteção Avançada",
+                    "Não foi possível consultar o estado neste dispositivo.",
+                    null, 0, null));
+        }
     }
 
     private void checkDevicePosture(List<ScanFinding> out) {
