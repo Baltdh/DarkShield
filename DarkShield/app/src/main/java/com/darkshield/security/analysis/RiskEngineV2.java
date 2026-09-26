@@ -76,8 +76,8 @@ public final class RiskEngineV2 {
     }
 
     static Assessment assess(EvidenceGraph.Node node) {
-        int positivePoints = node.positivePoints();
-        int categoryCount = node.securityKindCount();
+        int positivePoints = node.independentPositivePoints();
+        int categoryCount = node.independentSecurityKindCount();
         int evidenceCount = node.evidenceCount();
         int independentEvidenceCount = node.independentEvidenceCount();
         int strongEvidenceCount = node.strongEvidenceCount();
