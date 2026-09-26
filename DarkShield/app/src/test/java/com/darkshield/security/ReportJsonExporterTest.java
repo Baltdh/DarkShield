@@ -125,4 +125,20 @@ public class ReportJsonExporterTest {
         assertTrue(json.contains("\"independent_raw_points\":5"));
         assertTrue(json.contains("\"derived_raw_points\":7"));
     }
+    @Test
+    public void historyExportIncludesRiskProvenanceFields() {
+        ScanHistoryStore.Entry entry =
+                new ScanHistoryStore.Entry(
+                        100L, 40, 1, 2, 3, 4, 5, 6, 9, 3, 2);
+
+        String json = ReportJsonExporter.redacted(
+                new ScanReport(Collections.emptyList()),
+                Collections.singletonList(entry),
+                200L);
+
+        assertTrue(json.contains("\"independent_raw_points\":9"));
+        assertTrue(json.contains("\"derived_raw_points\":3"));
+        assertTrue(json.contains("\"analysis_gaps\":2"));
+    }
+
 }
