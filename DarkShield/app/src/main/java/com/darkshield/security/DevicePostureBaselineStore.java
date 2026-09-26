@@ -18,10 +18,13 @@ public final class DevicePostureBaselineStore {
     public static final String ATTR_DEFAULT_IME = "device.default_ime";
     public static final String ATTR_DEFAULT_SMS = "device.default_sms";
     public static final String ATTR_DEFAULT_DIALER = "device.default_dialer";
+    public static final String ATTR_ADVANCED_PROTECTION = "device.advanced_protection";
     public static final String ATTR_CHANGE_ADB_ENABLED = "posture.change_adb_enabled";
     public static final String ATTR_CHANGE_DEV_ENABLED = "posture.change_dev_enabled";
     public static final String ATTR_CHANGE_PATCH_REGRESSED = "posture.change_patch_regressed";
     public static final String ATTR_CHANGE_HANDLER = "posture.change_handler";
+    public static final String ATTR_CHANGE_ADVANCED_PROTECTION_DISABLED =
+            "posture.change_advanced_protection_disabled";
 
     private static final String PREFS = "darkshield_device_posture_baseline";
     private static final String KEY_SCHEMA = "schema";
@@ -104,6 +107,7 @@ public final class DevicePostureBaselineStore {
             copyIfPresent(finding, values, ATTR_DEFAULT_IME);
             copyIfPresent(finding, values, ATTR_DEFAULT_SMS);
             copyIfPresent(finding, values, ATTR_DEFAULT_DIALER);
+            copyIfPresent(finding, values, ATTR_ADVANCED_PROTECTION);
         }
         return new Snapshot(values);
     }
@@ -142,6 +146,23 @@ public final class DevicePostureBaselineStore {
                     "Confirme se essa mudança foi intencional")
                     .withEvidence(ScanFinding.EvidenceSource.DERIVED)
                     .withAttribute(ATTR_CHANGE_DEV_ENABLED, "1"));
+        }
+
+        if ("1".equals(before.get(ATTR_ADVANCED_PROTECTION))
+                && "0".equals(now.get(ATTR_ADVANCED_PROTECTION))) {
+            changes.add(new ScanFinding(
+                    ScanFinding.Level.MEDIUM,
+                    "Modo Proteção Avançada foi desativado",
+                    "O Android informava o Modo Proteção Avançada como ativo na linha de base anterior "
+                            + "e agora ele está desativado. Isso pode ser uma escolha legítima do usuário, "
+                            + "mas reduz proteções adicionais do sistema.",
+                    null,
+                    3,
+                    "Se você não desativou esse modo conscientemente, revise as configurações de segurança do dispositivo")
+                    .withEvidence(
+                            ScanFinding.EvidenceSource.DERIVED,
+                            ScanFinding.EvidenceTag.CORRELATION)
+                    .withAttribute(ATTR_CHANGE_ADVANCED_PROTECTION_DISABLED, "1"));
         }
 
         if (patchRegressed(
