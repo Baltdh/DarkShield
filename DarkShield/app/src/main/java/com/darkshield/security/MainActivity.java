@@ -275,6 +275,8 @@ public class MainActivity extends android.app.Activity {
         List<ScanFinding> enrichedFindings = new ArrayList<>(findings);
         enrichedFindings.addAll(SecurityBaselineStore.compareAndUpdate(
                 getApplicationContext(), findings));
+        enrichedFindings.addAll(PackageIdentityBaselineStore.compareAndUpdate(
+                getApplicationContext(), findings));
         findings = enrichedFindings;
 
         ScanReport scanReport = new ScanReport(findings);
