@@ -1,0 +1,75 @@
+package com.darkshield.security.analysis;
+
+import com.darkshield.security.ScanFinding;
+
+import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
+import static org.junit.Assert.*;
+
+public class RiskEngineV2Test {
+    private static ScanFinding finding(
+            ScanFinding.Level level, String title, String detail, String pkg, int points) {
+        return new ScanFinding(level, title, detail, pkg, points, null);
+    }
+
+    @Test
+    public void emptyInputProducesNoAssessments() {
+        assertTrue(RiskEngineV2.assess(Collections.emptyList()).isEmpty());
+    }
+
+    @Test
+    public void isolatedWeakSignalKeepsLowConfidence() {
+        List<RiskEngineV2.Assessment> assessments = RiskEngineV2.assess(Arrays.asList(
+                finding(ScanFinding.Level.LOW, "Inicialização automática declarada",
+                        "boot", "pkg", 1)));
+
+        assertEquals(1, assessments.size());
+        assertEquals(RiskEngineV2.Confidence.LOW, assessments.get(0).confidence);
+        assertTrue(assessments.get(0).riskScore < 35);
+    }
+
+    @Test
+    public void correlatedMultiCategoryChainRaisesRiskAndConfidence() {
+        List<RiskEngineV2.Assessment> assessments = RiskEngineV2.assess(Arrays.asList(
+                finding(ScanFinding.Level.HIGH, "Serviço de acessibilidade ativo",
+                        "service", "pkg", 8),
+                finding(ScanFinding.Level.LOW, "Inicialização automática declarada",
+                        "boot", "pkg", 1),
+                finding(ScanFinding.Level.MEDIUM, "Acesso a SMS",
+                        "operacional", "pkg", 4),
+                finding(ScanFinding.Level.HIGH,
+                        "Correlação de acessibilidade, notificações e boot",
+                        "combinação de sinais", "pkg", 7)));
+
+        RiskEngineV2.Assessment assessment = assessments.get(0);
+        assertEquals(ScanFinding.Level.HIGH, assessment.level);
+        assertEquals(RiskEngineV2.Confidence.HIGH, assessment.confidence);
+        assertTrue(assessment.riskScore >= 65);
+        assertTrue(assessment.categoryCount >= 4);
+    }
+
+    @Test
+    public void incompleteAnalysisDowngradesConfidence() {
+        List<RiskEngineV2.Assessment> assessments = RiskEngineV2.assess(Arrays.asList(
+                finding(ScanFinding.Level.HIGH, "Serviço de acessibilidade ativo",
+                        "service", "pkg", 8),
+                finding(ScanFinding.Level.LOW, "Inicialização automática declarada",
+                        "boot", "pkg", 1),
+                finding(ScanFinding.Level.MEDIUM, "Acesso a SMS",
+                        "operacional", "pkg", 4),
+                finding(ScanFinding.Level.HIGH,
+                        "Correlação de acessibilidade, notificações e boot",
+                        "combinação de sinais", "pkg", 7),
+                finding(ScanFinding.Level.LOW, "Falha na análise estática",
+                        "Não foi possível ler parte do APK", "pkg", 1)));
+
+        RiskEngineV2.Assessment assessment = assessments.get(0);
+        assertTrue(assessment.analysisPartial);
+        assertEquals(RiskEngineV2.Confidence.MEDIUM, assessment.confidence);
+        assertTrue(assessment.riskScore <= 100);
+    }
+}
