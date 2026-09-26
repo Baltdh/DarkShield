@@ -204,7 +204,7 @@ public final class PackageIdentityBaselineStore {
                             ? "Confirme se o downgrade foi intencional e obtenha a versão atualizada da fonte oficial"
                             : "Confirme se a mudança de origem/reinstalação foi intencional";
 
-            findings.add(new ScanFinding(
+            ScanFinding identityFinding = new ScanFinding(
                     level,
                     signerChanged && !signerContinuity
                             ? "Identidade de assinatura do aplicativo mudou"
@@ -214,11 +214,20 @@ public final class PackageIdentityBaselineStore {
                     detail.toString(),
                     packageName,
                     points,
-                    action)
-                    .withEvidence(
+                    action);
+
+            boolean securityRelevantChange =
+                    (signerChanged && !signerContinuity)
+                            || installerChanged
+                            || downgraded
+                            || reinstalled;
+            identityFinding = securityRelevantChange
+                    ? identityFinding.withEvidence(
                             ScanFinding.EvidenceSource.DERIVED,
                             ScanFinding.EvidenceTag.INSTALL_TRUST,
-                            ScanFinding.EvidenceTag.CORRELATION));
+                            ScanFinding.EvidenceTag.CORRELATION)
+                    : identityFinding.withEvidence(ScanFinding.EvidenceSource.DERIVED);
+            findings.add(identityFinding);
         }
         return findings;
     }
