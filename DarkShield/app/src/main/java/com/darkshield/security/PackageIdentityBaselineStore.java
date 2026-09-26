@@ -21,6 +21,11 @@ public final class PackageIdentityBaselineStore {
     public static final String ATTR_LAST_UPDATE = "identity.last_update";
     public static final String ATTR_CURRENT_SIGNERS = "identity.current_signers";
     public static final String ATTR_SIGNING_LINEAGE = "identity.signing_lineage";
+    public static final String ATTR_CHANGE_SIGNER_MISMATCH = "identity.change_signer_mismatch";
+    public static final String ATTR_CHANGE_SIGNER_ROTATION = "identity.change_signer_rotation";
+    public static final String ATTR_CHANGE_DOWNGRADE = "identity.change_downgrade";
+    public static final String ATTR_CHANGE_INSTALLER = "identity.change_installer";
+    public static final String ATTR_CHANGE_REINSTALL = "identity.change_reinstall";
 
     private static final String PREFS = "darkshield_package_identity_baseline";
     private static final String KEY_SCHEMA = "schema";
@@ -227,6 +232,26 @@ public final class PackageIdentityBaselineStore {
                             ScanFinding.EvidenceTag.INSTALL_TRUST,
                             ScanFinding.EvidenceTag.CORRELATION)
                     : identityFinding.withEvidence(ScanFinding.EvidenceSource.DERIVED);
+
+            if (signerChanged && !signerContinuity) {
+                identityFinding = identityFinding.withAttribute(
+                        ATTR_CHANGE_SIGNER_MISMATCH, "1");
+            } else if (signerChanged) {
+                identityFinding = identityFinding.withAttribute(
+                        ATTR_CHANGE_SIGNER_ROTATION, "1");
+            }
+            if (downgraded) {
+                identityFinding = identityFinding.withAttribute(
+                        ATTR_CHANGE_DOWNGRADE, "1");
+            }
+            if (installerChanged) {
+                identityFinding = identityFinding.withAttribute(
+                        ATTR_CHANGE_INSTALLER, "1");
+            }
+            if (reinstalled) {
+                identityFinding = identityFinding.withAttribute(
+                        ATTR_CHANGE_REINSTALL, "1");
+            }
             findings.add(identityFinding);
         }
         return findings;
