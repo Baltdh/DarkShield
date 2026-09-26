@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Map;
 
 public final class SecurityBaselineStore {
+    public static final String ATTR_CHANGE_TYPE = "baseline.change_type";
+    public static final String ATTR_ADDED_TAGS = "baseline.added_tags";
+
     private static final String PREFS = "darkshield_security_baseline";
     private static final String KEY_SCHEMA = "schema";
     private static final String KEY_DATA = "data";
@@ -150,7 +153,9 @@ public final class SecurityBaselineStore {
                     "Revise o aplicativo e os acessos concedidos se você não reconhece essa mudança")
                     .withEvidence(
                             ScanFinding.EvidenceSource.DERIVED,
-                            ScanFinding.EvidenceTag.CORRELATION));
+                            ScanFinding.EvidenceTag.CORRELATION)
+                    .withAttribute(ATTR_CHANGE_TYPE, "privileges_added")
+                    .withAttribute(ATTR_ADDED_TAGS, joinTags(added)));
         }
         return changes;
     }
