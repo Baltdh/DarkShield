@@ -72,4 +72,21 @@ public class RiskEngineV2Test {
         assertEquals(RiskEngineV2.Confidence.MEDIUM, assessment.confidence);
         assertTrue(assessment.riskScore <= 100);
     }
+    @Test
+    public void structuredRemoteChainRaisesRiskWithoutTextMarkers() {
+        List<RiskEngineV2.Assessment> assessments = RiskEngineV2.assess(Arrays.asList(
+                new ScanFinding(ScanFinding.Level.HIGH, "A", "x", "pkg", 8, null)
+                        .withTags(ScanFinding.EvidenceTag.ACTIVE_ACCESS),
+                new ScanFinding(ScanFinding.Level.LOW, "B", "y", "pkg", 1, null)
+                        .withTags(ScanFinding.EvidenceTag.PERSISTENCE),
+                new ScanFinding(ScanFinding.Level.MEDIUM, "C", "z", "pkg", 4, null)
+                        .withTags(ScanFinding.EvidenceTag.REMOTE_CONTROL),
+                new ScanFinding(ScanFinding.Level.HIGH, "D", "w", "pkg", 7, null)
+                        .withTags(ScanFinding.EvidenceTag.CORRELATION)));
+
+        RiskEngineV2.Assessment assessment = assessments.get(0);
+        assertEquals(ScanFinding.Level.HIGH, assessment.level);
+        assertEquals(RiskEngineV2.Confidence.HIGH, assessment.confidence);
+        assertTrue(assessment.riskScore >= 65);
+    }
 }
