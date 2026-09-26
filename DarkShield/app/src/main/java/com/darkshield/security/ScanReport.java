@@ -211,6 +211,30 @@ public final class ScanReport {
         return RiskEngineV2.assess(findings);
     }
 
+    public String riskAssessmentSummaryV2() {
+        List<RiskEngineV2.Assessment> assessments = riskAssessmentsV2();
+        if (assessments.isEmpty()) return "";
+
+        StringBuilder out = new StringBuilder();
+        int shown = 0;
+        for (RiskEngineV2.Assessment assessment : assessments) {
+            if (assessment == null || assessment.level == ScanFinding.Level.INFO) continue;
+            if (shown > 0) out.append("\n");
+            out.append(assessment.level)
+                    .append(" • ")
+                    .append(assessment.packageName)
+                    .append(" • confiança ")
+                    .append(assessment.confidence)
+                    .append(" • risco estrutural ")
+                    .append(assessment.riskScore)
+                    .append("/100");
+            if (assessment.analysisPartial) out.append(" • análise parcial");
+            shown++;
+            if (shown >= 5) break;
+        }
+        return out.toString();
+    }
+
     public static final class PackageSummary {
         public final String packageName;
         public final ScanFinding.Level level;
