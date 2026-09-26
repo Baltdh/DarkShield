@@ -31,6 +31,7 @@ public final class AppPresenceBaselineStore {
     static final class State {
         final String packageName;
         final boolean missingAfterSeen;
+        final int missingScanCount;
         final long versionCode;
         final String installer;
         final Set<String> currentSigners;
@@ -41,8 +42,25 @@ public final class AppPresenceBaselineStore {
                 long versionCode,
                 String installer,
                 Set<String> currentSigners) {
+            this(
+                    packageName,
+                    missingAfterSeen,
+                    missingAfterSeen ? 1 : 0,
+                    versionCode,
+                    installer,
+                    currentSigners);
+        }
+
+        State(
+                String packageName,
+                boolean missingAfterSeen,
+                int missingScanCount,
+                long versionCode,
+                String installer,
+                Set<String> currentSigners) {
             this.packageName = packageName == null ? "" : packageName.trim();
             this.missingAfterSeen = missingAfterSeen;
+            this.missingScanCount = Math.max(0, missingScanCount);
             this.versionCode = Math.max(0L, versionCode);
             this.installer = installer == null ? "" : installer.trim();
             this.currentSigners = normalized(currentSigners);
@@ -147,6 +165,7 @@ public final class AppPresenceBaselineStore {
                 next.put(old.packageName, new State(
                         old.packageName,
                         true,
+                        Math.max(1, old.missingScanCount + 1),
                         old.versionCode,
                         old.installer,
                         old.currentSigners));
@@ -202,9 +221,11 @@ public final class AppPresenceBaselineStore {
             points = 4;
         }
 
+        int missingScans = before == null ? 1 : Math.max(1, before.missingScanCount);
         StringBuilder detail = new StringBuilder(
-                "O pacote estava presente em uma linha de base anterior, ficou ausente em uma "
-                        + "verificação completa e voltou a aparecer.");
+                "O pacote estava presente em uma linha de base anterior, ficou ausente por "
+                        + missingScans
+                        + " verificação(ões) completa(s) e voltou a aparecer.");
         if (signerChanged && signerContinuity) {
             detail.append(" A assinatura mudou com continuidade pela linhagem de certificados.");
         } else if (signerChanged) {
@@ -265,6 +286,7 @@ public final class AppPresenceBaselineStore {
             if (out.length() > 0) out.append('\n');
             out.append(encodePart(state.packageName)).append('\t')
                     .append(state.missingAfterSeen ? "1" : "0").append('\t')
+                    .append(state.missingScanCount).append('\t')
                     .append(state.versionCode).append('\t')
                     .append(encodePart(state.installer)).append('\t')
                     .append(encodePart(join(state.currentSigners)));
