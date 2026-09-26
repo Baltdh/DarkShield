@@ -100,4 +100,29 @@ public class ReportJsonExporterTest {
         assertTrue(json.contains("\"analysis_gaps\":1"));
         assertFalse(json.contains("detalhe omitido"));
     }
+    @Test
+    public void redactedExportIncludesIndependentAndDerivedPointTotals() {
+        ScanReport report = new ScanReport(Arrays.asList(
+                new ScanFinding(
+                        ScanFinding.Level.MEDIUM, "observed", "x",
+                        "pkg", 5, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.OBSERVED,
+                                ScanFinding.EvidenceTag.ACTIVE_ACCESS),
+                new ScanFinding(
+                        ScanFinding.Level.HIGH, "derived", "y",
+                        "pkg", 7, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION)));
+
+        String json = ReportJsonExporter.redacted(
+                report,
+                Collections.emptyList(),
+                1L);
+
+        assertTrue(json.contains("\"raw_points\":12"));
+        assertTrue(json.contains("\"independent_raw_points\":5"));
+        assertTrue(json.contains("\"derived_raw_points\":7"));
+    }
 }
