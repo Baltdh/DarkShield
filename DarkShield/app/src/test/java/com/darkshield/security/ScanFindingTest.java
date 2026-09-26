@@ -68,4 +68,19 @@ public class ScanFindingTest {
         assertTrue(tagged.hasEvidenceTag(ScanFinding.EvidenceTag.REMOTE_CONTROL));
         assertTrue(tagged.evidenceTags.size() == 2);
     }
+    @Test public void withEvidenceSetsProvenanceAndPreservesTags() {
+        ScanFinding finding = new ScanFinding(
+                ScanFinding.Level.HIGH, "title", "detail",
+                "com.example", 5, null)
+                .withEvidence(
+                        ScanFinding.EvidenceSource.OBSERVED,
+                        ScanFinding.EvidenceTag.ACTIVE_ACCESS);
+
+        assertTrue(finding.evidenceSource == ScanFinding.EvidenceSource.OBSERVED);
+        assertTrue(finding.hasEvidenceTag(ScanFinding.EvidenceTag.ACTIVE_ACCESS));
+
+        ScanFinding extended = finding.withTags(ScanFinding.EvidenceTag.SENSITIVE_DATA);
+        assertTrue(extended.evidenceSource == ScanFinding.EvidenceSource.OBSERVED);
+        assertTrue(extended.hasEvidenceTag(ScanFinding.EvidenceTag.SENSITIVE_DATA));
+    }
 }
