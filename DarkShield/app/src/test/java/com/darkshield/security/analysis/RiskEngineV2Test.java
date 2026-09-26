@@ -89,4 +89,51 @@ public class RiskEngineV2Test {
         assertEquals(RiskEngineV2.Confidence.HIGH, assessment.confidence);
         assertTrue(assessment.riskScore >= 65);
     }
+    @Test
+    public void declaredAndHeuristicOnlyEvidenceCannotReachHighConfidence() {
+        List<RiskEngineV2.Assessment> assessments = RiskEngineV2.assess(Arrays.asList(
+                new ScanFinding(ScanFinding.Level.MEDIUM, "A", "x", "pkg", 5, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DECLARED,
+                                ScanFinding.EvidenceTag.PERSISTENCE),
+                new ScanFinding(ScanFinding.Level.MEDIUM, "B", "y", "pkg", 5, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.HEURISTIC,
+                                ScanFinding.EvidenceTag.REMOTE_CONTROL),
+                new ScanFinding(ScanFinding.Level.HIGH, "C", "z", "pkg", 7, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION)));
+
+        RiskEngineV2.Assessment assessment = assessments.get(0);
+        assertEquals(RiskEngineV2.Confidence.LOW, assessment.confidence);
+        assertEquals(0, assessment.strongEvidenceCount);
+        assertEquals(2, assessment.independentEvidenceCount);
+    }
+
+    @Test
+    public void observedEvidenceCanRaiseConfidenceWithIndependentCategories() {
+        List<RiskEngineV2.Assessment> assessments = RiskEngineV2.assess(Arrays.asList(
+                new ScanFinding(ScanFinding.Level.HIGH, "A", "x", "pkg", 8, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.OBSERVED,
+                                ScanFinding.EvidenceTag.ACTIVE_ACCESS),
+                new ScanFinding(ScanFinding.Level.MEDIUM, "B", "y", "pkg", 4, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.OBSERVED,
+                                ScanFinding.EvidenceTag.SENSITIVE_DATA),
+                new ScanFinding(ScanFinding.Level.LOW, "C", "z", "pkg", 1, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DECLARED,
+                                ScanFinding.EvidenceTag.PERSISTENCE),
+                new ScanFinding(ScanFinding.Level.HIGH, "D", "w", "pkg", 7, null)
+                        .withEvidence(
+                                ScanFinding.EvidenceSource.DERIVED,
+                                ScanFinding.EvidenceTag.CORRELATION)));
+
+        RiskEngineV2.Assessment assessment = assessments.get(0);
+        assertEquals(RiskEngineV2.Confidence.HIGH, assessment.confidence);
+        assertEquals(2, assessment.strongEvidenceCount);
+        assertEquals(3, assessment.independentEvidenceCount);
+    }
 }
