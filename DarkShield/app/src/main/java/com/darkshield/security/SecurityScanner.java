@@ -1123,7 +1123,7 @@ public final class SecurityScanner {
                     .withAttribute(
                             DevicePostureBaselineStore.ATTR_ADVANCED_PROTECTION,
                             enabled ? "1" : "0"));
-        } catch (SecurityException | RuntimeException e) {
+        } catch (RuntimeException e) {
             out.add(new ScanFinding(
                     ScanFinding.Level.INFO,
                     "Modo Proteção Avançada",
