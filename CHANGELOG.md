@@ -2,6 +2,10 @@
 
 ## 0.7.2
 
+- adiciona `EvidenceGraph` e `RiskEngineV2` como camada paralela para correlacionar evidências por pacote, separar risco de confiança e reduzir dependência de soma simples de permissões;
+- exibe no relatório uma seção experimental de correlação por evidências sem substituir o score heurístico legado;
+- integra `androidx.security:security-state:1.1.0` para leitura local separada do estado de patch do Android System, módulos Mainline e kernel, sem afirmar conformidade com CVEs sem relatório OSV;
+- eleva o ambiente de compilação para `compileSdk 36` e AGP 8.10.1, mantendo `targetSdk 35` até concluir a auditoria de mudanças de comportamento do Android 16;
 - integra a Central de correções e remoção confirmada pelo Android com o hardening e a cadeia de build reproduzível da linha 0.7.1;
 - identifica MediaProjection e outros serviços privilegiados declarados sem tratá-los como ativos ou pontuar captura apenas declarada;
 - diferencia administrador do dispositivo declarado de administrador realmente ativo;
