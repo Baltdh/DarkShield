@@ -13,7 +13,7 @@ public class ScanHistoryStoreTest {
     public void encodeDecodeRoundTripKeepsSummaryFields() {
         List<ScanHistoryStore.Entry> entries = new ArrayList<>();
         entries.add(new ScanHistoryStore.Entry(
-                123456L, 47, 1, 2, 3, 4, 10, 20));
+                123456L, 47, 1, 2, 3, 4, 10, 20, 11, 7, 2));
 
         List<ScanHistoryStore.Entry> decoded =
                 ScanHistoryStore.decode(ScanHistoryStore.encode(entries));
@@ -28,6 +28,9 @@ public class ScanHistoryStoreTest {
         assertEquals(4, entry.low);
         assertEquals(10, entry.reviewCount);
         assertEquals(20, entry.totalFindings);
+        assertEquals(11, entry.independentRawPoints);
+        assertEquals(7, entry.derivedRawPoints);
+        assertEquals(2, entry.analysisGaps);
     }
 
     @Test
@@ -55,4 +58,17 @@ public class ScanHistoryStoreTest {
         assertEquals(0, decoded.get(0).critical);
         assertTrue(decoded.get(0).high >= 0);
     }
+    @Test
+    public void legacyEightFieldHistoryIsStillReadable() {
+        List<ScanHistoryStore.Entry> decoded =
+                ScanHistoryStore.decode("100|40|1|2|3|4|5|6");
+
+        assertEquals(1, decoded.size());
+        ScanHistoryStore.Entry entry = decoded.get(0);
+        assertEquals(40, entry.score);
+        assertEquals(0, entry.independentRawPoints);
+        assertEquals(0, entry.derivedRawPoints);
+        assertEquals(0, entry.analysisGaps);
+    }
+
 }
