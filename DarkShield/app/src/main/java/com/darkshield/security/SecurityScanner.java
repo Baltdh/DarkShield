@@ -1055,6 +1055,7 @@ public final class SecurityScanner {
                         : patch,
                 null, 0, null));
         addSecurityPatchAgeFinding(out, patch);
+        out.addAll(SecurityStateScanner.scan(c));
     }
 
     static int securityPatchAgeDays(String patch, LocalDate today) {
