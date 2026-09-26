@@ -18,6 +18,10 @@ public final class DevicePostureBaselineStore {
     public static final String ATTR_DEFAULT_IME = "device.default_ime";
     public static final String ATTR_DEFAULT_SMS = "device.default_sms";
     public static final String ATTR_DEFAULT_DIALER = "device.default_dialer";
+    public static final String ATTR_CHANGE_ADB_ENABLED = "posture.change_adb_enabled";
+    public static final String ATTR_CHANGE_DEV_ENABLED = "posture.change_dev_enabled";
+    public static final String ATTR_CHANGE_PATCH_REGRESSED = "posture.change_patch_regressed";
+    public static final String ATTR_CHANGE_HANDLER = "posture.change_handler";
 
     private static final String PREFS = "darkshield_device_posture_baseline";
     private static final String KEY_SCHEMA = "schema";
@@ -116,7 +120,9 @@ public final class DevicePostureBaselineStore {
                     "Se você não ativou ADB conscientemente, desative a depuração e revise os aplicativos com acesso elevado")
                     .withEvidence(
                             ScanFinding.EvidenceSource.DERIVED,
-                            ScanFinding.EvidenceTag.CORRELATION));
+                            ScanFinding.EvidenceTag.CORRELATION)
+                    .withAttribute(ATTR_CHANGE_ADB_ENABLED, "1")
+                    .withAttribute(ATTR_CHANGE_DEV_ENABLED, devEnabled ? "1" : "0"));
         } else if (devEnabled) {
             changes.add(new ScanFinding(
                     ScanFinding.Level.LOW,
@@ -125,7 +131,8 @@ public final class DevicePostureBaselineStore {
                     null,
                     1,
                     "Confirme se essa mudança foi intencional")
-                    .withEvidence(ScanFinding.EvidenceSource.DERIVED));
+                    .withEvidence(ScanFinding.EvidenceSource.DERIVED)
+                    .withAttribute(ATTR_CHANGE_DEV_ENABLED, "1"));
         }
 
         if (patchRegressed(
@@ -143,7 +150,8 @@ public final class DevicePostureBaselineStore {
                     .withEvidence(
                             ScanFinding.EvidenceSource.DERIVED,
                             ScanFinding.EvidenceTag.VULNERABILITY,
-                            ScanFinding.EvidenceTag.CORRELATION));
+                            ScanFinding.EvidenceTag.CORRELATION)
+                    .withAttribute(ATTR_CHANGE_PATCH_REGRESSED, "1"));
         }
 
         addHandlerChange(
@@ -153,7 +161,8 @@ public final class DevicePostureBaselineStore {
                 now.get(ATTR_DEFAULT_IME),
                 ScanFinding.Level.MEDIUM,
                 3,
-                "Confirme se você escolheu conscientemente o novo teclado; ele pode processar texto digitado");
+                "Confirme se você escolheu conscientemente o novo teclado; ele pode processar texto digitado",
+                "ime");
         addHandlerChange(
                 changes,
                 "Aplicativo padrão de SMS mudou",
@@ -161,7 +170,8 @@ public final class DevicePostureBaselineStore {
                 now.get(ATTR_DEFAULT_SMS),
                 ScanFinding.Level.LOW,
                 1,
-                "Confirme se você reconhece o novo aplicativo padrão de SMS");
+                "Confirme se você reconhece o novo aplicativo padrão de SMS",
+                "sms");
         addHandlerChange(
                 changes,
                 "Aplicativo padrão de chamadas mudou",
@@ -169,7 +179,8 @@ public final class DevicePostureBaselineStore {
                 now.get(ATTR_DEFAULT_DIALER),
                 ScanFinding.Level.LOW,
                 1,
-                "Confirme se você reconhece o novo aplicativo padrão de chamadas");
+                "Confirme se você reconhece o novo aplicativo padrão de chamadas",
+                "dialer");
 
         return changes;
     }
@@ -228,7 +239,8 @@ public final class DevicePostureBaselineStore {
             String now,
             ScanFinding.Level level,
             int points,
-            String action) {
+            String action,
+            String changeValue) {
         if (before == null || now == null
                 || before.trim().isEmpty() || now.trim().isEmpty()
                 || before.equals(now)) {
@@ -242,7 +254,8 @@ public final class DevicePostureBaselineStore {
                 now,
                 points,
                 action)
-                .withEvidence(ScanFinding.EvidenceSource.DERIVED));
+                .withEvidence(ScanFinding.EvidenceSource.DERIVED)
+                .withAttribute(ATTR_CHANGE_HANDLER, changeValue == null ? "" : changeValue));
     }
 
     private static void copyIfPresent(
