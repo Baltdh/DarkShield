@@ -281,6 +281,8 @@ public class MainActivity extends android.app.Activity {
                 getApplicationContext(), findings));
         enrichedFindings.addAll(PackageIdentityBaselineStore.compareAndUpdate(
                 getApplicationContext(), findings));
+        enrichedFindings.addAll(DevicePostureBaselineStore.compareAndUpdate(
+                getApplicationContext(), findings));
         findings = enrichedFindings;
 
         ScanReport scanReport = new ScanReport(findings);
