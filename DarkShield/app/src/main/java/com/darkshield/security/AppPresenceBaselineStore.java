@@ -302,17 +302,35 @@ public final class AppPresenceBaselineStore {
         for (String line : encoded.split("\n")) {
             if (states.size() >= MAX_TRACKED_PACKAGES) break;
             String[] fields = line.split("\t", -1);
-            if (fields.length != 5) continue;
+            if (fields.length != 5 && fields.length != 6) continue;
             try {
                 String packageName = decodePart(fields[0]);
                 if (packageName.trim().isEmpty()) continue;
                 boolean missing = "1".equals(fields[1]);
-                long version = Long.parseLong(fields[2]);
-                String installer = decodePart(fields[3]);
-                Set<String> signers = parseSet(decodePart(fields[4]));
+                int missingCount;
+                long version;
+                String installer;
+                Set<String> signers;
+                if (fields.length == 6) {
+                    missingCount = Integer.parseInt(fields[2]);
+                    version = Long.parseLong(fields[3]);
+                    installer = decodePart(fields[4]);
+                    signers = parseSet(decodePart(fields[5]));
+                } else {
+                    missingCount = missing ? 1 : 0;
+                    version = Long.parseLong(fields[2]);
+                    installer = decodePart(fields[3]);
+                    signers = parseSet(decodePart(fields[4]));
+                }
                 states.put(
                         packageName,
-                        new State(packageName, missing, version, installer, signers));
+                        new State(
+                                packageName,
+                                missing,
+                                missingCount,
+                                version,
+                                installer,
+                                signers));
             } catch (RuntimeException ignored) {
                 // Keep the valid portion of the state.
             }
