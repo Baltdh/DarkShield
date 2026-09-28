@@ -171,6 +171,52 @@ public class ThreatCorrelationEngineTest {
         assertEquals(5, out.get(0).points);
     }
 
+    @Test public void correlatesThirdPartyKeyboardWithAccessibilityAndOverlay() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Teclado de terceiros ativo", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),
+                f("Permissão de sobreposição concedida", ScanFinding.Level.MEDIUM)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(8, out.get(0).points);
+        assertTrue(out.get(0).title.contains("teclado"));
+    }
+
+    @Test public void thirdPartyKeyboardWithBootIsMediumNotHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Teclado de terceiros ativo", ScanFinding.Level.LOW),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(5, out.get(0).points);
+    }
+
+    @Test public void correlatesBootWithMultipleSensitiveSignals() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Inicialização automática declarada", ScanFinding.Level.LOW),
+                f("Acesso à localização", ScanFinding.Level.INFO),
+                f("Acesso a microfone/câmera", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(5, out.get(0).points);
+        assertTrue(out.get(0).title.contains("coleta sensível"));
+    }
+
+    @Test public void accessibilityRaisesPersistentSensitiveCollectionToHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Inicialização automática declarada", ScanFinding.Level.LOW),
+                f("Acesso à localização", ScanFinding.Level.INFO),
+                f("Acesso a microfone/câmera", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(8, out.get(0).points);
+    }
+
     @Test public void correlatesAdministratorAndAccessibility() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Administrador do dispositivo ativo", ScanFinding.Level.HIGH),
