@@ -40,6 +40,7 @@ public final class ThreatCorrelationEngine {
         Map<String, Boolean> notification = new HashMap<>();
         Map<String, Boolean> boot = new HashMap<>();
         Map<String, Boolean> apkInstall = new HashMap<>();
+        Map<String, Boolean> dynamicCode = new HashMap<>();
         Map<String, Integer> sensitive = new HashMap<>();
 
         for (ScanFinding f : findings) {
@@ -55,6 +56,7 @@ public final class ThreatCorrelationEngine {
             if (t.contains("acesso a notificações ativo")) notification.put(p, true);
             if (t.contains("inicialização automática declarada")) boot.put(p, true);
             if (t.contains("pode solicitar instalação de apks")) apkInstall.put(p, true);
+            if (t.contains("carregamento dinâmico de código")) dynamicCode.put(p, true);
             if (t.contains("acesso a sms")
                     || t.contains("histórico de chamadas")
                     || t.contains("microfone/câmera")
@@ -157,6 +159,30 @@ public final class ThreatCorrelationEngine {
                         "O mesmo pacote possui serviço de acessibilidade ativo e acesso ativo às notificações.",
                         p, 4,
                         "Confirme que o aplicativo é reconhecido e que ambos os acessos são necessários"));
+            }
+        }
+
+        for (String p : dynamicCode.keySet()) {
+            boolean i = apkInstall.getOrDefault(p, false);
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean o = overlay.getOrDefault(p, false);
+            boolean r = remote.getOrDefault(p, false);
+            int s = sensitive.getOrDefault(p, 0);
+
+            if (i && (a || o || r)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de carregamento dinâmico e controle privilegiado",
+                        "O pacote combina capacidade de carregar código dinamicamente, solicitar instalação de APKs e outro mecanismo de controle privilegiado. Essa cadeia merece revisão aprofundada, mas ainda não prova execução de payload malicioso.",
+                        p, 8,
+                        "Revise a origem e assinatura do app; remova privilégios desnecessários e considere desinstalar se a combinação não for esperada"));
+            } else if (i || (s > 0 && (a || o || r))) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de carregamento dinâmico com capacidade sensível",
+                        "O pacote combina carregamento dinâmico de código com outra capacidade que pode ampliar o impacto de código obtido ou ativado posteriormente.",
+                        p, 5,
+                        "Confirme se plugins, módulos ou atualizações dinâmicas fazem parte da função legítima do aplicativo"));
             }
         }
 
