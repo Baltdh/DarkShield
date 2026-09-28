@@ -1,10 +1,13 @@
 package com.darkshield.security;
 
 import android.content.ClipData;
+import android.content.ClipDescription;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Build;
+import android.os.PersistableBundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.provider.Settings;
@@ -13,10 +16,12 @@ import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ClickableSpan;
 import android.view.View;
+import android.view.MotionEvent;
 import android.widget.Toast;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
@@ -74,6 +79,7 @@ public class MainActivity extends android.app.Activity {
         securitySettings = findViewById(R.id.settings);
         share = findViewById(R.id.share);
         copy = findViewById(R.id.copy);
+        protectSensitiveAction(remediation);
 
         scan.setOnClickListener(v -> startScan());
         cancelScan.setOnClickListener(v -> cancelActiveScan());
@@ -338,12 +344,14 @@ public class MainActivity extends android.app.Activity {
 
             Button open = new Button(this);
             open.setText("ABRIR CORREÇÃO");
+            protectSensitiveAction(open);
             open.setOnClickListener(v -> openRemediation(action));
             row.addView(open);
 
             if (action.uninstallCandidate) {
                 Button uninstall = new Button(this);
                 uninstall.setText("DESINSTALAR COM CONFIRMAÇÃO");
+                protectSensitiveAction(uninstall);
                 uninstall.setOnClickListener(v ->
                         requestPackageUninstall(action.packageName));
                 row.addView(uninstall);
@@ -352,11 +360,46 @@ public class MainActivity extends android.app.Activity {
             container.addView(row);
         }
 
-        new android.app.AlertDialog.Builder(this)
+        ScrollView dialogScroll = new ScrollView(this);
+        dialogScroll.setFillViewport(true);
+        dialogScroll.addView(container);
+
+        android.app.AlertDialog dialog = new android.app.AlertDialog.Builder(this)
                 .setTitle("Central de correções seguras")
-                .setView(container)
+                .setView(dialogScroll)
                 .setPositiveButton("FECHAR", null)
-                .show();
+                .create();
+        setOverlayProtection(true);
+        dialog.setOnDismissListener(ignored -> setOverlayProtection(false));
+        dialog.show();
+        protectSensitiveAction(dialog.getButton(android.app.AlertDialog.BUTTON_POSITIVE));
+    }
+
+    private void protectSensitiveAction(View view) {
+        if (view == null) return;
+        view.setFilterTouchesWhenObscured(true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            view.setOnTouchListener((v, event) -> {
+                if ((event.getFlags() & MotionEvent.FLAG_WINDOW_IS_PARTIALLY_OBSCURED) != 0) {
+                    if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                        Toast.makeText(this,
+                                "Ação bloqueada porque outra janela está cobrindo parte da tela.",
+                                Toast.LENGTH_SHORT).show();
+                    }
+                    return true;
+                }
+                return false;
+            });
+        }
+    }
+
+    private void setOverlayProtection(boolean enabled) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) return;
+        try {
+            getWindow().setHideOverlayWindows(enabled);
+        } catch (Exception ignored) {
+            // A proteção de toque por View continua ativa mesmo se o OEM não aceitar esta chamada.
+        }
     }
 
     private void requestPackageUninstall(String packageName) {
@@ -370,7 +413,7 @@ public class MainActivity extends android.app.Activity {
 
         try {
             Intent uninstall = new Intent(
-                    Intent.ACTION_DELETE, Uri.parse("package:" + packageName));
+                    Intent.ACTION_UNINSTALL_PACKAGE, Uri.parse("package:" + packageName));
             uninstall.putExtra(Intent.EXTRA_RETURN_RESULT, true);
             startActivity(uninstall);
         } catch (Exception first) {
@@ -628,9 +671,15 @@ public class MainActivity extends android.app.Activity {
             return;
         }
 
-        clipboard.setPrimaryClip(ClipData.newPlainText(
-                "DarkShield — Relatório de segurança", lastReport));
-        Toast.makeText(this, "Relatório copiado.", Toast.LENGTH_SHORT).show();
+        ClipData clipData = ClipData.newPlainText(
+                "DarkShield — Relatório de segurança", lastReport);
+        PersistableBundle extras = new PersistableBundle();
+        extras.putBoolean(ClipDescription.EXTRA_IS_SENSITIVE, true);
+        clipData.getDescription().setExtras(extras);
+        clipboard.setPrimaryClip(clipData);
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.S_V2) {
+            Toast.makeText(this, "Relatório copiado.", Toast.LENGTH_SHORT).show();
+        }
     }
 
     private void openSecuritySettings() {
