@@ -375,6 +375,9 @@ public class MainActivity extends android.app.Activity {
             case USAGE_ACCESS:
                 intent = new Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS);
                 break;
+            case BATTERY_OPTIMIZATION:
+                intent = new Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS);
+                break;
             case SECURITY:
                 intent = new Intent(Settings.ACTION_SECURITY_SETTINGS);
                 break;
