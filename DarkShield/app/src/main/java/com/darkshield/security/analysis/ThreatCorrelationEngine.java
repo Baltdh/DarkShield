@@ -41,6 +41,8 @@ public final class ThreatCorrelationEngine {
         Map<String, Boolean> boot = new HashMap<>();
         Map<String, Boolean> apkInstall = new HashMap<>();
         Map<String, Boolean> dynamicCode = new HashMap<>();
+        Map<String, Boolean> identityTamper = new HashMap<>();
+        Map<String, Boolean> installerChanged = new HashMap<>();
         Map<String, Integer> sensitive = new HashMap<>();
 
         for (ScanFinding f : findings) {
@@ -57,6 +59,11 @@ public final class ThreatCorrelationEngine {
             if (t.contains("inicialização automática declarada")) boot.put(p, true);
             if (t.contains("pode solicitar instalação de apks")) apkInstall.put(p, true);
             if (t.contains("carregamento dinâmico de código")) dynamicCode.put(p, true);
+            if (t.contains("assinatura do aplicativo alterada")
+                    || t.contains("downgrade de versão detectado")) {
+                identityTamper.put(p, true);
+            }
+            if (t.contains("origem de instalação alterada")) installerChanged.put(p, true);
             if (t.contains("acesso a sms")
                     || t.contains("histórico de chamadas")
                     || t.contains("microfone/câmera")
@@ -183,6 +190,38 @@ public final class ThreatCorrelationEngine {
                         "O pacote combina carregamento dinâmico de código com outra capacidade que pode ampliar o impacto de código obtido ou ativado posteriormente.",
                         p, 5,
                         "Confirme se plugins, módulos ou atualizações dinâmicas fazem parte da função legítima do aplicativo"));
+            }
+        }
+
+        for (String p : identityTamper.keySet()) {
+            boolean d = dynamicCode.getOrDefault(p, false);
+            boolean i = apkInstall.getOrDefault(p, false);
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean o = overlay.getOrDefault(p, false);
+            boolean r = remote.getOrDefault(p, false);
+            boolean m = admin.getOrDefault(p, false);
+
+            if (d || i || a || o || r || m) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de integridade do pacote e capacidade privilegiada",
+                        "O pacote apresenta mudança relevante de identidade/versão junto de uma capacidade que pode ampliar impacto ou persistência. A combinação merece revisão prioritária; ela ainda não identifica sozinha a causa da mudança.",
+                        p, 9,
+                        "Confirme a origem e assinatura; remova privilégios desnecessários e reinstale pela fonte oficial se a mudança não for esperada"));
+            }
+        }
+
+        for (String p : installerChanged.keySet()) {
+            boolean d = dynamicCode.getOrDefault(p, false);
+            boolean i = apkInstall.getOrDefault(p, false);
+            boolean r = remote.getOrDefault(p, false);
+            if (d || i || r) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de mudança de origem e capacidade de distribuição",
+                        "O instalador conhecido mudou desde a referência anterior e o pacote também apresenta capacidade de carregar código, instalar APKs ou acesso remoto heurístico.",
+                        p, 5,
+                        "Confirme se a mudança de origem foi intencional e compare a assinatura com a distribuição oficial"));
             }
         }
 
