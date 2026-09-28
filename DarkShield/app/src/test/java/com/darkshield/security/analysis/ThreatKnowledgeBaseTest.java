@@ -98,4 +98,22 @@ public class ThreatKnowledgeBaseTest {
         assertFalse(context.trim().isEmpty());
         assertTrue(context.contains("não é tratada como confirmação"));
     }
+    @Test public void keyboardCorrelationExplainsInputCaptureRisk() {
+        String annotation = ThreatKnowledgeBase.annotate(
+                "Correlação de teclado, acessibilidade e sobreposição");
+
+        assertNotNull(annotation);
+        assertTrue(annotation.contains("T1417"));
+        assertTrue(annotation.contains("não confirmação"));
+    }
+
+    @Test public void persistentSensitiveCollectionGetsSurveillanceContext() {
+        String annotation = ThreatKnowledgeBase.annotate(
+                "Correlação de persistência e coleta sensível");
+
+        assertNotNull(annotation);
+        assertTrue(annotation.contains("spyware/stalkerware"));
+        assertTrue(annotation.contains("aplicativos legítimos"));
+    }
+
 }
