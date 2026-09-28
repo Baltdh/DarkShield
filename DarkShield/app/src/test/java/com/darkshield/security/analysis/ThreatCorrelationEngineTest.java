@@ -73,6 +73,45 @@ public class ThreatCorrelationEngineTest {
         assertEquals(8, out.get(0).points);
     }
 
+    @Test public void packageIdentityChangeAloneDoesNotCreateDerivedCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Assinatura do aplicativo alterada", ScanFinding.Level.HIGH)));
+        assertTrue(out.isEmpty());
+    }
+
+    @Test public void correlatesPackageIdentityChangeWithAccessibility() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Assinatura do aplicativo alterada", ScanFinding.Level.HIGH),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(9, out.get(0).points);
+        assertTrue(out.get(0).title.contains("integridade do pacote"));
+    }
+
+    @Test public void correlatesDowngradeWithDynamicCodeLoading() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Downgrade de versão detectado", ScanFinding.Level.MEDIUM),
+                f("Capacidade de carregamento dinâmico de código", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(9, out.get(0).points);
+    }
+
+    @Test public void installerChangeNeedsCorroboration() {
+        assertTrue(ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Origem de instalação alterada", ScanFinding.Level.LOW))).isEmpty());
+
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Origem de instalação alterada", ScanFinding.Level.LOW),
+                f("Pode solicitar instalação de APKs", ScanFinding.Level.MEDIUM)));
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(5, out.get(0).points);
+    }
+
     @Test public void correlatesAdministratorAndAccessibility() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Administrador do dispositivo ativo", ScanFinding.Level.HIGH),
