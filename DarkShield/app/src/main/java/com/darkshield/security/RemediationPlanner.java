@@ -52,9 +52,6 @@ public final class RemediationPlanner {
             }
 
             String pkg = f.packageName.trim();
-            String key = f.level + "|" + pkg;
-            if (!seen.add(key)) continue;
-
             String title = f.title == null ? "" : f.title.toLowerCase(Locale.ROOT);
             Kind kind;
             if (title.contains("acessibilidade")) {
@@ -75,6 +72,9 @@ public final class RemediationPlanner {
             } else {
                 kind = Kind.APP_DETAILS;
             }
+
+            String key = pkg + "|" + kind;
+            if (!seen.add(key)) continue;
 
             boolean uninstallCandidate = f.level == ScanFinding.Level.CRITICAL
                     || f.level == ScanFinding.Level.HIGH;
