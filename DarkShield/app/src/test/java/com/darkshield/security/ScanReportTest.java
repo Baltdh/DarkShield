@@ -149,6 +149,22 @@ public class ScanReportTest {
         assertTrue(summary.contains("… e mais 1 pacote(s)"));
     }
 
+    @Test public void packageSummaryIncludesEvidenceClassification() {
+        ScanReport report = new ScanReport(java.util.Arrays.asList(
+                new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de carregamento dinâmico e controle privilegiado",
+                        "detail",
+                        "com.example.strong",
+                        8,
+                        null)));
+
+        assertEquals(
+                ThreatClassifier.Category.STRONG_THREAT_INDICATORS,
+                report.classificationForPackage("com.example.strong"));
+        assertTrue(report.packageSummary().contains("Indicadores fortes de ameaça"));
+    }
+
     @Test public void detailsShowsHeuristicImpactWhenPointsArePositive() {
         ScanReport report = new ScanReport(java.util.Arrays.asList(
                 new ScanFinding(ScanFinding.Level.MEDIUM, "Teste", "detail",
