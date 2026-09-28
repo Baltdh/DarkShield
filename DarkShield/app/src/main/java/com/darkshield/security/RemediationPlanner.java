@@ -18,6 +18,7 @@ public final class RemediationPlanner {
         WRITE_SETTINGS,
         UNKNOWN_SOURCES,
         USAGE_ACCESS,
+        BATTERY_OPTIMIZATION,
         SECURITY,
         APP_DETAILS
     }
@@ -36,6 +37,22 @@ public final class RemediationPlanner {
             this.kind = kind;
             this.uninstallCandidate = uninstallCandidate;
         }
+    }
+
+    private static String actionTitle(Kind kind, String packageName) {
+        String prefix;
+        switch (kind) {
+            case ACCESSIBILITY: prefix = "Revisar acessibilidade"; break;
+            case NOTIFICATIONS: prefix = "Revisar notificações"; break;
+            case OVERLAY: prefix = "Revisar sobreposição"; break;
+            case WRITE_SETTINGS: prefix = "Revisar configurações do sistema"; break;
+            case UNKNOWN_SOURCES: prefix = "Revisar instalação de APKs"; break;
+            case USAGE_ACCESS: prefix = "Revisar dados de uso"; break;
+            case BATTERY_OPTIMIZATION: prefix = "Revisar atividade em segundo plano"; break;
+            case SECURITY: prefix = "Revisar administrador do dispositivo"; break;
+            default: prefix = "Revisar aplicativo"; break;
+        }
+        return prefix + " • " + packageName;
     }
 
     private RemediationPlanner() {}
@@ -67,6 +84,8 @@ public final class RemediationPlanner {
                 kind = Kind.UNKNOWN_SOURCES;
             } else if (title.contains("dados de uso")) {
                 kind = Kind.USAGE_ACCESS;
+            } else if (title.contains("otimização de bateria")) {
+                kind = Kind.BATTERY_OPTIMIZATION;
             } else if (title.contains("administrador")) {
                 kind = Kind.SECURITY;
             } else {
@@ -80,7 +99,7 @@ public final class RemediationPlanner {
                     || f.level == ScanFinding.Level.HIGH;
             result.add(new Action(
                     pkg,
-                    "Revisar " + pkg,
+                    actionTitle(kind, pkg),
                     f.detail == null ? "Indicador que merece revisão." : f.detail,
                     kind,
                     uninstallCandidate));
