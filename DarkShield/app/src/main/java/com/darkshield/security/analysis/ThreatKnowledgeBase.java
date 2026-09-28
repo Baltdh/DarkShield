@@ -16,6 +16,12 @@ public final class ThreatKnowledgeBase {
         if (title == null) return null;
         String t = title.toLowerCase(Locale.ROOT);
 
+        if (t.contains("teclado") && (t.contains("acessibilidade") || t.contains("captura"))) {
+            return "MITRE ATT&CK Mobile T1417/T1417.001 (Input Capture/Keylogging): teclado de terceiros, acessibilidade e sobreposição são capacidades que podem ser abusadas para observar entrada. A correlação indica risco de captura, não confirmação de keylogging.";
+        }
+        if (t.contains("persistência") && t.contains("coleta sensível")) {
+            return "MITRE ATT&CK Mobile: persistência após boot combinada com acesso a localização, áudio/vídeo, mensagens ou notificações aumenta a prioridade de revisão para spyware/stalkerware. A combinação ainda pode existir em aplicativos legítimos.";
+        }
         if (t.contains("carregamento dinâmico")) {
             return "MITRE ATT&CK Mobile T1407 (Download New Code at Runtime): ameaças podem buscar ou ativar código após a instalação para escapar de análise estática. Referências a APIs de carregamento dinâmico também aparecem em apps legítimos, portanto esse sinal precisa ser correlacionado com origem, instalação de APKs e privilégios.";
         }
