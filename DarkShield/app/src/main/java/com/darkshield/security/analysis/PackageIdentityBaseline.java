@@ -45,6 +45,28 @@ public final class PackageIdentityBaseline {
         return previous != null && current != null && !previous.equals(current);
     }
 
+    public static boolean shouldUpdateSignerBaseline(
+            String previousSigner,
+            String currentSigner,
+            boolean previousSignerInCurrentLineage) {
+        String current = normalize(currentSigner);
+        if (current == null) return false;
+        return compareSigner(
+                previousSigner, currentSigner, previousSignerInCurrentLineage)
+                != SignerChange.UNEXPECTED_CHANGE;
+    }
+
+    public static boolean shouldUpdateVersionBaseline(
+            long previousVersion, long currentVersion) {
+        return currentVersion >= 0L && !isDowngrade(previousVersion, currentVersion);
+    }
+
+    public static boolean shouldUpdateInstallerBaseline(
+            String previousInstaller, String currentInstaller) {
+        String current = normalize(currentInstaller);
+        return current != null && !installerChanged(previousInstaller, currentInstaller);
+    }
+
     static String normalize(String value) {
         if (value == null) return null;
         String normalized = value.trim().toLowerCase(Locale.ROOT);
