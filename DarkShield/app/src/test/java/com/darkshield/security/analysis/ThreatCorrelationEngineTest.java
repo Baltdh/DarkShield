@@ -46,6 +46,33 @@ public class ThreatCorrelationEngineTest {
         assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
     }
 
+    @Test public void dynamicLoadingAloneDoesNotCreateCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Capacidade de carregamento dinâmico de código", ScanFinding.Level.LOW)));
+        assertTrue(out.isEmpty());
+    }
+
+    @Test public void correlatesDynamicLoadingWithApkInstall() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Capacidade de carregamento dinâmico de código", ScanFinding.Level.LOW),
+                f("Pode solicitar instalação de APKs", ScanFinding.Level.MEDIUM)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertTrue(out.get(0).title.contains("carregamento dinâmico"));
+    }
+
+    @Test public void correlatesDynamicLoadingApkInstallAndAccessibilityStrongly() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Capacidade de carregamento dinâmico de código", ScanFinding.Level.LOW),
+                f("Pode solicitar instalação de APKs", ScanFinding.Level.MEDIUM),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(8, out.get(0).points);
+    }
+
     @Test public void correlatesAdministratorAndAccessibility() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Administrador do dispositivo ativo", ScanFinding.Level.HIGH),
