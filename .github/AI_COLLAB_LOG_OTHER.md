@@ -44,3 +44,12 @@ Use este arquivo para registrar a passagem de trabalho para o GPT-5.6 Luna.
 - Manter DCL, origem desconhecida, VPN e permissões isoladas como sinais heurísticos; não converter um único sinal em veredicto de malware.
 - Uma reputação externa por SHA-256 pode ser adicionada no futuro somente com fonte/API compatível e tratamento de privacidade, limites e autenticação.
 - Ações destrutivas devem continuar exigindo confirmação do usuário e respeitando as telas/permissões oficiais do Android.
+
+
+### Fechamento da validação — 2026-09-28
+- HEAD final validado: `15638e3b8475fb6ca0c46c3f0e6b47047d066e10`.
+- GitHub Actions run #529 (`36487930387`) concluiu com `success`.
+- Passaram: validação do projeto, `assembleDebug`, testes unitários, `assembleRelease`, `lintDebug`, localização/verificação do APK (incluindo alinhamento e assinatura) e upload do APK debug.
+- A falha unitária observada durante a integração foi corrigida elevando a correlação corroborada de origem desconhecida + carregamento dinâmico para 6 pontos MEDIUM, garantindo que a explicação específica prevaleça sobre a regra genérica sem classificá-la como malware confirmado.
+- A Central de correções endurecida foi integrada diretamente ao `main`: lista rolável, fluxo oficial de desinstalação com confirmação, proteção contra toques obscurecidos/tapjacking, ocultação de overlays no Android 12+ e clipboard marcado como sensível.
+- O workflow agora usa concorrência por ref, evitando que pushes em branches/PRs cancelem a validação do `main`.
