@@ -7,6 +7,11 @@ on:
       - "DarkShield/**"
       - ".github/workflows/android-apk.yml"
       - "README.md"
+  pull_request:
+    paths:
+      - "DarkShield/**"
+      - ".github/workflows/android-apk.yml"
+      - "README.md"
 
 permissions:
   contents: read
