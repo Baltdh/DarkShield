@@ -337,11 +337,17 @@ public class MainActivity extends android.app.Activity {
             row.addView(reason);
 
             Button open = new Button(this);
-            open.setText(action.uninstallCandidate
-                    ? "REVISAR / DESINSTALAR NO ANDROID"
-                    : "ABRIR CORREÇÃO");
+            open.setText("ABRIR CORREÇÃO");
             open.setOnClickListener(v -> openRemediation(action));
             row.addView(open);
+
+            if (action.uninstallCandidate) {
+                Button uninstall = new Button(this);
+                uninstall.setText("DESINSTALAR COM CONFIRMAÇÃO");
+                uninstall.setOnClickListener(v ->
+                        requestPackageUninstall(action.packageName));
+                row.addView(uninstall);
+            }
 
             container.addView(row);
         }
@@ -351,6 +357,33 @@ public class MainActivity extends android.app.Activity {
                 .setView(container)
                 .setPositiveButton("FECHAR", null)
                 .show();
+    }
+
+    private void requestPackageUninstall(String packageName) {
+        if (packageName == null || packageName.trim().isEmpty()
+                || getPackageName().equals(packageName)) {
+            Toast.makeText(this,
+                    "Não é possível iniciar a remoção deste pacote.",
+                    Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        try {
+            Intent uninstall = new Intent(
+                    Intent.ACTION_DELETE, Uri.parse("package:" + packageName));
+            uninstall.putExtra(Intent.EXTRA_RETURN_RESULT, true);
+            startActivity(uninstall);
+        } catch (Exception first) {
+            try {
+                startActivity(new Intent(
+                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                        Uri.parse("package:" + packageName)));
+            } catch (Exception second) {
+                Toast.makeText(this,
+                        "O Android não disponibilizou a tela de desinstalação.",
+                        Toast.LENGTH_SHORT).show();
+            }
+        }
     }
 
     private void openRemediation(RemediationPlanner.Action action) {
