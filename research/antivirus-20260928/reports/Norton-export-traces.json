@@ -1,0 +1,162 @@
+[
+  {
+    "module": "AvPreScn.dll",
+    "sha256": "0bc0cd2c18a8b4439fe70e4da09afca938f1fdab7e27b7ab0b9a3f0b788acf66",
+    "exports": [
+      {
+        "export": "GetDebugOutput",
+        "entry_rva": "0x1828",
+        "blocks": 1,
+        "instructions": 2,
+        "named_import_references": [],
+        "unresolved_indirect_transfers": 0,
+        "pending_blocks": 0,
+        "scope": "At most 64 blocks / 2048 instructions / two direct call levels; no runtime reachability proof."
+      },
+      {
+        "export": "GetFactory",
+        "entry_rva": "0x1e4d",
+        "blocks": 64,
+        "instructions": 898,
+        "named_import_references": [
+          "KERNEL32.dll:FreeLibrary",
+          "KERNEL32.dll:GetModuleFileNameW",
+          "SHLWAPI.dll:PathAddBackslashW",
+          "SHLWAPI.dll:PathRemoveFileSpecW",
+          "VCRUNTIME140.dll:memset",
+          "api-ms-win-crt-string-l1-1-0.dll:wcscat_s"
+        ],
+        "unresolved_indirect_transfers": 5,
+        "pending_blocks": 30,
+        "scope": "At most 64 blocks / 2048 instructions / two direct call levels; no runtime reachability proof."
+      },
+      {
+        "export": "GetObjectCount",
+        "entry_rva": "0x1e47",
+        "blocks": 1,
+        "instructions": 2,
+        "named_import_references": [],
+        "unresolved_indirect_transfers": 0,
+        "pending_blocks": 0,
+        "scope": "At most 64 blocks / 2048 instructions / two direct call levels; no runtime reachability proof."
+      },
+      {
+        "export": "PostRebootProc",
+        "entry_rva": "0x20c1",
+        "blocks": 6,
+        "instructions": 31,
+        "named_import_references": [
+          "ADVAPI32.dll:TraceMessage"
+        ],
+        "unresolved_indirect_transfers": 0,
+        "pending_blocks": 0,
+        "scope": "At most 64 blocks / 2048 instructions / two direct call levels; no runtime reachability proof."
+      }
+    ]
+  },
+  {
+    "module": "ccScanw.dll",
+    "sha256": "66e701dc92a5a25ee7891986cedab27aeed94868ddc49c51f9cfa709266cd060",
+    "exports": [
+      {
+        "export": "GetFactory",
+        "entry_rva": "0x21e88",
+        "blocks": 64,
+        "instructions": 564,
+        "named_import_references": [
+          "KERNEL32.dll:GetCurrentProcessId",
+          "KERNEL32.dll:GetCurrentThreadId",
+          "KERNEL32.dll:GetSystemTimeAsFileTime",
+          "KERNEL32.dll:QueryPerformanceCounter",
+          "api-ms-win-crt-heap-l1-1-0.dll:_callnewh",
+          "api-ms-win-crt-heap-l1-1-0.dll:malloc"
+        ],
+        "unresolved_indirect_transfers": 0,
+        "pending_blocks": 12,
+        "scope": "At most 64 blocks / 2048 instructions / two direct call levels; no runtime reachability proof."
+      },
+      {
+        "export": "GetObjectCount",
+        "entry_rva": "0x21e82",
+        "blocks": 1,
+        "instructions": 2,
+        "named_import_references": [],
+        "unresolved_indirect_transfers": 0,
+        "pending_blocks": 0,
+        "scope": "At most 64 blocks / 2048 instructions / two direct call levels; no runtime reachability proof."
+      },
+      {
+        "export": "_filelengthi64",
+        "entry_rva": "0x11eb30",
+        "blocks": 1,
+        "instructions": 3,
+        "named_import_references": [],
+        "unresolved_indirect_transfers": 0,
+        "pending_blocks": 0,
+        "scope": "At most 64 blocks / 2048 instructions / two direct call levels; no runtime reachability proof."
+      }
+    ]
+  },
+  {
+    "module": "sds_loader_x86.dll",
+    "sha256": "f4922ddf61b225dfd812f241365c65a2f90d84d3dfbb61c5374186c3d45bd7bb",
+    "exports": [
+      {
+        "export": "SDSInitialize",
+        "entry_rva": "0x10d0",
+        "blocks": 64,
+        "instructions": 316,
+        "named_import_references": [
+          "KERNEL32.dll:FreeLibrary",
+          "KERNEL32.dll:GetProcAddress",
+          "KERNEL32.dll:HeapAlloc"
+        ],
+        "unresolved_indirect_transfers": 0,
+        "pending_blocks": 18,
+        "scope": "At most 64 blocks / 2048 instructions / two direct call levels; no runtime reachability proof."
+      },
+      {
+        "export": "SDSLoaderGetHandle",
+        "entry_rva": "0x1120",
+        "blocks": 64,
+        "instructions": 343,
+        "named_import_references": [
+          "KERNEL32.dll:FreeLibrary",
+          "KERNEL32.dll:GetProcAddress",
+          "KERNEL32.dll:GetVersionExA",
+          "KERNEL32.dll:HeapAlloc",
+          "KERNEL32.dll:LoadLibraryW"
+        ],
+        "unresolved_indirect_transfers": 0,
+        "pending_blocks": 22,
+        "scope": "At most 64 blocks / 2048 instructions / two direct call levels; no runtime reachability proof."
+      },
+      {
+        "export": "SDSLoaderReleaseHandle",
+        "entry_rva": "0x1270",
+        "blocks": 12,
+        "instructions": 85,
+        "named_import_references": [
+          "KERNEL32.dll:FreeLibrary",
+          "KERNEL32.dll:GetLastError",
+          "KERNEL32.dll:HeapFree"
+        ],
+        "unresolved_indirect_transfers": 1,
+        "pending_blocks": 0,
+        "scope": "At most 64 blocks / 2048 instructions / two direct call levels; no runtime reachability proof."
+      },
+      {
+        "export": "SDSReleaseUnusedResources",
+        "entry_rva": "0x12f0",
+        "blocks": 13,
+        "instructions": 81,
+        "named_import_references": [
+          "KERNEL32.dll:FreeLibrary"
+        ],
+        "unresolved_indirect_transfers": 1,
+        "pending_blocks": 0,
+        "scope": "At most 64 blocks / 2048 instructions / two direct call levels; no runtime reachability proof."
+      }
+    ]
+  }
+]
