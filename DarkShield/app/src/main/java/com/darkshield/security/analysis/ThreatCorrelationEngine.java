@@ -48,6 +48,7 @@ public final class ThreatCorrelationEngine {
         Map<String, Boolean> identityTamper = new HashMap<>();
         Map<String, Boolean> installerChanged = new HashMap<>();
         Map<String, Boolean> thirdPartyKeyboard = new HashMap<>();
+        Map<String, Boolean> embeddedPayload = new HashMap<>();
         Map<String, Boolean> location = new HashMap<>();
         Map<String, Boolean> media = new HashMap<>();
         Map<String, Boolean> messaging = new HashMap<>();
@@ -77,6 +78,7 @@ public final class ThreatCorrelationEngine {
             }
             if (t.contains("origem de instalação alterada")) installerChanged.put(p, true);
             if (t.contains("teclado de terceiros ativo")) thirdPartyKeyboard.put(p, true);
+            if (t.contains("payload de pacote embutido")) embeddedPayload.put(p, true);
             if (t.contains("acesso à localização")) location.put(p, true);
             if (t.contains("microfone/câmera")) media.put(p, true);
             if (t.contains("acesso a sms") || t.contains("histórico de chamadas")) {
@@ -208,6 +210,27 @@ public final class ThreatCorrelationEngine {
                         "O pacote combina carregamento dinâmico de código com outra capacidade que pode ampliar o impacto de código obtido ou ativado posteriormente.",
                         p, 5,
                         "Confirme se plugins, módulos ou atualizações dinâmicas fazem parte da função legítima do aplicativo"));
+            }
+        }
+
+        for (String p : embeddedPayload.keySet()) {
+            boolean i = apkInstall.getOrDefault(p, false);
+            boolean d = dynamicCode.getOrDefault(p, false);
+
+            if (i && d) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de payload embutido, instalação e código dinâmico",
+                        "O pacote contém APK/JAR embutido, pode solicitar instalação de APKs e referencia carregamento dinâmico. Essa cadeia é compatível com capacidade de dropper/loader, mas não confirma que o payload seja malicioso.",
+                        p, 8,
+                        "Confirme a origem e assinatura do aplicativo e revise se essa função de módulos/instalação é esperada"));
+            } else if (i || d) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de payload embutido com execução/distribuição",
+                        "O pacote contém APK/JAR embutido e também apresenta capacidade de instalar APKs ou carregar código dinamicamente.",
+                        p, 5,
+                        "Revise a finalidade do payload embutido e compare o aplicativo com sua distribuição oficial"));
             }
         }
 
