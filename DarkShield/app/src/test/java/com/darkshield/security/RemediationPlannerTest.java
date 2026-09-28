@@ -77,4 +77,21 @@ public class RemediationPlannerTest {
         assertFalse(actions.get(0).uninstallCandidate);
     }
 
+    @Test public void activeDeviceAdminRequiresPrivilegeReviewBeforeUninstall() {
+        ScanFinding finding = new ScanFinding(
+                ScanFinding.Level.HIGH,
+                "Administrador do dispositivo ativo",
+                "Administrador ativo",
+                "com.example.admin",
+                8,
+                "Revise");
+
+        List<RemediationPlanner.Action> actions =
+                RemediationPlanner.plan(Arrays.asList(finding));
+
+        assertEquals(1, actions.size());
+        assertEquals(RemediationPlanner.Kind.SECURITY, actions.get(0).kind);
+        assertFalse(actions.get(0).uninstallCandidate);
+    }
+
 }
