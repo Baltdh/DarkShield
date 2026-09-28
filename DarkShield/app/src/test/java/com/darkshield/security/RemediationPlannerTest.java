@@ -33,4 +33,30 @@ public class RemediationPlannerTest {
                 null);
         assertTrue(RemediationPlanner.plan(Arrays.asList(finding)).isEmpty());
     }
+    @Test public void preservesDistinctActionsAtSameSeverityForSameApp() {
+        ScanFinding accessibility = new ScanFinding(
+                ScanFinding.Level.HIGH,
+                "Serviço de acessibilidade ativo",
+                "Acessibilidade ativa",
+                "com.example.suspicious",
+                8,
+                "Revise");
+        ScanFinding overlay = new ScanFinding(
+                ScanFinding.Level.HIGH,
+                "Permissão de sobreposição concedida",
+                "Sobreposição ativa",
+                "com.example.suspicious",
+                7,
+                "Revise");
+
+        List<RemediationPlanner.Action> actions =
+                RemediationPlanner.plan(Arrays.asList(accessibility, overlay));
+
+        assertEquals(2, actions.size());
+        assertEquals(RemediationPlanner.Kind.ACCESSIBILITY, actions.get(0).kind);
+        assertEquals(RemediationPlanner.Kind.OVERLAY, actions.get(1).kind);
+        assertTrue(actions.get(0).uninstallCandidate);
+        assertTrue(actions.get(1).uninstallCandidate);
+    }
+
 }
