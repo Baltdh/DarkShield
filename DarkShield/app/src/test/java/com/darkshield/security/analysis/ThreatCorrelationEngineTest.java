@@ -127,6 +127,18 @@ public class ThreatCorrelationEngineTest {
         assertTrue(out.get(0).title.contains("acessibilidade"));
     }
 
+    @Test public void correlatesActiveAccessibilityWithOverlayWithoutPersistence() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),
+                f("Permissão de sobreposição concedida", ScanFinding.Level.MEDIUM)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(5, out.get(0).points);
+        assertTrue(out.get(0).title.contains("sobreposição"));
+        assertTrue(out.get(0).detail.contains("não prova"));
+    }
+
     @Test public void correlatesActiveAccessibilityWithNotifications() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),
