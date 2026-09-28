@@ -143,7 +143,14 @@ public final class ThreatCorrelationEngine {
                         "Confirme a origem do aplicativo e verifique se as três capacidades são realmente necessárias"));
             }
 
-            if (a && n && !r && !o && !b) {
+            if (a && o && !r && !b) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de acessibilidade e sobreposição",
+                        "O mesmo pacote possui serviço de acessibilidade ativo e permissão de sobreposição. Essa combinação pode permitir observar ou interferir com interfaces de outros aplicativos; isoladamente, não prova captura de entrada nem malware.",
+                        p, 5,
+                        "Confirme a origem do aplicativo e se acessibilidade e sobreposição são realmente necessárias"));
+            } else if (a && n && !r && !o && !b) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,
                         "Correlação de acessibilidade e notificações",
