@@ -36,4 +36,22 @@ public class PackageIdentityBaselineTest {
         assertFalse(PackageIdentityBaseline.installerChanged(
                 "com.android.vending", null));
     }
+    @Test public void suspiciousIdentityStateDoesNotReplaceTrustedBaseline() {
+        assertFalse(PackageIdentityBaseline.shouldUpdateSignerBaseline(
+                "OLD", "NEW", false));
+        assertFalse(PackageIdentityBaseline.shouldUpdateVersionBaseline(
+                20L, 19L));
+        assertFalse(PackageIdentityBaseline.shouldUpdateInstallerBaseline(
+                "com.android.vending", "com.example.store"));
+    }
+
+    @Test public void legitimateIdentityEvolutionCanAdvanceBaseline() {
+        assertTrue(PackageIdentityBaseline.shouldUpdateSignerBaseline(
+                "OLD", "NEW", true));
+        assertTrue(PackageIdentityBaseline.shouldUpdateVersionBaseline(
+                20L, 21L));
+        assertTrue(PackageIdentityBaseline.shouldUpdateInstallerBaseline(
+                null, "com.android.vending"));
+    }
+
 }
