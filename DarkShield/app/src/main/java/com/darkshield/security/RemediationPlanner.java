@@ -95,8 +95,9 @@ public final class RemediationPlanner {
             String key = pkg + "|" + kind;
             if (!seen.add(key)) continue;
 
-            boolean uninstallCandidate = f.level == ScanFinding.Level.CRITICAL
-                    || f.level == ScanFinding.Level.HIGH;
+            boolean uninstallCandidate = (f.level == ScanFinding.Level.CRITICAL
+                    || f.level == ScanFinding.Level.HIGH)
+                    && kind != Kind.SECURITY;
             result.add(new Action(
                     pkg,
                     actionTitle(kind, pkg),
