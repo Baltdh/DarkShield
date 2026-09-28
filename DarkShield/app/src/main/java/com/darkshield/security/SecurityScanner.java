@@ -1197,14 +1197,18 @@ public final class SecurityScanner {
         // Otherwise a suspicious replacement would become the new "normal" on
         // the next scan and the warning would disappear automatically.
         android.content.SharedPreferences.Editor editor = prefs.edit();
-        if (currentSigner != null && !unexpectedSignerChange) {
+        if (PackageIdentityBaseline.shouldUpdateSignerBaseline(
+                previousSigner,
+                currentSigner,
+                signerHistoryContains(p, previousSigner))) {
             editor.putString(signerKey, currentSigner);
         }
-        if (currentVersion >= 0L && !downgrade) {
+        if (PackageIdentityBaseline.shouldUpdateVersionBaseline(
+                previousVersion, currentVersion)) {
             editor.putLong(versionKey, currentVersion);
         }
-        if (currentInstaller != null && !currentInstaller.trim().isEmpty()
-                && !changedInstaller) {
+        if (PackageIdentityBaseline.shouldUpdateInstallerBaseline(
+                previousInstaller, currentInstaller)) {
             editor.putString(installerKey, currentInstaller);
         }
         editor.apply();
