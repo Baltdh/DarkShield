@@ -16,6 +16,12 @@ public final class ThreatKnowledgeBase {
         if (title == null) return null;
         String t = title.toLowerCase(Locale.ROOT);
 
+        if (t.contains("carregamento dinâmico")) {
+            return "MITRE ATT&CK Mobile T1407 (Download New Code at Runtime): ameaças podem buscar ou ativar código após a instalação para escapar de análise estática. Referências a APIs de carregamento dinâmico também aparecem em apps legítimos, portanto esse sinal precisa ser correlacionado com origem, instalação de APKs e privilégios.";
+        }
+        if (t.contains("acessibilidade") && t.contains("sobreposição")) {
+            return "MITRE ATT&CK Mobile T1453 (Abuse Accessibility Features) e T1417.002 (GUI Input Capture): a combinação de acessibilidade e sobreposição pode ser abusada para observar ou imitar interfaces; a presença das capacidades não confirma captura de credenciais.";
+        }
         if (t.contains("controle remoto") || t.contains("acesso remoto")) {
             return "MITRE ATT&CK Mobile T1663 (Remote Access Software): acesso remoto legítimo também existe; esse sinal isolado não prova abuso, e a correlação com outras capacidades é o que aumenta a prioridade.";
         }
