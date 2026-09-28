@@ -73,6 +73,65 @@ public class ThreatCorrelationEngineTest {
         assertEquals(8, out.get(0).points);
     }
 
+    @Test public void correlatesBootAndBatteryExemptionAsPersistence() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Inicialização automática declarada", ScanFinding.Level.LOW),
+                f("Exceção de otimização de bateria ativa", ScanFinding.Level.MEDIUM)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertTrue(out.get(0).title.contains("persistência"));
+    }
+
+    @Test public void privilegedPersistentAppRaisesStrongerCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Inicialização automática declarada", ScanFinding.Level.LOW),
+                f("Exceção de otimização de bateria ativa", ScanFinding.Level.MEDIUM),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(7, out.get(0).points);
+    }
+
+    @Test public void unknownOriginAloneDoesNotCreateCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Origem de instalação não identificada", ScanFinding.Level.INFO)));
+        assertTrue(out.isEmpty());
+    }
+
+    @Test public void correlatesUnknownOriginDynamicCodeAndApkInstall() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Origem de instalação não identificada", ScanFinding.Level.INFO),
+                f("Capacidade de carregamento dinâmico de código", ScanFinding.Level.LOW),
+                f("Pode solicitar instalação de APKs", ScanFinding.Level.MEDIUM)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertTrue(out.get(0).detail.contains("Origem desconhecida isoladamente"));
+    }
+
+    @Test public void correlatesVpnWithAccessibility() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Serviço VPN declarado", ScanFinding.Level.MEDIUM),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertTrue(out.get(0).title.contains("VPN"));
+    }
+
+    @Test public void correlatesExposedProviderWithSensitivePrivilegedAccess() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Content provider exportado sem proteção", ScanFinding.Level.LOW),
+                f("Acesso a SMS", ScanFinding.Level.MEDIUM),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertTrue(out.get(0).title.contains("superfície exposta"));
+    }
+
     @Test public void packageIdentityChangeAloneDoesNotCreateDerivedCorrelation() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Assinatura do aplicativo alterada", ScanFinding.Level.HIGH)));
