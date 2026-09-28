@@ -1142,6 +1142,7 @@ public final class SecurityScanner {
         String previousInstaller = prefs.getString(installerKey, null);
         long currentVersion = packageVersionCode(p);
 
+        boolean unexpectedSignerChange = false;
         if (previousSigner != null && currentSigner != null) {
             PackageIdentityBaseline.SignerChange signerChange =
                     PackageIdentityBaseline.compareSigner(
@@ -1157,6 +1158,7 @@ public final class SecurityScanner {
                         "Nenhuma ação é necessária se a atualização veio de uma origem confiável"));
             } else if (signerChange
                     == PackageIdentityBaseline.SignerChange.UNEXPECTED_CHANGE) {
+                unexpectedSignerChange = true;
                 out.add(new ScanFinding(
                         ScanFinding.Level.HIGH,
                         "Assinatura do aplicativo alterada",
@@ -1166,7 +1168,9 @@ public final class SecurityScanner {
             }
         }
 
-        if (PackageIdentityBaseline.isDowngrade(previousVersion, currentVersion)) {
+        boolean downgrade =
+                PackageIdentityBaseline.isDowngrade(previousVersion, currentVersion);
+        if (downgrade) {
             out.add(new ScanFinding(
                     ScanFinding.Level.MEDIUM,
                     "Downgrade de versão detectado",
@@ -1176,8 +1180,9 @@ public final class SecurityScanner {
                     "Confirme se a instalação de uma versão anterior foi intencional"));
         }
 
-        if (PackageIdentityBaseline.installerChanged(
-                previousInstaller, currentInstaller)) {
+        boolean changedInstaller = PackageIdentityBaseline.installerChanged(
+                previousInstaller, currentInstaller);
+        if (changedInstaller) {
             out.add(new ScanFinding(
                     ScanFinding.Level.LOW,
                     "Origem de instalação alterada",
@@ -1188,10 +1193,18 @@ public final class SecurityScanner {
                     "Confirme se a mudança de loja, restaurador ou instalador foi intencional"));
         }
 
+        // Never replace a trusted baseline with a state that was just flagged.
+        // Otherwise a suspicious replacement would become the new "normal" on
+        // the next scan and the warning would disappear automatically.
         android.content.SharedPreferences.Editor editor = prefs.edit();
-        if (currentSigner != null) editor.putString(signerKey, currentSigner);
-        if (currentVersion >= 0L) editor.putLong(versionKey, currentVersion);
-        if (currentInstaller != null && !currentInstaller.trim().isEmpty()) {
+        if (currentSigner != null && !unexpectedSignerChange) {
+            editor.putString(signerKey, currentSigner);
+        }
+        if (currentVersion >= 0L && !downgrade) {
+            editor.putLong(versionKey, currentVersion);
+        }
+        if (currentInstaller != null && !currentInstaller.trim().isEmpty()
+                && !changedInstaller) {
             editor.putString(installerKey, currentInstaller);
         }
         editor.apply();
