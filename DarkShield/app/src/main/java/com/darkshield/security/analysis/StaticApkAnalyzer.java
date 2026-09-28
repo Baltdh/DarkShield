@@ -109,6 +109,7 @@ public final class StaticApkAnalyzer {
         List<String> suspiciousResourceMarkers = new ArrayList<>();
         List<String> suspiciousContent = new ArrayList<>();
         List<String> dynamicCodeContent = new ArrayList<>();
+        List<String> embeddedPackages = new ArrayList<>();
         long contentScanned = 0L;
         boolean contentSampleReadFailure = false;
 
@@ -138,6 +139,11 @@ public final class StaticApkAnalyzer {
                 if ("resources.arsc".equals(lower)) resources = true;
                 if (lower.endsWith(".dex")) dex++;
                 if (lower.startsWith("lib/") && lower.endsWith(".so")) nativeLibs++;
+                if (!lower.startsWith("meta-inf/")
+                        && (lower.endsWith(".apk") || lower.endsWith(".jar"))) {
+                    addCappedMarker(
+                            embeddedPackages, name, MAX_SUSPICIOUS_CONTENT_HITS);
+                }
 
                 if (containsSuspiciousMarker(lower)) {
                     if (isExecutableEntry(lower)) {
@@ -232,6 +238,24 @@ public final class StaticApkAnalyzer {
                         "Pelo menos uma entrada de DEX/biblioteca não pôde ser lida para a amostragem estática; a ausência de marcador nessa entrada não deve ser interpretada como ausência de risco.",
                         packageName, 0,
                         "Repita a análise com um APK íntegro ou faça uma inspeção separada do arquivo"));
+            }
+
+            if (!embeddedPackages.isEmpty()) {
+                embeddedPackages.sort(StaticApkAnalyzer::compareMarker);
+                StringBuilder detail = new StringBuilder();
+                int shown = Math.min(6, embeddedPackages.size());
+                for (int i = 0; i < shown; i++) {
+                    if (i > 0) detail.append(", ");
+                    detail.append(embeddedPackages.get(i));
+                }
+                if (embeddedPackages.size() > shown) detail.append(" …");
+                out.add(new ScanFinding(
+                        ScanFinding.Level.LOW,
+                        "Payload de pacote embutido",
+                        "O APK contém outro arquivo APK/JAR empacotado: " + detail
+                                + ". Apps legítimos podem distribuir módulos ou conteúdo dessa forma; o sinal isolado não prova comportamento de dropper.",
+                        packageName, 2,
+                        "Correlacione com instalação de APKs, carregamento dinâmico e origem do aplicativo"));
             }
 
             if (!dynamicCodeContent.isEmpty()) {
