@@ -26,19 +26,19 @@ DarkShield é um auditor local de segurança para Android. O objetivo é reunir 
 - proxy HTTP/HTTPS observado pela rede;
 - origem de instalação conhecida quando o Android a disponibiliza;
 - assinatura SHA-256 do(s) certificado(s) do aplicativo, usando o certificado atual quando há rotação e listando múltiplos signatários em ordem determinística;
-- análise estática básica da estrutura ZIP de APKs instalados;
+- análise estática básica da estrutura ZIP de APKs instalados, incluindo detecção conservadora de referências a APIs de carregamento dinâmico de código;
 - componentes Android exportados e proteção explícita por permissão, incluindo Activities, serviços, receivers e providers; componentes públicos comuns são mantidos como informação, enquanto providers exportados sem `readPermission`/`writePermission` explícitas recebem um alerta pontuado;
 - indicadores heurísticos associados a aplicativos de acesso remoto;
-- correlação entre sinais do mesmo pacote para destacar combinações que merecem revisão;
+- correlação entre sinais do mesmo pacote para destacar combinações que merecem revisão, incluindo carregamento dinâmico + instalação de APKs/privilégios e mudanças de identidade/versão + capacidades privilegiadas;
 - metadados de aplicativos como target SDK muito antigo, `testOnly` e uso permitido de cleartext;
 - aplicativo padrão de SMS e aplicativo padrão de chamadas, mantidos como informação de revisão porque podem lidar diretamente com comunicações do dispositivo;
-- resumo por pacote com maior severidade, quantidade de achados e pontos brutos para facilitar a revisão.
+- resumo por pacote com maior severidade, quantidade de achados, pontos brutos e uma classificação de evidência que separa informação, privacidade, capacidades para revisão, comportamento suspeito e indicadores fortes de ameaça.
 
 ## Limitações importantes
 
 DarkShield não é um antivírus baseado em assinatura e não pode garantir que um aparelho está livre de malware. Um indicador isolado não prova invasão, stalkerware ou acesso remoto.
 
-A análise estática atual examina a estrutura ZIP, nomes de entradas e amostras limitadas do início e do final do conteúdo de DEX/bibliotecas em busca de marcadores heurísticos; ela não executa o APK e não substitui análise dinâmica, engenharia reversa ou verificação de reputação do arquivo. Marcadores em recursos não executáveis são tratados como informação técnica sem pontuação isolada.
+A análise estática atual examina a estrutura ZIP, nomes de entradas e amostras limitadas do início e do final do conteúdo de DEX/bibliotecas em busca de marcadores heurísticos e referências específicas a carregadores dinâmicos; ela não executa o APK e não substitui análise dinâmica, engenharia reversa ou verificação de reputação do arquivo. O uso de APIs como DexClassLoader é tratado como capacidade de baixa confiança e não como prova de malware. Marcadores em recursos não executáveis são tratados como informação técnica sem pontuação isolada.
 
 O scanner usa apenas APIs e informações acessíveis a um aplicativo Android sem root. Alguns estados são protegidos pelo sistema operacional e podem aparecer como não disponíveis. Quando a lista de aplicativos não pode ser obtida, a verificação registra explicitamente que o inventário está incompleto em vez de tratar o resultado como uma varredura normal sem aplicativos.
 
