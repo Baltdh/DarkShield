@@ -47,6 +47,10 @@ public final class ThreatCorrelationEngine {
         Map<String, Boolean> unknownOrigin = new HashMap<>();
         Map<String, Boolean> identityTamper = new HashMap<>();
         Map<String, Boolean> installerChanged = new HashMap<>();
+        Map<String, Boolean> thirdPartyKeyboard = new HashMap<>();
+        Map<String, Boolean> location = new HashMap<>();
+        Map<String, Boolean> media = new HashMap<>();
+        Map<String, Boolean> messaging = new HashMap<>();
         Map<String, Integer> sensitive = new HashMap<>();
 
         for (ScanFinding f : findings) {
@@ -72,6 +76,12 @@ public final class ThreatCorrelationEngine {
                 identityTamper.put(p, true);
             }
             if (t.contains("origem de instalação alterada")) installerChanged.put(p, true);
+            if (t.contains("teclado de terceiros ativo")) thirdPartyKeyboard.put(p, true);
+            if (t.contains("acesso à localização")) location.put(p, true);
+            if (t.contains("microfone/câmera")) media.put(p, true);
+            if (t.contains("acesso a sms") || t.contains("histórico de chamadas")) {
+                messaging.put(p, true);
+            }
             if (t.contains("acesso a sms")
                     || t.contains("histórico de chamadas")
                     || t.contains("microfone/câmera")
@@ -198,6 +208,56 @@ public final class ThreatCorrelationEngine {
                         "O pacote combina carregamento dinâmico de código com outra capacidade que pode ampliar o impacto de código obtido ou ativado posteriormente.",
                         p, 5,
                         "Confirme se plugins, módulos ou atualizações dinâmicas fazem parte da função legítima do aplicativo"));
+            }
+        }
+
+        for (String p : thirdPartyKeyboard.keySet()) {
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean o = overlay.getOrDefault(p, false);
+            boolean b = boot.getOrDefault(p, false);
+
+            if (a && o) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de teclado, acessibilidade e sobreposição",
+                        "O mesmo pacote está ativo como teclado de terceiros e também possui acessibilidade ativa e sobreposição. Essa combinação pode ampliar a capacidade de observar ou interferir com entrada do usuário, mas não prova keylogging.",
+                        p, 8,
+                        "Confirme se o teclado é reconhecido e se acessibilidade/sobreposição são realmente necessárias"));
+            } else if (a || o || b) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de teclado com capacidade de captura",
+                        "O teclado de terceiros também apresenta uma capacidade adicional relacionada a observação, sobreposição ou persistência.",
+                        p, 5,
+                        "Revise o teclado e remova privilégios adicionais que não façam parte da função esperada"));
+            }
+        }
+
+        java.util.Set<String> surveillancePackages = new java.util.HashSet<>();
+        surveillancePackages.addAll(boot.keySet());
+        surveillancePackages.retainAll(sensitive.keySet());
+        for (String p : surveillancePackages) {
+            int privacySignals = 0;
+            if (location.getOrDefault(p, false)) privacySignals++;
+            if (media.getOrDefault(p, false)) privacySignals++;
+            if (messaging.getOrDefault(p, false)) privacySignals++;
+            if (notification.getOrDefault(p, false)) privacySignals++;
+
+            boolean a = accessibility.getOrDefault(p, false);
+            if (privacySignals >= 2 && a) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de persistência e coleta sensível",
+                        "O pacote combina inicialização automática, acessibilidade ativa e múltiplos acessos a dados/sensores sensíveis. Essa combinação é compatível com capacidades observadas em spyware/stalkerware, embora também possa existir em apps legítimos.",
+                        p, 8,
+                        "Confirme a finalidade do aplicativo, sua origem e se todos esses acessos foram concedidos conscientemente"));
+            } else if (privacySignals >= 2) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de persistência e coleta sensível",
+                        "O pacote combina inicialização automática com múltiplos acessos a dados/sensores sensíveis. Isso merece revisão de privacidade e persistência.",
+                        p, 5,
+                        "Revise permissões, inicialização automática e a necessidade real desses acessos"));
             }
         }
 
