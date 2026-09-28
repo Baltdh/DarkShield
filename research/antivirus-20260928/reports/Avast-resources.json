@@ -1,0 +1,81 @@
+{
+  "file": "Avast.exe",
+  "resource_inventory": [
+    {
+      "type": "COLOR",
+      "name": "400",
+      "size": 4,
+      "prefix_hex": "fefefe00"
+    },
+    {
+      "type": "GIF",
+      "name": "200",
+      "size": 5108,
+      "prefix_hex": "474946383961a4019600d53f"
+    },
+    {
+      "type": "LZMA",
+      "name": "300",
+      "size": 17523,
+      "prefix_hex": "5d00000004ffffffffffffff"
+    },
+    {
+      "type": "3",
+      "name": "1",
+      "size": 6852,
+      "prefix_hex": "89504e470d0a1a0a0000000d"
+    },
+    {
+      "type": "3",
+      "name": "2",
+      "size": 16936,
+      "prefix_hex": "280000004000000080000000"
+    },
+    {
+      "type": "3",
+      "name": "3",
+      "size": 9640,
+      "prefix_hex": "280000003000000060000000"
+    },
+    {
+      "type": "3",
+      "name": "4",
+      "size": 4264,
+      "prefix_hex": "280000002000000040000000"
+    },
+    {
+      "type": "3",
+      "name": "5",
+      "size": 1128,
+      "prefix_hex": "280000001000000020000000"
+    },
+    {
+      "type": "14",
+      "name": "128",
+      "size": 76,
+      "prefix_hex": "000001000500000000000100"
+    },
+    {
+      "type": "16",
+      "name": "1",
+      "size": 968,
+      "prefix_hex": "c80334000000560053005f00"
+    },
+    {
+      "type": "24",
+      "name": "1",
+      "size": 2063,
+      "prefix_hex": "efbbbf3c3f786d6c20766572"
+    }
+  ],
+  "lzma_resources": [
+    {
+      "resource": "300",
+      "size": 76815,
+      "complete": true,
+      "sha256": "be153b10de7fb52ab25db88e8ca202cf0b0e858057800e7ee36e068f920741f8",
+      "prefix_hex": "3c3f786d6c2076657273696f"
+    }
+  ],
+  "embedded_7z": []
+}

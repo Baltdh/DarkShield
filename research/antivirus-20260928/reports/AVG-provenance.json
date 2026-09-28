@@ -1,0 +1,11 @@
+{
+  "vendor": "AVG",
+  "source_url": "https://www.avg.com/en-us/download-thank-you.php?product=FREEGSR",
+  "retrieved_utc": "2026-09-28T19:19:01.727570+00:00",
+  "binary_link": "https://bits.avcdn.net/productfamily_ANTIVIRUS/insttype_FREE/platform_WIN_AVG/installertype_ONLINE/build_RELEASE/cookie_mmm_bav_998_999_000_m:dlid_FREEGSR?alt=en-us",
+  "final_url": "https://bits.avcdn.net/productfamily_ANTIVIRUS/insttype_FREE/platform_WIN_AVG/installertype_ONLINE/build_RELEASE/cookie_mmm_bav_998_999_000_m:dlid_FREEGSR?alt=en-us",
+  "size_bytes": 256440,
+  "sha256": "c4c21486528231b4801062c819aa3d64394d272a2e4b368fc628e5fe955f55e2",
+  "local_file": "AVG.exe",
+  "status": "downloaded"
+}

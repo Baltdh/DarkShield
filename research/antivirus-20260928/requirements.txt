@@ -1,0 +1,6 @@
+pefile==2024.8.26
+capstone==5.0.9
+requests==2.34.2
+beautifulsoup4==4.15.0
+cryptography==46.0.0
+py7zr==1.1.3

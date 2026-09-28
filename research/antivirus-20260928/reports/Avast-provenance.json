@@ -1,0 +1,11 @@
+{
+  "vendor": "Avast",
+  "source_url": "https://www.avast.com/en-us/download-thank-you.php?locale=en-us&product=AVAST-ONE-MOD-WIN-AV",
+  "retrieved_utc": "2026-09-28T19:19:01.727209+00:00",
+  "binary_link": "https://bits.avcdn.net/gen?productid=1968&applicationid=4571&alt=a1f-free-av&giet=freeav&pps=1062590-121686-21441764_av&sourceid=mmm_a1m_998_999_000_m%3Adlid_AVAST-ONE-MOD-WIN-AV",
+  "final_url": "https://bits.avcdn.net/gen?productid=1968&applicationid=4571&alt=a1f-free-av&giet=freeav&pps=1062590-121686-21441764_av&sourceid=mmm_a1m_998_999_000_m%3Adlid_AVAST-ONE-MOD-WIN-AV",
+  "size_bytes": 1751384,
+  "sha256": "5f5f64a6bd969ce474c4c71f1866e7ce8f16047ac66c54cd0a64c44ad722337f",
+  "local_file": "Avast.exe",
+  "status": "downloaded"
+}

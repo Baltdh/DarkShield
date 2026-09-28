@@ -1,0 +1,5 @@
+raw/
+extracted/
+*.7z
+*.log
+__pycache__/

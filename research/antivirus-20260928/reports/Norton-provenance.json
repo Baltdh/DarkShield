@@ -1,0 +1,12 @@
+{
+  "vendor": "Norton",
+  "source_url": "https://community.norton.com/t/norton-360-v24-offline-installer/262674",
+  "binary_link": "https://buy-download.norton.com/downloads/2024/22.24.8/N360/US/N360-ESD-22.24.8.36-EN.exe",
+  "scope": "Historical Norton 360 22.24.8.36 Windows; current official support redirect returned 404. Vendor-hosted older package, not current engine.",
+  "retrieved_utc": "2026-09-28T19:20:04.803245+00:00",
+  "final_url": "https://buy-download.norton.com/downloads/2024/22.24.8/N360/US/N360-ESD-22.24.8.36-EN.exe",
+  "status": "downloaded",
+  "size_bytes": 245422936,
+  "sha256": "7787c59d5daebe6b08df6076867abf242e9414bb11716169489666eb72bd7dee",
+  "local_file": "Norton.exe"
+}
