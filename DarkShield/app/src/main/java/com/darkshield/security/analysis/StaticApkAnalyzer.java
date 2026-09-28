@@ -47,6 +47,18 @@ public final class StaticApkAnalyzer {
             "backdoor"
     };
 
+    // API/class strings are only capability indicators. Legitimate apps use
+    // dynamic loading for plugins, multidex and modular features, so these
+    // markers must stay low-confidence until correlated with stronger signals.
+    private static final String[] DYNAMIC_CODE_MARKERS = {
+            "dalvik/system/dexclassloader",
+            "dalvik/system/inmemorydexclassloader",
+            "dalvik/system/dexfile",
+            "dexclassloader",
+            "inmemorydexclassloader",
+            "loadDex"
+    };
+
     private StaticApkAnalyzer() {}
 
     public static List<ScanFinding> analyze(String apkPath, String packageName) {
@@ -96,6 +108,7 @@ public final class StaticApkAnalyzer {
         List<String> suspicious = new ArrayList<>();
         List<String> suspiciousResourceMarkers = new ArrayList<>();
         List<String> suspiciousContent = new ArrayList<>();
+        List<String> dynamicCodeContent = new ArrayList<>();
         long contentScanned = 0L;
         boolean contentSampleReadFailure = false;
 
@@ -152,6 +165,7 @@ public final class StaticApkAnalyzer {
                         }
                         contentScanned += sample.length;
                         collectContentMarkers(name, sample, suspiciousContent);
+                        collectDynamicCodeMarkers(name, sample, dynamicCodeContent);
                     }
                 }
             }
@@ -218,6 +232,25 @@ public final class StaticApkAnalyzer {
                         "Pelo menos uma entrada de DEX/biblioteca não pôde ser lida para a amostragem estática; a ausência de marcador nessa entrada não deve ser interpretada como ausência de risco.",
                         packageName, 0,
                         "Repita a análise com um APK íntegro ou faça uma inspeção separada do arquivo"));
+            }
+
+            if (!dynamicCodeContent.isEmpty()) {
+                dynamicCodeContent.sort(StaticApkAnalyzer::compareMarker);
+                StringBuilder detail = new StringBuilder();
+                int shown = Math.min(6, dynamicCodeContent.size());
+                for (int i = 0; i < shown; i++) {
+                    if (i > 0) detail.append(", ");
+                    detail.append(dynamicCodeContent.get(i));
+                }
+                if (dynamicCodeContent.size() > shown) detail.append(" …");
+                out.add(new ScanFinding(
+                        ScanFinding.Level.LOW,
+                        "Capacidade de carregamento dinâmico de código",
+                        "A amostra de código contém referência(s) a APIs de carregamento dinâmico: "
+                                + detail
+                                + ". Esse recurso também é usado por aplicativos legítimos e não prova malware isoladamente.",
+                        packageName, 2,
+                        "Correlacione com origem, assinatura, instalação de APKs e outros privilégios antes de tomar uma ação"));
             }
 
             if (!suspiciousContent.isEmpty()) {
@@ -423,6 +456,20 @@ public final class StaticApkAnalyzer {
                 .toLowerCase(Locale.ROOT);
         for (String marker : SUSPICIOUS_MARKERS) {
             if (text.contains(marker)) {
+                addCappedMarker(
+                        hits, entryName + ":" + marker, MAX_SUSPICIOUS_CONTENT_HITS);
+            }
+        }
+    }
+
+    private static void collectDynamicCodeMarkers(
+            String entryName, byte[] sample, List<String> hits) {
+        if (sample.length == 0) return;
+        String text = new String(sample, StandardCharsets.ISO_8859_1)
+                .toLowerCase(Locale.ROOT);
+        for (String marker : DYNAMIC_CODE_MARKERS) {
+            String normalized = marker.toLowerCase(Locale.ROOT);
+            if (text.contains(normalized)) {
                 addCappedMarker(
                         hits, entryName + ":" + marker, MAX_SUSPICIOUS_CONTENT_HITS);
             }
