@@ -26,6 +26,25 @@ public class ThreatKnowledgeBaseTest {
         assertTrue(annotation.contains("T1453"));
     }
 
+    @Test public void dynamicLoadingAnnotationUsesRuntimeCodeTechniqueAndCaveat() {
+        String annotation = ThreatKnowledgeBase.annotate(
+                "Correlação de carregamento dinâmico com capacidade sensível");
+
+        assertNotNull(annotation);
+        assertTrue(annotation.contains("T1407"));
+        assertTrue(annotation.contains("apps legítimos"));
+    }
+
+    @Test public void accessibilityOverlayAnnotationIncludesBothTechniques() {
+        String annotation = ThreatKnowledgeBase.annotate(
+                "Correlação de acessibilidade e sobreposição");
+
+        assertNotNull(annotation);
+        assertTrue(annotation.contains("T1453"));
+        assertTrue(annotation.contains("T1417.002"));
+        assertTrue(annotation.contains("não confirma"));
+    }
+
     @Test public void notificationAnnotationCoversSensitiveNotificationAccess() {
         String annotation = ThreatKnowledgeBase.annotate(
                 "Acesso a notificações ativo");
