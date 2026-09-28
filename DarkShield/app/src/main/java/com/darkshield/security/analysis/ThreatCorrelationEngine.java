@@ -290,7 +290,7 @@ public final class ThreatCorrelationEngine {
                         ScanFinding.Level.MEDIUM,
                         "Correlação de origem desconhecida e código dinâmico",
                         "O Android não informou um instalador conhecido e o pacote também apresenta carregamento dinâmico combinado com outra capacidade relevante. Origem desconhecida isoladamente não é tratada como ameaça.",
-                        p, 5,
+                        p, 6,
                         "Confirme a procedência e assinatura do APK antes de manter privilégios sensíveis ativos"));
             }
         }
