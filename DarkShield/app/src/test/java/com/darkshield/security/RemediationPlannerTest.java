@@ -59,4 +59,22 @@ public class RemediationPlannerTest {
         assertTrue(actions.get(1).uninstallCandidate);
     }
 
+    @Test public void batteryExemptionGetsDedicatedRemediation() {
+        ScanFinding finding = new ScanFinding(
+                ScanFinding.Level.MEDIUM,
+                "Exceção de otimização de bateria ativa",
+                "App fora das otimizações",
+                "com.example.background",
+                3,
+                "Revise");
+
+        List<RemediationPlanner.Action> actions =
+                RemediationPlanner.plan(Arrays.asList(finding));
+
+        assertEquals(1, actions.size());
+        assertEquals(RemediationPlanner.Kind.BATTERY_OPTIMIZATION, actions.get(0).kind);
+        assertTrue(actions.get(0).title.contains("segundo plano"));
+        assertFalse(actions.get(0).uninstallCandidate);
+    }
+
 }
