@@ -97,6 +97,8 @@ public final class ScanReport {
                     .append(" • ")
                     .append(summary.packageName)
                     .append(" • ")
+                    .append(ThreatClassifier.classify(findings, summary.packageName).label)
+                    .append(" • ")
                     .append(summary.findings)
                     .append(" achado(s), ")
                     .append(summary.points)
@@ -108,6 +110,10 @@ public final class ScanReport {
         return out.toString();
     }
 
+
+    public ThreatClassifier.Category classificationForPackage(String packageName) {
+        return ThreatClassifier.classify(findings, packageName);
+    }
 
     public String informationalDetails() {
         List<ScanFinding> info = new ArrayList<>();
