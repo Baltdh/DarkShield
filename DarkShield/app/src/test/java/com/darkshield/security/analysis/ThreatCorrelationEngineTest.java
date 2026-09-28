@@ -172,6 +172,34 @@ public class ThreatCorrelationEngineTest {
         assertEquals(5, out.get(0).points);
     }
 
+    @Test public void embeddedPayloadAloneDoesNotCreateDerivedCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Payload de pacote embutido", ScanFinding.Level.LOW)));
+        assertTrue(out.isEmpty());
+    }
+
+    @Test public void correlatesEmbeddedPayloadWithApkInstall() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Payload de pacote embutido", ScanFinding.Level.LOW),
+                f("Pode solicitar instalação de APKs", ScanFinding.Level.MEDIUM)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(5, out.get(0).points);
+    }
+
+    @Test public void embeddedPayloadInstallAndDynamicLoadingIsHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Payload de pacote embutido", ScanFinding.Level.LOW),
+                f("Pode solicitar instalação de APKs", ScanFinding.Level.MEDIUM),
+                f("Capacidade de carregamento dinâmico de código", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(8, out.get(0).points);
+        assertTrue(out.get(0).title.contains("payload embutido"));
+    }
+
     @Test public void correlatesThirdPartyKeyboardWithAccessibilityAndOverlay() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Teclado de terceiros ativo", ScanFinding.Level.LOW),
