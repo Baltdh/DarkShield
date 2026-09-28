@@ -558,6 +558,44 @@ public class StaticApkAnalyzerTest {
         assertTrue(apk.delete());
     }
 
+    @Test public void embeddedApkPayloadIsLowConfidence() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "classes.dex", new byte[]{1, 2, 3});
+            add(zip, "assets/module.apk", new byte[]{4, 5, 6});
+        }
+
+        List<ScanFinding> findings =
+                StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+        ScanFinding hit = findings.stream()
+                .filter(x -> x.title.equals("Payload de pacote embutido"))
+                .findFirst().orElse(null);
+
+        assertTrue(hit != null);
+        assertEquals(ScanFinding.Level.LOW, hit.level);
+        assertEquals(2, hit.points);
+        assertTrue(hit.detail.contains("assets/module.apk"));
+        assertTrue(hit.detail.contains("não prova"));
+        assertTrue(apk.delete());
+    }
+
+    @Test public void metaInfJarMetadataDoesNotTriggerEmbeddedPayload() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "classes.dex", new byte[]{1, 2, 3});
+            add(zip, "META-INF/library.jar", new byte[]{4});
+        }
+
+        List<ScanFinding> findings =
+                StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+
+        assertTrue(findings.stream().noneMatch(
+                x -> x.title.equals("Payload de pacote embutido")));
+        assertTrue(apk.delete());
+    }
+
     @Test public void multipleDexFilesAreInformationalOnly() throws Exception {
         File apk = File.createTempFile("darkshield-test", ".apk");
         try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
