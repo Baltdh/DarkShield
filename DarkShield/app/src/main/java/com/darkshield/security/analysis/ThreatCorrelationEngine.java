@@ -41,6 +41,10 @@ public final class ThreatCorrelationEngine {
         Map<String, Boolean> boot = new HashMap<>();
         Map<String, Boolean> apkInstall = new HashMap<>();
         Map<String, Boolean> dynamicCode = new HashMap<>();
+        Map<String, Boolean> batteryExempt = new HashMap<>();
+        Map<String, Boolean> vpn = new HashMap<>();
+        Map<String, Boolean> exposedProvider = new HashMap<>();
+        Map<String, Boolean> unknownOrigin = new HashMap<>();
         Map<String, Boolean> identityTamper = new HashMap<>();
         Map<String, Boolean> installerChanged = new HashMap<>();
         Map<String, Integer> sensitive = new HashMap<>();
@@ -59,6 +63,10 @@ public final class ThreatCorrelationEngine {
             if (t.contains("inicialização automática declarada")) boot.put(p, true);
             if (t.contains("pode solicitar instalação de apks")) apkInstall.put(p, true);
             if (t.contains("carregamento dinâmico de código")) dynamicCode.put(p, true);
+            if (t.contains("exceção de otimização de bateria ativa")) batteryExempt.put(p, true);
+            if (t.contains("serviço vpn declarado")) vpn.put(p, true);
+            if (t.contains("content provider exportado sem proteção")) exposedProvider.put(p, true);
+            if (t.contains("origem de instalação não identificada")) unknownOrigin.put(p, true);
             if (t.contains("assinatura do aplicativo alterada")
                     || t.contains("downgrade de versão detectado")) {
                 identityTamper.put(p, true);
@@ -222,6 +230,68 @@ public final class ThreatCorrelationEngine {
                         "O instalador conhecido mudou desde a referência anterior e o pacote também apresenta capacidade de carregar código, instalar APKs ou acesso remoto heurístico.",
                         p, 5,
                         "Confirme se a mudança de origem foi intencional e compare a assinatura com a distribuição oficial"));
+            }
+        }
+
+        for (String p : batteryExempt.keySet()) {
+            boolean b = boot.getOrDefault(p, false);
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean n = notification.getOrDefault(p, false);
+            boolean r = remote.getOrDefault(p, false);
+            if (b && (a || n || r)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de persistência prolongada",
+                        "O pacote combina inicialização após o boot, exceção ativa de otimização de bateria e uma capacidade privilegiada adicional. Essa combinação pode manter o aplicativo ativo por longos períodos, mas também existe em aplicativos legítimos.",
+                        p, 7,
+                        "Confirme se a execução persistente é esperada e remova acessos que não sejam necessários"));
+            } else if (b) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de persistência após reinicialização",
+                        "O pacote declara inicialização após o boot e está fora das otimizações de bateria. A combinação favorece execução persistente, mas não prova comportamento malicioso.",
+                        p, 4,
+                        "Confirme se o aplicativo realmente precisa iniciar e permanecer ativo em segundo plano"));
+            }
+        }
+
+        for (String p : exposedProvider.keySet()) {
+            if (sensitive.getOrDefault(p, 0) > 0
+                    && (accessibility.getOrDefault(p, false)
+                        || remote.getOrDefault(p, false))) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de superfície exposta e acesso sensível",
+                        "O pacote combina um Content Provider exportado sem proteção explícita com acesso sensível e outra capacidade de controle. Isso amplia a superfície de exposição e merece revisão.",
+                        p, 5,
+                        "Revise a origem do aplicativo, seus privilégios e a necessidade de componentes públicos"));
+            }
+        }
+
+        for (String p : vpn.keySet()) {
+            if (accessibility.getOrDefault(p, false)
+                    || notification.getOrDefault(p, false)
+                    || remote.getOrDefault(p, false)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de VPN e acesso privilegiado",
+                        "O pacote declara serviço VPN e também possui uma capacidade privilegiada adicional. VPNs legítimas são comuns; a combinação merece revisão apenas quando o aplicativo não é reconhecido ou esses acessos não são esperados.",
+                        p, 4,
+                        "Confirme se você reconhece o aplicativo e se VPN e demais acessos fazem parte da função esperada"));
+            }
+        }
+
+        for (String p : unknownOrigin.keySet()) {
+            if (dynamicCode.getOrDefault(p, false)
+                    && (apkInstall.getOrDefault(p, false)
+                        || accessibility.getOrDefault(p, false)
+                        || remote.getOrDefault(p, false))) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de origem desconhecida e código dinâmico",
+                        "O Android não informou um instalador conhecido e o pacote também apresenta carregamento dinâmico combinado com outra capacidade relevante. Origem desconhecida isoladamente não é tratada como ameaça.",
+                        p, 5,
+                        "Confirme a procedência e assinatura do APK antes de manter privilégios sensíveis ativos"));
             }
         }
 
