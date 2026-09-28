@@ -239,6 +239,7 @@
             android:layout_height="48dp"
             android:layout_marginTop="8dp"
             android:contentDescription="Abrir central de correções seguras"
+            android:filterTouchesWhenObscured="true"
             android:text="CORRIGIR COM SEGURANÇA"
             android:textSize="13sp"
             android:enabled="false" />
