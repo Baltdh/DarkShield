@@ -26,6 +26,7 @@ import java.time.format.DateTimeParseException;
 import java.util.*;
 import com.darkshield.security.analysis.StaticApkAnalyzer;
 import com.darkshield.security.analysis.ThreatCorrelationEngine;
+import com.darkshield.security.analysis.PackageIdentityBaseline;
 
 public final class SecurityScanner {
     private static final String[] SENSITIVE_PERMISSIONS = {
@@ -37,6 +38,7 @@ public final class SecurityScanner {
         "android.permission.PACKAGE_USAGE_STATS","android.permission.READ_PHONE_STATE",
         "android.permission.WRITE_SETTINGS","android.permission.MANAGE_EXTERNAL_STORAGE"
     };
+    private static final String IDENTITY_PREFS = "darkshield_package_identity_v1";
     private static final Set<String> REMOTE_MARKERS = new HashSet<>(Arrays.asList(
         "anydesk","teamviewer","airdroid","rustdesk","splashtop","vysor","scrcpy",
         "remotecontrol","remote support","remote desktop","remote access"
@@ -364,8 +366,9 @@ public final class SecurityScanner {
                     "Confirme se você instalou e reconhece este aplicativo"));
         }
 
+        String installer = null;
         if (!system) {
-            String installer = getInstaller(p.packageName);
+            installer = getInstaller(p.packageName);
             if (installer == null || installer.trim().isEmpty()) {
                 out.add(new ScanFinding(
                         ScanFinding.Level.INFO, "Origem de instalação não identificada",
@@ -437,6 +440,10 @@ public final class SecurityScanner {
             out.add(new ScanFinding(
                     ScanFinding.Level.INFO, "Assinatura SHA-256",
                     cert, p.packageName, 0, null));
+        }
+
+        if (!system) {
+            inspectPackageIdentityBaseline(p, cert, installer, out);
         }
 
         if (!system && ai.sourceDir != null && !ai.sourceDir.isEmpty()) {
@@ -1114,6 +1121,110 @@ public final class SecurityScanner {
                     "A consulta foi restringida pelo sistema",
                     null, 1, null));
         }
+    }
+
+    private void inspectPackageIdentityBaseline(
+            PackageInfo p,
+            String currentSigner,
+            String currentInstaller,
+            List<ScanFinding> out) {
+        if (p == null || p.packageName == null) return;
+
+        android.content.SharedPreferences prefs =
+                c.getSharedPreferences(IDENTITY_PREFS, Context.MODE_PRIVATE);
+        String prefix = p.packageName + "|";
+        String signerKey = prefix + "signer";
+        String versionKey = prefix + "version";
+        String installerKey = prefix + "installer";
+
+        String previousSigner = prefs.getString(signerKey, null);
+        long previousVersion = prefs.getLong(versionKey, -1L);
+        String previousInstaller = prefs.getString(installerKey, null);
+        long currentVersion = packageVersionCode(p);
+
+        if (previousSigner != null && currentSigner != null) {
+            PackageIdentityBaseline.SignerChange signerChange =
+                    PackageIdentityBaseline.compareSigner(
+                            previousSigner,
+                            currentSigner,
+                            signerHistoryContains(p, previousSigner));
+            if (signerChange == PackageIdentityBaseline.SignerChange.LEGITIMATE_ROTATION) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Rotação de assinatura reconhecida",
+                        "O certificado atual mudou, mas o certificado anterior permanece na linhagem de assinatura informada pelo Android.",
+                        p.packageName, 0,
+                        "Nenhuma ação é necessária se a atualização veio de uma origem confiável"));
+            } else if (signerChange
+                    == PackageIdentityBaseline.SignerChange.UNEXPECTED_CHANGE) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Assinatura do aplicativo alterada",
+                        "A assinatura atual difere da observada anteriormente e a assinatura anterior não aparece na linhagem atual. Isso pode ocorrer após desinstalação/reinstalação, troca de distribuição ou substituição do APK.",
+                        p.packageName, 8,
+                        "Confirme a origem do aplicativo; se a mudança não for esperada, considere remover e reinstalar pela fonte oficial"));
+            }
+        }
+
+        if (PackageIdentityBaseline.isDowngrade(previousVersion, currentVersion)) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.MEDIUM,
+                    "Downgrade de versão detectado",
+                    "A versão instalada (" + currentVersion
+                            + ") é inferior à observada anteriormente (" + previousVersion + ").",
+                    p.packageName, 5,
+                    "Confirme se a instalação de uma versão anterior foi intencional"));
+        }
+
+        if (PackageIdentityBaseline.installerChanged(
+                previousInstaller, currentInstaller)) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.LOW,
+                    "Origem de instalação alterada",
+                    "O instalador mudou de " + previousInstaller
+                            + " para " + currentInstaller
+                            + " desde a referência anterior.",
+                    p.packageName, 2,
+                    "Confirme se a mudança de loja, restaurador ou instalador foi intencional"));
+        }
+
+        android.content.SharedPreferences.Editor editor = prefs.edit();
+        if (currentSigner != null) editor.putString(signerKey, currentSigner);
+        if (currentVersion >= 0L) editor.putLong(versionKey, currentVersion);
+        if (currentInstaller != null && !currentInstaller.trim().isEmpty()) {
+            editor.putString(installerKey, currentInstaller);
+        }
+        editor.apply();
+    }
+
+    private long packageVersionCode(PackageInfo p) {
+        if (p == null) return -1L;
+        if (Build.VERSION.SDK_INT >= 28) return p.getLongVersionCode();
+        return p.versionCode;
+    }
+
+    private boolean signerHistoryContains(PackageInfo p, String expectedSigner) {
+        if (p == null || expectedSigner == null || expectedSigner.trim().isEmpty()) {
+            return false;
+        }
+        try {
+            android.content.pm.Signature[] history;
+            if (Build.VERSION.SDK_INT >= 28) {
+                if (p.signingInfo == null || p.signingInfo.hasMultipleSigners()) return false;
+                history = p.signingInfo.getSigningCertificateHistory();
+            } else {
+                history = p.signatures;
+            }
+            if (history == null) return false;
+            for (android.content.pm.Signature sig : history) {
+                if (sig == null) continue;
+                String hash = sha256(sig.toByteArray());
+                if (expectedSigner.equalsIgnoreCase(hash)) return true;
+            }
+        } catch (Exception ignored) {
+            // A restricted/unavailable signing history is not evidence of tampering.
+        }
+        return false;
     }
 
     private String signingSha256(PackageInfo p) {
