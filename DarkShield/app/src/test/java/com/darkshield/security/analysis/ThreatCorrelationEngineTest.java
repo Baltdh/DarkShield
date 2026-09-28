@@ -108,6 +108,7 @@ public class ThreatCorrelationEngineTest {
 
         assertEquals(1, out.size());
         assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(6, out.get(0).points);
         assertTrue(out.get(0).detail.contains("Origem desconhecida isoladamente"));
     }
 
