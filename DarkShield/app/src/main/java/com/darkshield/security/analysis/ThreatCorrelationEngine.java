@@ -231,6 +231,15 @@ public final class ThreatCorrelationEngine {
                         "O pacote contém APK/JAR embutido e também apresenta capacidade de instalar APKs ou carregar código dinamicamente.",
                         p, 5,
                         "Revise a finalidade do payload embutido e compare o aplicativo com sua distribuição oficial"));
+            } else if (accessibility.getOrDefault(p, false)
+                    || overlay.getOrDefault(p, false)
+                    || admin.getOrDefault(p, false)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de payload embutido com acesso privilegiado",
+                        "O pacote contém APK/JAR embutido e também mantém uma capacidade privilegiada ativa. O payload isolado pode ser legítimo, mas a combinação merece inspeção adicional.",
+                        p, 6,
+                        "Confirme a origem e assinatura do aplicativo e revise o privilégio ativo antes de confiar no payload embutido"));
             }
         }
 
@@ -365,16 +374,44 @@ public final class ThreatCorrelationEngine {
         }
 
         for (String p : unknownOrigin.keySet()) {
-            if (dynamicCode.getOrDefault(p, false)
-                    && (apkInstall.getOrDefault(p, false)
-                        || accessibility.getOrDefault(p, false)
-                        || remote.getOrDefault(p, false))) {
+            boolean d = dynamicCode.getOrDefault(p, false);
+            boolean i = apkInstall.getOrDefault(p, false);
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean o = overlay.getOrDefault(p, false);
+            boolean r = remote.getOrDefault(p, false);
+            boolean m = admin.getOrDefault(p, false);
+            boolean b = boot.getOrDefault(p, false);
+            boolean persistent = batteryExempt.getOrDefault(p, false);
+            boolean payload = embeddedPayload.getOrDefault(p, false);
+
+            if (d && (i || a || r)) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,
                         "Correlação de origem desconhecida e código dinâmico",
                         "O Android não informou um instalador conhecido e o pacote também apresenta carregamento dinâmico combinado com outra capacidade relevante. Origem desconhecida isoladamente não é tratada como ameaça.",
                         p, 6,
                         "Confirme a procedência e assinatura do APK antes de manter privilégios sensíveis ativos"));
+            } else if (payload && (a || o || m)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de origem desconhecida, payload e privilégio",
+                        "O Android não informou um instalador conhecido; o pacote contém APK/JAR embutido e mantém uma capacidade privilegiada ativa. A combinação é compatível com cadeias de loader/dropper, embora não confirme malware.",
+                        p, 8,
+                        "Compare o APK com a distribuição oficial, confirme a assinatura e remova privilégios inesperados"));
+            } else if (b && persistent && (a || o || m || r)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de origem desconhecida e persistência privilegiada",
+                        "O pacote sem instalador conhecido combina inicialização após o boot, exceção ativa de bateria e uma capacidade privilegiada. A combinação merece revisão prioritária por favorecer persistência prolongada.",
+                        p, 8,
+                        "Confirme a procedência do aplicativo e revogue persistência ou privilégios que não sejam necessários"));
+            } else if (b && (a || m) && sensitive.getOrDefault(p, 0) > 0) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de origem desconhecida, persistência e acesso sensível",
+                        "O pacote sem instalador conhecido combina inicialização automática, acesso privilegiado e capacidade sensível. Nenhum desses sinais isoladamente confirma ameaça.",
+                        p, 6,
+                        "Confirme a origem do aplicativo e revise os acessos concedidos e a inicialização automática"));
             }
         }
 
