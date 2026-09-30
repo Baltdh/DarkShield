@@ -59,6 +59,16 @@ public final class StaticApkAnalyzer {
             "loadDex"
     };
 
+    // Screen capture is a legitimate capability for recorders and remote-support
+    // apps. Keep these markers low-confidence and only raise priority when they
+    // correlate with accessibility, overlays, persistence, or remote-control signals.
+    private static final String[] SCREEN_CAPTURE_MARKERS = {
+            "android/media/projection/mediaprojectionmanager",
+            "android/media/projection/mediaprojection",
+            "createscreencaptureintent",
+            "getmediaprojection"
+    };
+
     private StaticApkAnalyzer() {}
 
     public static List<ScanFinding> analyze(String apkPath, String packageName) {
@@ -109,6 +119,7 @@ public final class StaticApkAnalyzer {
         List<String> suspiciousResourceMarkers = new ArrayList<>();
         List<String> suspiciousContent = new ArrayList<>();
         List<String> dynamicCodeContent = new ArrayList<>();
+        List<String> screenCaptureContent = new ArrayList<>();
         List<String> embeddedPackages = new ArrayList<>();
         long contentScanned = 0L;
         boolean contentSampleReadFailure = false;
@@ -172,6 +183,7 @@ public final class StaticApkAnalyzer {
                         contentScanned += sample.length;
                         collectContentMarkers(name, sample, suspiciousContent);
                         collectDynamicCodeMarkers(name, sample, dynamicCodeContent);
+                        collectScreenCaptureMarkers(name, sample, screenCaptureContent);
                     }
                 }
             }
@@ -275,6 +287,25 @@ public final class StaticApkAnalyzer {
                                 + ". Esse recurso também é usado por aplicativos legítimos e não prova malware isoladamente.",
                         packageName, 2,
                         "Correlacione com origem, assinatura, instalação de APKs e outros privilégios antes de tomar uma ação"));
+            }
+
+            if (!screenCaptureContent.isEmpty()) {
+                screenCaptureContent.sort(StaticApkAnalyzer::compareMarker);
+                StringBuilder detail = new StringBuilder();
+                int shown = Math.min(6, screenCaptureContent.size());
+                for (int i = 0; i < shown; i++) {
+                    if (i > 0) detail.append(", ");
+                    detail.append(screenCaptureContent.get(i));
+                }
+                if (screenCaptureContent.size() > shown) detail.append(" …");
+                out.add(new ScanFinding(
+                        ScanFinding.Level.LOW,
+                        "Referências a captura de tela/projeção",
+                        "A amostra de código contém referência(s) a APIs de MediaProjection/captura de tela: "
+                                + detail
+                                + ". Gravadores e apps de suporte remoto podem usar isso legitimamente; o sinal isolado não prova espionagem.",
+                        packageName, 2,
+                        "Correlacione com acessibilidade, sobreposição, persistência e finalidade declarada do aplicativo"));
             }
 
             if (!suspiciousContent.isEmpty()) {
@@ -492,6 +523,20 @@ public final class StaticApkAnalyzer {
         String text = new String(sample, StandardCharsets.ISO_8859_1)
                 .toLowerCase(Locale.ROOT);
         for (String marker : DYNAMIC_CODE_MARKERS) {
+            String normalized = marker.toLowerCase(Locale.ROOT);
+            if (text.contains(normalized)) {
+                addCappedMarker(
+                        hits, entryName + ":" + marker, MAX_SUSPICIOUS_CONTENT_HITS);
+            }
+        }
+    }
+
+    private static void collectScreenCaptureMarkers(
+            String entryName, byte[] sample, List<String> hits) {
+        if (sample.length == 0) return;
+        String text = new String(sample, StandardCharsets.ISO_8859_1)
+                .toLowerCase(Locale.ROOT);
+        for (String marker : SCREEN_CAPTURE_MARKERS) {
             String normalized = marker.toLowerCase(Locale.ROOT);
             if (text.contains(normalized)) {
                 addCappedMarker(
