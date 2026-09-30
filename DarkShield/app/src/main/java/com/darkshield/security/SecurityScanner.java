@@ -27,6 +27,7 @@ import java.util.*;
 import com.darkshield.security.analysis.StaticApkAnalyzer;
 import com.darkshield.security.analysis.ThreatCorrelationEngine;
 import com.darkshield.security.analysis.PackageIdentityBaseline;
+import com.darkshield.security.analysis.SystemImpersonationDetector;
 
 public final class SecurityScanner {
     private static final String[] SENSITIVE_PERMISSIONS = {
@@ -380,6 +381,34 @@ public final class SecurityScanner {
                         ScanFinding.Level.INFO, "Origem de instalação",
                         "Instalador informado pelo Android: " + installer,
                         p.packageName, 0, null));
+            }
+        }
+
+        if (!system) {
+            SystemImpersonationDetector.Result impersonation =
+                    SystemImpersonationDetector.inspect(
+                            label, p.packageName, false, installer);
+            if (impersonation.suspicious()) {
+                boolean privilegedCorroboration = sensitive >= 2
+                        || isPermissionGranted(
+                                "android.permission.SYSTEM_ALERT_WINDOW",
+                                p.packageName)
+                        || hasAccessibilityService(p);
+                boolean highConfidence = impersonation.score >= 7
+                        || (impersonation.score >= 5 && privilegedCorroboration);
+                out.add(new ScanFinding(
+                        highConfidence
+                                ? ScanFinding.Level.HIGH
+                                : ScanFinding.Level.MEDIUM,
+                        "Possível disfarce de aplicativo do sistema",
+                        "O aplicativo não é marcado pelo Android como app de sistema, "
+                                + "mas apresenta sinais de identidade que podem imitar "
+                                + "um componente confiável: " + impersonation.reason
+                                + ". Isso é uma heurística e não prova malware.",
+                        p.packageName,
+                        highConfidence ? 7 : 4,
+                        "Confirme o desenvolvedor, a origem de instalação e a assinatura; "
+                                + "remova privilégios sensíveis se o aplicativo não for reconhecido"));
             }
         }
 
