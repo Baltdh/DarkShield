@@ -428,6 +428,55 @@ public class ThreatCorrelationEngineTest {
         assertEquals("Correlação de acesso remoto e administrador", out.get(0).title);
     }
 
+    @Test public void correlatesEmbeddedPayloadWithActiveAccessibility() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Payload de pacote embutido", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(6, out.get(0).points);
+        assertTrue(out.get(0).title.contains("payload embutido"));
+    }
+
+    @Test public void correlatesUnknownOriginPayloadAndPrivilegeStrongly() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Origem de instalação não identificada", ScanFinding.Level.INFO),
+                f("Payload de pacote embutido", ScanFinding.Level.LOW),
+                f("Administrador do dispositivo ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(8, out.get(0).points);
+        assertTrue(out.get(0).title.contains("origem desconhecida"));
+    }
+
+    @Test public void correlatesUnknownOriginPersistentPrivilegeStrongly() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Origem de instalação não identificada", ScanFinding.Level.INFO),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW),
+                f("Exceção de otimização de bateria ativa", ScanFinding.Level.MEDIUM),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(8, out.get(0).points);
+        assertTrue(out.get(0).title.contains("origem desconhecida"));
+    }
+
+    @Test public void correlatesUnknownOriginBootPrivilegeAndSensitiveAccess() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Origem de instalação não identificada", ScanFinding.Level.INFO),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW),
+                f("Administrador do dispositivo ativo", ScanFinding.Level.HIGH),
+                f("Acesso à localização", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(6, out.get(0).points);
+        assertTrue(out.get(0).title.contains("origem desconhecida"));
+    }
+
     @Test public void correlationTieBreakIsStableForEqualStrengthFindings() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
