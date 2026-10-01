@@ -829,7 +829,7 @@ public final class SecurityScanner {
         if (Build.VERSION.SDK_INT < 29 || p == null || p.services == null) return false;
         for (ServiceInfo s : p.services) {
             if (s == null) continue;
-            if ((s.foregroundServiceType
+            if ((s.getForegroundServiceType()
                     & ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION) != 0) {
                 return true;
             }
