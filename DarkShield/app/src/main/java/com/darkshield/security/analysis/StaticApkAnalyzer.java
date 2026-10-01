@@ -59,6 +59,15 @@ public final class StaticApkAnalyzer {
             "loadDex"
     };
 
+    // PackageManager APIs can legitimately toggle aliases/features, but malware
+    // may also use them to suppress its launcher entry. Keep this low-confidence
+    // until it is correlated with observed launcher visibility and persistence.
+    private static final String[] LAUNCHER_EVASION_MARKERS = {
+            "setcomponentenabledsetting",
+            "setapplicationenabledsetting",
+            "component_enabled_state_disabled"
+    };
+
     private StaticApkAnalyzer() {}
 
     public static List<ScanFinding> analyze(String apkPath, String packageName) {
@@ -109,6 +118,7 @@ public final class StaticApkAnalyzer {
         List<String> suspiciousResourceMarkers = new ArrayList<>();
         List<String> suspiciousContent = new ArrayList<>();
         List<String> dynamicCodeContent = new ArrayList<>();
+        List<String> launcherEvasionContent = new ArrayList<>();
         List<String> embeddedPackages = new ArrayList<>();
         long contentScanned = 0L;
         boolean contentSampleReadFailure = false;
@@ -172,6 +182,7 @@ public final class StaticApkAnalyzer {
                         contentScanned += sample.length;
                         collectContentMarkers(name, sample, suspiciousContent);
                         collectDynamicCodeMarkers(name, sample, dynamicCodeContent);
+                        collectLauncherEvasionMarkers(name, sample, launcherEvasionContent);
                     }
                 }
             }
@@ -275,6 +286,25 @@ public final class StaticApkAnalyzer {
                                 + ". Esse recurso também é usado por aplicativos legítimos e não prova malware isoladamente.",
                         packageName, 2,
                         "Correlacione com origem, assinatura, instalação de APKs e outros privilégios antes de tomar uma ação"));
+            }
+
+            if (!launcherEvasionContent.isEmpty()) {
+                launcherEvasionContent.sort(StaticApkAnalyzer::compareMarker);
+                StringBuilder detail = new StringBuilder();
+                int shown = Math.min(6, launcherEvasionContent.size());
+                for (int i = 0; i < shown; i++) {
+                    if (i > 0) detail.append(", ");
+                    detail.append(launcherEvasionContent.get(i));
+                }
+                if (launcherEvasionContent.size() > shown) detail.append(" …");
+                out.add(new ScanFinding(
+                        ScanFinding.Level.LOW,
+                        "Capacidade de alterar visibilidade do launcher",
+                        "A amostra de código referencia API(s) capazes de habilitar/desabilitar componentes ou o aplicativo: "
+                                + detail
+                                + ". Apps legítimos também usam essas APIs; o sinal se torna mais relevante quando o launcher está realmente oculto ou há persistência.",
+                        packageName, 2,
+                        "Correlacione com a presença do ícone, origem do app e privilégios ativos"));
             }
 
             if (!suspiciousContent.isEmpty()) {
@@ -494,6 +524,19 @@ public final class StaticApkAnalyzer {
         for (String marker : DYNAMIC_CODE_MARKERS) {
             String normalized = marker.toLowerCase(Locale.ROOT);
             if (text.contains(normalized)) {
+                addCappedMarker(
+                        hits, entryName + ":" + marker, MAX_SUSPICIOUS_CONTENT_HITS);
+            }
+        }
+    }
+
+    private static void collectLauncherEvasionMarkers(
+            String entryName, byte[] sample, List<String> hits) {
+        if (sample.length == 0) return;
+        String text = new String(sample, StandardCharsets.ISO_8859_1)
+                .toLowerCase(Locale.ROOT);
+        for (String marker : LAUNCHER_EVASION_MARKERS) {
+            if (text.contains(marker)) {
                 addCappedMarker(
                         hits, entryName + ":" + marker, MAX_SUSPICIOUS_CONTENT_HITS);
             }
