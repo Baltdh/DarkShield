@@ -16,6 +16,9 @@ public final class ThreatKnowledgeBase {
         if (title == null) return null;
         String t = title.toLowerCase(Locale.ROOT);
 
+        if (t.contains("ocultação") || t.contains("pouco visível")) {
+            return "MITRE ATT&CK Mobile T1628/T1628.001 (Hide Artifacts/Suppress Application Icon): malware pode reduzir a presença no launcher para dificultar descoberta e remoção. Apps legítimos também podem não ter interface, por isso o DarkShield só aumenta a prioridade quando há persistência ou capacidades privilegiadas correlacionadas.";
+        }
         if (t.contains("teclado") && (t.contains("acessibilidade") || t.contains("captura"))) {
             return "MITRE ATT&CK Mobile T1417/T1417.001 (Input Capture/Keylogging): teclado de terceiros, acessibilidade e sobreposição são capacidades que podem ser abusadas para observar entrada. A correlação indica risco de captura, não confirmação de keylogging.";
         }
