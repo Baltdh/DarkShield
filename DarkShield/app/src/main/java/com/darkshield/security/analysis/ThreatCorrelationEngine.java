@@ -49,6 +49,15 @@ public final class ThreatCorrelationEngine {
         Map<String, Boolean> installerChanged = new HashMap<>();
         Map<String, Boolean> thirdPartyKeyboard = new HashMap<>();
         Map<String, Boolean> embeddedPayload = new HashMap<>();
+        Map<String, Boolean> systemImpersonation = new HashMap<>();
+        Map<String, Boolean> hiddenLauncher = new HashMap<>();
+        Map<String, Boolean> launcherEvasionCode = new HashMap<>();
+        Map<String, Boolean> foregroundService = new HashMap<>();
+        Map<String, Boolean> foregroundSensitive = new HashMap<>();
+        Map<String, Boolean> wakeLock = new HashMap<>();
+        Map<String, Boolean> exactAlarm = new HashMap<>();
+        Map<String, Boolean> directBoot = new HashMap<>();
+        Map<String, Boolean> installFromFile = new HashMap<>();
         Map<String, Boolean> location = new HashMap<>();
         Map<String, Boolean> media = new HashMap<>();
         Map<String, Boolean> messaging = new HashMap<>();
@@ -79,6 +88,28 @@ public final class ThreatCorrelationEngine {
             if (t.contains("origem de instalação alterada")) installerChanged.put(p, true);
             if (t.contains("teclado de terceiros ativo")) thirdPartyKeyboard.put(p, true);
             if (t.contains("payload de pacote embutido")) embeddedPayload.put(p, true);
+            if (t.contains("possível app disfarçado de sistema")
+                    || t.contains("identidade semelhante a componente de sistema")) {
+                systemImpersonation.put(p, true);
+            }
+            if (t.contains("entrada do app no launcher desativada")
+                    || t.contains("app sem entrada no launcher com sinais sensíveis")) {
+                hiddenLauncher.put(p, true);
+            }
+            if (t.contains("capacidade de alterar visibilidade do launcher")) {
+                launcherEvasionCode.put(p, true);
+            }
+            if (t.contains("serviço em primeiro plano declarado")
+                    || t.contains("serviço em primeiro plano com tipo sensível declarado")) {
+                foregroundService.put(p, true);
+            }
+            if (t.contains("serviço em primeiro plano com tipo sensível declarado")) {
+                foregroundSensitive.put(p, true);
+            }
+            if (t.contains("wake lock declarado")) wakeLock.put(p, true);
+            if (t.contains("alarme exato declarado")) exactAlarm.put(p, true);
+            if (t.contains("componentes direct boot declarados")) directBoot.put(p, true);
+            if (t.contains("instalação a partir de arquivo")) installFromFile.put(p, true);
             if (t.contains("acesso à localização")) location.put(p, true);
             if (t.contains("microfone/câmera")) media.put(p, true);
             if (t.contains("acesso a sms") || t.contains("histórico de chamadas")) {
@@ -281,6 +312,182 @@ public final class ThreatCorrelationEngine {
                         "O pacote combina inicialização automática com múltiplos acessos a dados/sensores sensíveis. Isso merece revisão de privacidade e persistência.",
                         p, 5,
                         "Revise permissões, inicialização automática e a necessidade real desses acessos"));
+            }
+        }
+
+        for (String p : hiddenLauncher.keySet()) {
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean o = overlay.getOrDefault(p, false);
+            boolean b = boot.getOrDefault(p, false);
+            boolean m = admin.getOrDefault(p, false);
+            boolean n = notification.getOrDefault(p, false);
+            boolean r = remote.getOrDefault(p, false);
+            boolean i = apkInstall.getOrDefault(p, false);
+            boolean u = unknownOrigin.getOrDefault(p, false);
+            boolean impersonates = systemImpersonation.getOrDefault(p, false);
+            boolean evasionCode = launcherEvasionCode.getOrDefault(p, false);
+            boolean fg = foregroundService.getOrDefault(p, false);
+            boolean db = directBoot.getOrDefault(p, false);
+
+            int privileged = 0;
+            if (a) privileged++;
+            if (o) privileged++;
+            if (m) privileged++;
+            if (n) privileged++;
+            if (i) privileged++;
+
+            if ((evasionCode && (privileged >= 1 || b || impersonates))
+                    || (fg && b && privileged >= 1)
+                    || (db && fg && b && privileged >= 1)
+                    || (a && o)
+                    || (m && a)
+                    || (b && privileged >= 2)
+                    || (impersonates && privileged >= 1)
+                    || (u && privileged >= 2)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de ocultação do app e atividade privilegiada",
+                        "O aplicativo apresenta redução de visibilidade no launcher e mantém capacidades privilegiadas, persistência ou sinais adicionais de evasão. Essa cadeia merece revisão prioritária, embora ainda não prove malware.",
+                        p, 9,
+                        "Abra os detalhes do aplicativo, confirme a origem e revise acessibilidade, sobreposição, administrador, notificações e inicialização automática"));
+            } else if (evasionCode) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de launcher oculto e código de evasão",
+                        "O aplicativo está pouco visível no launcher e o APK referencia APIs capazes de desativar componentes/aplicativo. Essa combinação é mais específica do que qualquer um dos sinais isolados, mas ainda pode existir em funções legítimas.",
+                        p, 7,
+                        "Confirme se o aplicativo deveria ocultar sua entrada e compare o APK com a distribuição oficial"));
+            } else if ((db && (fg || b)) || (fg && b) || b || r || privileged > 0 || u || impersonates) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de app pouco visível e persistência",
+                        "O aplicativo tem presença reduzida no launcher e também apresenta outro sinal de persistência, privilégio, origem ou acesso remoto.",
+                        p, 6,
+                        "Confirme se a ausência do ícone é esperada e se o aplicativo precisa permanecer ativo em segundo plano"));
+            }
+        }
+
+        for (String p : installFromFile.keySet()) {
+            boolean h = hiddenLauncher.getOrDefault(p, false);
+            boolean d = dynamicCode.getOrDefault(p, false);
+            boolean i = apkInstall.getOrDefault(p, false);
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean o = overlay.getOrDefault(p, false);
+            boolean impersonates = systemImpersonation.getOrDefault(p, false);
+
+            if (impersonates && (h || d) && (a || o || i)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de sideload, identidade falsa e privilégio",
+                        "O pacote foi classificado pelo Android como instalado a partir de arquivo e também combina identidade semelhante ao sistema com ocultação/código dinâmico e capacidade privilegiada. O conjunto merece revisão prioritária, mas sideload isoladamente não é tratado como malware.",
+                        p, 8,
+                        "Confirme a origem do APK, o desenvolvedor e os privilégios antes de manter o aplicativo"));
+            } else if ((h && (a || o || d)) || (d && i)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de sideload com evasão ou distribuição",
+                        "O pacote foi instalado a partir de arquivo e também apresenta ocultação, código dinâmico, instalação de APKs ou acesso privilegiado. A combinação aumenta a prioridade de revisão sem considerar o sideload uma ameaça por si só.",
+                        p, 6,
+                        "Compare assinatura, hash e origem do APK com a distribuição oficial"));
+            }
+        }
+
+        for (String p : directBoot.keySet()) {
+            boolean b = boot.getOrDefault(p, false);
+            boolean fg = foregroundService.getOrDefault(p, false);
+            boolean h = hiddenLauncher.getOrDefault(p, false);
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean e = batteryExempt.getOrDefault(p, false);
+            boolean w = wakeLock.getOrDefault(p, false);
+            boolean x = exactAlarm.getOrDefault(p, false);
+
+            if (h && fg && b && a) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de persistência antes do desbloqueio",
+                        "O pacote declara componentes Direct Boot e combina essa capacidade com launcher pouco visível, foreground service, boot automático e acessibilidade. Essa cadeia merece revisão prioritária; não confirma execução maliciosa antes do desbloqueio.",
+                        p, 9,
+                        "Revise a origem do aplicativo e se ele realmente precisa executar componentes antes do primeiro desbloqueio"));
+            } else if ((b && fg && (e || w || x)) || (h && (b || fg))) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de Direct Boot e persistência",
+                        "O pacote declara componentes aptos ao modo Direct Boot e também apresenta outros mecanismos de persistência ou reativação.",
+                        p, 6,
+                        "Confirme se execução antes do desbloqueio é necessária para a função legítima do aplicativo"));
+            }
+        }
+
+        for (String p : foregroundService.keySet()) {
+            boolean b = boot.getOrDefault(p, false);
+            boolean e = batteryExempt.getOrDefault(p, false);
+            boolean w = wakeLock.getOrDefault(p, false);
+            boolean x = exactAlarm.getOrDefault(p, false);
+            boolean h = hiddenLauncher.getOrDefault(p, false);
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean o = overlay.getOrDefault(p, false);
+            boolean fs = foregroundSensitive.getOrDefault(p, false);
+
+            int privacySignals = 0;
+            if (location.getOrDefault(p, false)) privacySignals++;
+            if (media.getOrDefault(p, false)) privacySignals++;
+            if (messaging.getOrDefault(p, false)) privacySignals++;
+
+            if ((h && b && (a || o))
+                    || (b && e && (privacySignals > 0 || a || o || fs))) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de persistência em foreground e acesso sensível",
+                        "O pacote declara foreground service e combina essa capacidade com boot, exceção ativa de bateria, ocultação ou acesso privilegiado/sensível. Essa cadeia pode sustentar execução e coleta por longos períodos, mas também pode existir em apps legítimos.",
+                        p, 8,
+                        "Confirme se a execução persistente é esperada e revise launcher, bateria, sensores, acessibilidade e sobreposição"));
+            } else if ((b && (w || x || e) && (privacySignals > 0 || fs))
+                    || (h && b)
+                    || (fs && (b || e))) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de capacidades de persistência em segundo plano",
+                        "O pacote combina foreground service com mecanismos adicionais de reativação/manutenção, como boot, wake lock, alarme exato, exceção de bateria ou tipos sensíveis de serviço.",
+                        p, 6,
+                        "Revise se o comportamento em segundo plano é necessário para a função esperada do aplicativo"));
+            }
+        }
+
+        for (String p : systemImpersonation.keySet()) {
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean o = overlay.getOrDefault(p, false);
+            boolean b = boot.getOrDefault(p, false);
+            boolean i = apkInstall.getOrDefault(p, false);
+            boolean d = dynamicCode.getOrDefault(p, false);
+            boolean m = admin.getOrDefault(p, false);
+            boolean n = notification.getOrDefault(p, false);
+            boolean u = unknownOrigin.getOrDefault(p, false);
+            int privacy = sensitive.getOrDefault(p, 0);
+
+            int privilegedSignals = 0;
+            if (a) privilegedSignals++;
+            if (o) privilegedSignals++;
+            if (i) privilegedSignals++;
+            if (d) privilegedSignals++;
+            if (m) privilegedSignals++;
+            if (n) privilegedSignals++;
+
+            if ((a && o) || (a && i) || (d && i) || (m && a)
+                    || (u && privilegedSignals >= 2)
+                    || (b && privilegedSignals >= 2 && privacy > 0)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de identidade falsa e controle privilegiado",
+                        "O pacote não é um app de sistema, mas se apresenta como Android/Google/fabricante e combina essa identidade com múltiplas capacidades de controle, persistência ou distribuição. O conjunto merece revisão prioritária; a correlação não prova malware por si só.",
+                        p, 9,
+                        "Confirme a origem e o desenvolvedor do aplicativo; revise acessibilidade, sobreposição, administrador, instalação de APKs e demais privilégios"));
+            } else if (privilegedSignals > 0 || (b && privacy > 0) || u) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de identidade semelhante ao sistema",
+                        "O pacote se apresenta como componente do Android/Google/fabricante sem ser marcado como app de sistema e também possui outro sinal relevante de privilégio, persistência, origem ou coleta.",
+                        p, 6,
+                        "Compare o aplicativo com a versão oficial do fabricante e revise sua origem e permissões"));
             }
         }
 

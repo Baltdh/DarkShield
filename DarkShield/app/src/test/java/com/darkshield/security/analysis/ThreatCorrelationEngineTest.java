@@ -428,6 +428,202 @@ public class ThreatCorrelationEngineTest {
         assertEquals("Correlação de acesso remoto e administrador", out.get(0).title);
     }
 
+    @Test public void systemImpersonationAloneDoesNotCreateDerivedCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Identidade semelhante a componente de sistema", ScanFinding.Level.LOW)));
+        assertTrue(out.isEmpty());
+    }
+
+    @Test public void correlatesSystemImpersonationWithAccessibilityAndOverlay() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Possível app disfarçado de sistema", ScanFinding.Level.MEDIUM),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),
+                f("Permissão de sobreposição concedida", ScanFinding.Level.MEDIUM)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(9, out.get(0).points);
+        assertTrue(out.get(0).title.contains("identidade falsa"));
+    }
+
+    @Test public void correlatesSystemImpersonationWithUnknownOriginAndPrivilege() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Identidade semelhante a componente de sistema", ScanFinding.Level.LOW),
+                f("Origem de instalação não identificada", ScanFinding.Level.INFO),
+                f("Pode solicitar instalação de APKs", ScanFinding.Level.MEDIUM),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(6, out.get(0).points);
+    }
+
+
+    @Test public void hiddenLauncherAloneDoesNotCreateDerivedCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Entrada do app no launcher desativada", ScanFinding.Level.LOW)));
+        assertTrue(out.isEmpty());
+    }
+
+    @Test public void hiddenLauncherWithBootCreatesMediumCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Entrada do app no launcher desativada", ScanFinding.Level.LOW),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(6, out.get(0).points);
+        assertTrue(out.get(0).title.contains("pouco visível"));
+    }
+
+    @Test public void hiddenLauncherWithAccessibilityAndOverlayIsHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Entrada do app no launcher desativada", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),
+                f("Permissão de sobreposição concedida", ScanFinding.Level.MEDIUM)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(9, out.get(0).points);
+        assertTrue(out.get(0).title.contains("ocultação"));
+    }
+
+
+    @Test public void hiddenLauncherWithSuppressionApiCreatesSpecificMediumCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Entrada do app no launcher desativada", ScanFinding.Level.LOW),
+                f("Capacidade de alterar visibilidade do launcher", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(7, out.get(0).points);
+        assertTrue(out.get(0).title.contains("código de evasão"));
+    }
+
+    @Test public void hiddenLauncherSuppressionApiAndAccessibilityIsHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Entrada do app no launcher desativada", ScanFinding.Level.LOW),
+                f("Capacidade de alterar visibilidade do launcher", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(9, out.get(0).points);
+        assertTrue(out.get(0).title.contains("ocultação"));
+    }
+
+
+    @Test public void foregroundServiceAloneDoesNotCreateCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Serviço em primeiro plano declarado", ScanFinding.Level.INFO)));
+        assertTrue(out.isEmpty());
+    }
+
+    @Test public void foregroundBootWakeAndLocationCreateMediumPersistenceCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Serviço em primeiro plano declarado", ScanFinding.Level.INFO),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW),
+                f("Wake lock declarado", ScanFinding.Level.INFO),
+                f("Acesso à localização", ScanFinding.Level.INFO)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(6, out.get(0).points);
+        assertTrue(out.get(0).title.contains("persistência"));
+    }
+
+    @Test public void foregroundBootBatteryExemptionAndLocationAreHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Serviço em primeiro plano declarado", ScanFinding.Level.INFO),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW),
+                f("Exceção de otimização de bateria ativa", ScanFinding.Level.MEDIUM),
+                f("Acesso à localização", ScanFinding.Level.INFO)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(8, out.get(0).points);
+        assertTrue(out.get(0).title.contains("foreground"));
+    }
+
+    @Test public void hiddenLauncherForegroundBootAndAccessibilityAreHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Entrada do app no launcher desativada", ScanFinding.Level.LOW),
+                f("Serviço em primeiro plano declarado", ScanFinding.Level.INFO),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(9, out.get(0).points);
+        assertTrue(out.get(0).title.contains("ocultação"));
+    }
+
+
+    @Test public void directBootAloneDoesNotCreateCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Componentes Direct Boot declarados", ScanFinding.Level.INFO)));
+        assertTrue(out.isEmpty());
+    }
+
+    @Test public void directBootBootForegroundAndWakeCreateMediumCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Componentes Direct Boot declarados", ScanFinding.Level.INFO),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW),
+                f("Serviço em primeiro plano declarado", ScanFinding.Level.INFO),
+                f("Wake lock declarado", ScanFinding.Level.INFO)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(6, out.get(0).points);
+        assertTrue(out.get(0).title.contains("Direct Boot"));
+    }
+
+    @Test public void directBootHiddenForegroundBootAccessibilityIsHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Componentes Direct Boot declarados", ScanFinding.Level.INFO),
+                f("Entrada do app no launcher desativada", ScanFinding.Level.LOW),
+                f("Serviço em primeiro plano declarado", ScanFinding.Level.INFO),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(9, out.get(0).points);
+    }
+
+
+    @Test public void fileInstallAloneDoesNotCreateCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Instalação a partir de arquivo", ScanFinding.Level.INFO)));
+        assertTrue(out.isEmpty());
+    }
+
+    @Test public void fileInstallDynamicCodeAndApkInstallCreateMediumCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Instalação a partir de arquivo", ScanFinding.Level.INFO),
+                f("Capacidade de carregamento dinâmico de código", ScanFinding.Level.LOW),
+                f("Pode solicitar instalação de APKs", ScanFinding.Level.MEDIUM)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(6, out.get(0).points);
+        assertTrue(out.get(0).title.contains("sideload"));
+    }
+
+    @Test public void fileInstallSystemImpersonationDynamicCodeAndAccessibilityAreHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Instalação a partir de arquivo", ScanFinding.Level.INFO),
+                f("Possível app disfarçado de sistema", ScanFinding.Level.MEDIUM),
+                f("Capacidade de carregamento dinâmico de código", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(8, out.get(0).points);
+        assertTrue(out.get(0).title.contains("sideload"));
+    }
+
+
     @Test public void correlationTieBreakIsStableForEqualStrengthFindings() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),

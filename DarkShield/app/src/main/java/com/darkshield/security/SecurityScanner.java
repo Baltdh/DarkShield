@@ -6,9 +6,11 @@ import android.app.admin.DevicePolicyManager;
 import android.app.KeyguardManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
 import android.net.ConnectivityManager;
 import android.net.LinkProperties;
@@ -27,6 +29,10 @@ import java.util.*;
 import com.darkshield.security.analysis.StaticApkAnalyzer;
 import com.darkshield.security.analysis.ThreatCorrelationEngine;
 import com.darkshield.security.analysis.PackageIdentityBaseline;
+import com.darkshield.security.analysis.SystemAppIdentityHeuristics;
+import com.darkshield.security.analysis.HiddenFileScanner;
+import com.darkshield.security.analysis.LauncherVisibilityHeuristics;
+import com.darkshield.security.analysis.PersistenceCapabilityHeuristics;
 
 public final class SecurityScanner {
     private static final String[] SENSITIVE_PERMISSIONS = {
@@ -100,6 +106,8 @@ public final class SecurityScanner {
             out.addAll(ThreatCorrelationEngine.correlate(out));
             if (listener != null) listener.onStage("Verificando integridade do sistema…");
             checkSystemIntegrity(out);
+            if (listener != null) listener.onStage("Analisando arquivos ocultos acessíveis…");
+            out.addAll(HiddenFileScanner.scan(c));
             if (listener != null) listener.onStage("Verificando rede…");
             checkNetworkState(out);
             if (listener != null) listener.onStage("Finalizando relatório…");
@@ -158,6 +166,8 @@ public final class SecurityScanner {
         out.addAll(ThreatCorrelationEngine.correlate(out));
         if (listener != null) listener.onStage("Verificando integridade do sistema…");
         checkSystemIntegrity(out);
+        if (listener != null) listener.onStage("Analisando arquivos ocultos acessíveis…");
+        out.addAll(HiddenFileScanner.scan(c));
         if (listener != null) listener.onStage("Verificando rede…");
         checkNetworkState(out);
         if (listener != null) listener.onStage("Finalizando relatório…");
@@ -312,6 +322,68 @@ public final class SecurityScanner {
                     "Revise o acesso em Configurações > Acesso especial > Acesso aos dados de uso"));
         }
 
+        if (!system) {
+            ForegroundServiceDeclaration foregroundDeclaration =
+                    inspectForegroundServiceDeclaration(p);
+            boolean foregroundService =
+                    PersistenceCapabilityHeuristics.hasForegroundServiceCapability(ps)
+                            || foregroundDeclaration.declared;
+            boolean wakeLock = PersistenceCapabilityHeuristics.hasWakeLock(ps);
+            boolean exactAlarm = PersistenceCapabilityHeuristics.hasExactAlarm(ps);
+            int sensitiveForegroundTypes = Math.max(
+                    PersistenceCapabilityHeuristics.sensitiveForegroundServiceTypes(ps),
+                    foregroundDeclaration.sensitiveTypeCount);
+
+            if (foregroundService) {
+                String typeSummary =
+                        PersistenceCapabilityHeuristics.sensitiveTypeSummary(ps);
+                if (typeSummary.isEmpty()) {
+                    typeSummary = foregroundDeclaration.summary;
+                } else if (!foregroundDeclaration.summary.isEmpty()
+                        && !typeSummary.equals(foregroundDeclaration.summary)) {
+                    typeSummary = typeSummary + "; manifesto: " + foregroundDeclaration.summary;
+                }
+                out.add(new ScanFinding(
+                        sensitiveForegroundTypes > 0
+                                ? ScanFinding.Level.LOW
+                                : ScanFinding.Level.INFO,
+                        sensitiveForegroundTypes > 0
+                                ? "Serviço em primeiro plano com tipo sensível declarado"
+                                : "Serviço em primeiro plano declarado",
+                        sensitiveForegroundTypes > 0
+                                ? "O aplicativo declara capacidade de foreground service para: "
+                                        + typeSummary
+                                        + ". Isso descreve a capacidade declarada no pacote e não significa que o serviço esteja ativo."
+                                : "O aplicativo declara capacidade de executar foreground service"
+                                        + (foregroundDeclaration.summary.isEmpty()
+                                            ? "."
+                                            : " (tipos: " + foregroundDeclaration.summary + ").")
+                                        + " Isso é comum em apps legítimos e não significa que o serviço esteja ativo.",
+                        p.packageName,
+                        sensitiveForegroundTypes > 0 ? 2 : 0,
+                        sensitiveForegroundTypes > 0
+                                ? "Correlacione com boot, exceção de bateria, launcher oculto e permissões concedidas"
+                                : null));
+            }
+
+            if (wakeLock) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Wake lock declarado",
+                        "O aplicativo pode manter CPU/dispositivo acordado durante determinadas tarefas; o sinal isolado é comum em apps legítimos.",
+                        p.packageName, 0, null));
+            }
+
+            if (exactAlarm) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Alarme exato declarado",
+                        "O aplicativo declara capacidade de agendar alarmes exatos. Isso pode permitir reativação pontual em horários específicos, mas é legítimo em alarmes, calendários e automações.",
+                        p.packageName, 0,
+                        "Revise apenas quando combinado com ocultação, persistência ou privilégios inesperados"));
+            }
+        }
+
         if (!system && ps.contains("android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS")) {
             boolean exempt = isIgnoringBatteryOptimizations(p.packageName);
             out.add(new ScanFinding(
@@ -333,6 +405,19 @@ public final class SecurityScanner {
                     "O aplicativo tem acesso operacional à capacidade de solicitar instalações",
                     p.packageName, 4,
                     "Verifique se a instalação de APKs faz parte da função esperada"));
+        }
+
+        if (!system) {
+            int directBootComponents = countDirectBootAwareComponents(p);
+            if (directBootComponents > 0) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Componentes Direct Boot declarados",
+                        directBootComponents
+                                + " componente(s) podem ser instanciados durante o modo Direct Boot, antes do primeiro desbloqueio após reinicialização. Isso é legítimo em alguns apps e não prova persistência maliciosa.",
+                        p.packageName, 0,
+                        "Correlacione com boot automático, foreground service, launcher oculto e outros privilégios"));
+            }
         }
 
         if (!system && ps.contains("android.permission.RECEIVE_BOOT_COMPLETED")) {
@@ -368,7 +453,8 @@ public final class SecurityScanner {
 
         String installer = null;
         if (!system) {
-            installer = getInstaller(p.packageName);
+            InstallSourceDetails installSource = getInstallSourceDetails(p.packageName);
+            installer = installSource.installingPackage;
             if (installer == null || installer.trim().isEmpty()) {
                 out.add(new ScanFinding(
                         ScanFinding.Level.INFO, "Origem de instalação não identificada",
@@ -378,8 +464,85 @@ public final class SecurityScanner {
             } else {
                 out.add(new ScanFinding(
                         ScanFinding.Level.INFO, "Origem de instalação",
-                        "Instalador informado pelo Android: " + installer,
+                        installSource.describe(),
                         p.packageName, 0, null));
+            }
+
+            if (installSource.sideloadLike) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Instalação a partir de arquivo",
+                        "O Android classificou a origem como "
+                                + installSource.sourceLabel
+                                + ". Isso pode ser totalmente legítimo e não é tratado como ameaça isoladamente.",
+                        p.packageName, 0,
+                        "Confirme a procedência do arquivo quando houver outros sinais de risco"));
+            }
+
+            boolean claimsSystemIdentity =
+                    SystemAppIdentityHeuristics.claimsSystemIdentity(
+                            label, p.packageName, Build.MANUFACTURER, Build.BRAND);
+            int impersonationRisk = SystemAppIdentityHeuristics.impersonationRisk(
+                    false,
+                    claimsSystemIdentity,
+                    installer != null && !installer.trim().isEmpty(),
+                    sensitive,
+                    hasAccessibilityService(p),
+                    isPermissionGranted("android.permission.SYSTEM_ALERT_WINDOW", p.packageName),
+                    isPermissionGranted("android.permission.REQUEST_INSTALL_PACKAGES", p.packageName));
+            if (impersonationRisk > 0) {
+                ScanFinding.Level level = impersonationRisk >= 8
+                        ? ScanFinding.Level.HIGH
+                        : impersonationRisk >= 5
+                                ? ScanFinding.Level.MEDIUM
+                                : ScanFinding.Level.LOW;
+                out.add(new ScanFinding(
+                        level,
+                        impersonationRisk >= 5
+                                ? "Possível app disfarçado de sistema"
+                                : "Identidade semelhante a componente de sistema",
+                        "O aplicativo não é marcado pelo Android como app de sistema, mas o nome ou pacote se apresenta como Android, Google ou fabricante do aparelho."
+                                + (impersonationRisk >= 5
+                                    ? " A identidade contradiz outros sinais observados no pacote."
+                                    : " O nome isoladamente não prova comportamento malicioso."),
+                        p.packageName,
+                        impersonationRisk,
+                        impersonationRisk >= 5
+                                ? "Confirme o desenvolvedor, a origem da instalação e as permissões antes de manter o aplicativo"
+                                : "Revise apenas se você não reconhecer o aplicativo"));
+            }
+        }
+
+        if (!system) {
+            LauncherVisibilityHeuristics.State launcherState =
+                    launcherVisibilityState(p.packageName);
+            int launcherRisk = LauncherVisibilityHeuristics.riskScore(
+                    false,
+                    launcherState,
+                    ps.contains("android.permission.RECEIVE_BOOT_COMPLETED"),
+                    hasAccessibilityService(p),
+                    isPermissionGranted("android.permission.SYSTEM_ALERT_WINDOW", p.packageName),
+                    installer != null && !installer.trim().isEmpty(),
+                    sensitive);
+            if (launcherRisk > 0) {
+                boolean disabled =
+                        launcherState == LauncherVisibilityHeuristics.State.DECLARED_BUT_DISABLED;
+                ScanFinding.Level level = launcherRisk >= 8
+                        ? ScanFinding.Level.HIGH
+                        : launcherRisk >= 5
+                                ? ScanFinding.Level.MEDIUM
+                                : ScanFinding.Level.LOW;
+                out.add(new ScanFinding(
+                        level,
+                        disabled
+                                ? "Entrada do app no launcher desativada"
+                                : "App sem entrada no launcher com sinais sensíveis",
+                        disabled
+                                ? "O pacote declara uma entrada de launcher, mas ela não está disponível como atividade de launcher ativa. Isso pode ser legítimo, porém também pode reduzir a visibilidade do app para o usuário."
+                                : "O pacote não expõe uma entrada de launcher e também apresenta outros sinais de persistência, privilégio ou acesso sensível. Apps de serviço legítimos podem funcionar assim, portanto a combinação deve ser revisada em contexto.",
+                        p.packageName,
+                        launcherRisk,
+                        "Confirme se o aplicativo deveria aparecer na gaveta e revise origem, persistência e privilégios"));
             }
         }
 
@@ -448,6 +611,135 @@ public final class SecurityScanner {
 
         if (!system && ai.sourceDir != null && !ai.sourceDir.isEmpty()) {
             out.addAll(StaticApkAnalyzer.analyze(ai.sourceDir, p.packageName));
+        }
+    }
+
+    private int countDirectBootAwareComponents(PackageInfo p) {
+        if (p == null || Build.VERSION.SDK_INT < 24) return 0;
+        int count = 0;
+        if (p.services != null) {
+            for (ServiceInfo service : p.services) {
+                if (service != null && service.directBootAware) count++;
+            }
+        }
+        if (p.receivers != null) {
+            for (android.content.pm.ActivityInfo receiver : p.receivers) {
+                if (receiver != null && receiver.directBootAware) count++;
+            }
+        }
+        if (p.providers != null) {
+            for (android.content.pm.ProviderInfo provider : p.providers) {
+                if (provider != null && provider.directBootAware) count++;
+            }
+        }
+        if (p.activities != null) {
+            for (android.content.pm.ActivityInfo activity : p.activities) {
+                if (activity != null && activity.directBootAware) count++;
+            }
+        }
+        return count;
+    }
+
+    private ForegroundServiceDeclaration inspectForegroundServiceDeclaration(PackageInfo p) {
+        if (p == null || p.services == null || Build.VERSION.SDK_INT < 29) {
+            return new ForegroundServiceDeclaration(false, 0, "");
+        }
+
+        Set<String> types = new LinkedHashSet<>();
+        int sensitive = 0;
+        boolean declared = false;
+        for (ServiceInfo service : p.services) {
+            if (service == null) continue;
+            int mask;
+            try {
+                mask = service.getForegroundServiceType();
+            } catch (Exception e) {
+                continue;
+            }
+            if (mask == 0) continue;
+            declared = true;
+            if (mask == ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST) {
+                types.add("tipos definidos pelo manifesto");
+                continue;
+            }
+
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA) != 0) {
+                types.add("câmera");
+                sensitive++;
+            }
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE) != 0) {
+                types.add("microfone");
+                sensitive++;
+            }
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION) != 0) {
+                types.add("localização");
+                sensitive++;
+            }
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION) != 0) {
+                types.add("captura/projeção de tela");
+                sensitive++;
+            }
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH) != 0) {
+                types.add("saúde/sensores");
+                sensitive++;
+            }
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC) != 0) {
+                types.add("sincronização de dados");
+            }
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK) != 0) {
+                types.add("reprodução de mídia");
+            }
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE) != 0) {
+                types.add("dispositivo conectado");
+            }
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL) != 0) {
+                types.add("chamada");
+            }
+            if (Build.VERSION.SDK_INT >= 34
+                    && (mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING) != 0) {
+                types.add("mensageria remota");
+            }
+        }
+        return new ForegroundServiceDeclaration(
+                declared, sensitive, String.join(", ", types));
+    }
+
+    private static final class ForegroundServiceDeclaration {
+        final boolean declared;
+        final int sensitiveTypeCount;
+        final String summary;
+
+        ForegroundServiceDeclaration(
+                boolean declared, int sensitiveTypeCount, String summary) {
+            this.declared = declared;
+            this.sensitiveTypeCount = sensitiveTypeCount;
+            this.summary = summary == null ? "" : summary;
+        }
+    }
+
+    private LauncherVisibilityHeuristics.State launcherVisibilityState(String packageName) {
+        if (packageName == null || packageName.trim().isEmpty()) {
+            return LauncherVisibilityHeuristics.State.UNKNOWN;
+        }
+        try {
+            Intent launcherIntent = new Intent(Intent.ACTION_MAIN);
+            launcherIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+            launcherIntent.setPackage(packageName);
+
+            List<ResolveInfo> enabled = pm.queryIntentActivities(launcherIntent, 0);
+            if (enabled != null && !enabled.isEmpty()) {
+                return LauncherVisibilityHeuristics.State.VISIBLE;
+            }
+
+            List<ResolveInfo> declared = pm.queryIntentActivities(
+                    launcherIntent,
+                    PackageManager.MATCH_DISABLED_COMPONENTS);
+            if (declared != null && !declared.isEmpty()) {
+                return LauncherVisibilityHeuristics.State.DECLARED_BUT_DISABLED;
+            }
+            return LauncherVisibilityHeuristics.State.NO_LAUNCHER_DECLARED;
+        } catch (Exception e) {
+            return LauncherVisibilityHeuristics.State.UNKNOWN;
         }
     }
 
@@ -833,14 +1125,96 @@ public final class SecurityScanner {
         }
     }
 
-    private String getInstaller(String packageName) {
+    private InstallSourceDetails getInstallSourceDetails(String packageName) {
         try {
             if (Build.VERSION.SDK_INT >= 30) {
-                return pm.getInstallSourceInfo(packageName).getInstallingPackageName();
+                android.content.pm.InstallSourceInfo info =
+                        pm.getInstallSourceInfo(packageName);
+                String installing = info.getInstallingPackageName();
+                String initiating = info.getInitiatingPackageName();
+                String originating = info.getOriginatingPackageName();
+                String updateOwner = Build.VERSION.SDK_INT >= 34
+                        ? info.getUpdateOwnerPackageName()
+                        : null;
+                int packageSource = Build.VERSION.SDK_INT >= 33
+                        ? info.getPackageSource()
+                        : android.content.pm.PackageInstaller.PACKAGE_SOURCE_UNSPECIFIED;
+                return new InstallSourceDetails(
+                        installing,
+                        initiating,
+                        originating,
+                        updateOwner,
+                        packageSourceLabel(packageSource),
+                        packageSource == android.content.pm.PackageInstaller.PACKAGE_SOURCE_LOCAL_FILE
+                                || packageSource
+                                   == android.content.pm.PackageInstaller.PACKAGE_SOURCE_DOWNLOADED_FILE);
             }
-            return pm.getInstallerPackageName(packageName);
+            String installer = pm.getInstallerPackageName(packageName);
+            return new InstallSourceDetails(
+                    installer, installer, null, null, "não especificada", false);
         } catch (Exception e) {
-            return null;
+            return new InstallSourceDetails(
+                    null, null, null, null, "não especificada", false);
+        }
+    }
+
+    private String packageSourceLabel(int source) {
+        if (Build.VERSION.SDK_INT < 33) return "não especificada";
+        if (source == android.content.pm.PackageInstaller.PACKAGE_SOURCE_STORE) {
+            return "loja";
+        }
+        if (source == android.content.pm.PackageInstaller.PACKAGE_SOURCE_LOCAL_FILE) {
+            return "arquivo local";
+        }
+        if (source == android.content.pm.PackageInstaller.PACKAGE_SOURCE_DOWNLOADED_FILE) {
+            return "arquivo baixado";
+        }
+        if (source == android.content.pm.PackageInstaller.PACKAGE_SOURCE_OTHER) {
+            return "outra origem";
+        }
+        return "não especificada";
+    }
+
+    private static final class InstallSourceDetails {
+        final String installingPackage;
+        final String initiatingPackage;
+        final String originatingPackage;
+        final String updateOwnerPackage;
+        final String sourceLabel;
+        final boolean sideloadLike;
+
+        InstallSourceDetails(
+                String installingPackage,
+                String initiatingPackage,
+                String originatingPackage,
+                String updateOwnerPackage,
+                String sourceLabel,
+                boolean sideloadLike) {
+            this.installingPackage = installingPackage;
+            this.initiatingPackage = initiatingPackage;
+            this.originatingPackage = originatingPackage;
+            this.updateOwnerPackage = updateOwnerPackage;
+            this.sourceLabel = sourceLabel == null ? "não especificada" : sourceLabel;
+            this.sideloadLike = sideloadLike;
+        }
+
+        String describe() {
+            StringBuilder detail = new StringBuilder();
+            detail.append("Instalador: ")
+                    .append(installingPackage == null ? "não informado" : installingPackage);
+            if (initiatingPackage != null
+                    && !initiatingPackage.equals(installingPackage)) {
+                detail.append("; iniciador: ").append(initiatingPackage);
+            }
+            if (originatingPackage != null) {
+                detail.append("; origem declarada: ").append(originatingPackage);
+            }
+            if (updateOwnerPackage != null) {
+                detail.append("; responsável por atualizações: ")
+                        .append(updateOwnerPackage);
+            }
+            detail.append("; categoria: ").append(sourceLabel);
+            return detail.toString();
         }
     }
 
