@@ -428,6 +428,37 @@ public class ThreatCorrelationEngineTest {
         assertEquals("Correlação de acesso remoto e administrador", out.get(0).title);
     }
 
+    @Test public void systemImpersonationAloneDoesNotCreateDerivedCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Identidade semelhante a componente de sistema", ScanFinding.Level.LOW)));
+        assertTrue(out.isEmpty());
+    }
+
+    @Test public void correlatesSystemImpersonationWithAccessibilityAndOverlay() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Possível app disfarçado de sistema", ScanFinding.Level.MEDIUM),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH),
+                f("Permissão de sobreposição concedida", ScanFinding.Level.MEDIUM)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(9, out.get(0).points);
+        assertTrue(out.get(0).title.contains("identidade falsa"));
+    }
+
+    @Test public void correlatesSystemImpersonationWithUnknownOriginAndPrivilege() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Identidade semelhante a componente de sistema", ScanFinding.Level.LOW),
+                f("Origem de instalação não identificada", ScanFinding.Level.INFO),
+                f("Pode solicitar instalação de APKs", ScanFinding.Level.MEDIUM),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(6, out.get(0).points);
+    }
+
+
     @Test public void correlationTieBreakIsStableForEqualStrengthFindings() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
