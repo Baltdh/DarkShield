@@ -490,4 +490,61 @@ public class ThreatCorrelationEngineTest {
         assertEquals("Correlação de acesso remoto e administrador", out.get(0).title);
     }
 
+
+    @Test public void screenCaptureAloneDoesNotCreateCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Capacidade de captura de tela declarada", ScanFinding.Level.LOW)));
+        assertTrue(out.isEmpty());
+    }
+
+    @Test public void screenCaptureWithAdvancedAccessibilityIsHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Referências a captura de tela/projeção", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo com capacidades avançadas", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(9, out.get(0).points);
+        assertTrue(out.get(0).title.contains("captura de tela"));
+    }
+
+    @Test public void systemLabelCollisionAloneDoesNotCreateCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Nome semelhante a aplicativo do sistema", ScanFinding.Level.LOW)));
+        assertTrue(out.isEmpty());
+    }
+
+    @Test public void systemLabelCollisionWithScreenCaptureIsHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Nome semelhante a aplicativo do sistema", ScanFinding.Level.LOW),
+                f("Capacidade de captura de tela declarada", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(9, out.get(0).points);
+        assertTrue(out.get(0).title.contains("disfarce"));
+    }
+
+    @Test public void hiddenLauncherBootAndAccessibilityIsHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Aplicativo sem inicializador visível", ScanFinding.Level.LOW),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(8, out.get(0).points);
+        assertTrue(out.get(0).title.contains("ocultação"));
+    }
+
+    @Test public void hiddenLauncherWithApkInstallIsMedium() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Aplicativo sem inicializador visível", ScanFinding.Level.LOW),
+                f("Pode solicitar instalação de APKs", ScanFinding.Level.MEDIUM)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(5, out.get(0).points);
+    }
+
 }
