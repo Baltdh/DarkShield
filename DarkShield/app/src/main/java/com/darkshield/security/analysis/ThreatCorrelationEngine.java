@@ -34,6 +34,7 @@ public final class ThreatCorrelationEngine {
 
         Map<String, Boolean> remote = new HashMap<>();
         Map<String, Boolean> accessibility = new HashMap<>();
+        Map<String, Boolean> accessibilityAdvanced = new HashMap<>();
         Map<String, Boolean> accessibilityDeclared = new HashMap<>();
         Map<String, Boolean> overlay = new HashMap<>();
         Map<String, Boolean> admin = new HashMap<>();
@@ -49,6 +50,9 @@ public final class ThreatCorrelationEngine {
         Map<String, Boolean> installerChanged = new HashMap<>();
         Map<String, Boolean> thirdPartyKeyboard = new HashMap<>();
         Map<String, Boolean> embeddedPayload = new HashMap<>();
+        Map<String, Boolean> screenCapture = new HashMap<>();
+        Map<String, Boolean> systemImpersonation = new HashMap<>();
+        Map<String, Boolean> hiddenLauncher = new HashMap<>();
         Map<String, Boolean> location = new HashMap<>();
         Map<String, Boolean> media = new HashMap<>();
         Map<String, Boolean> messaging = new HashMap<>();
@@ -61,6 +65,10 @@ public final class ThreatCorrelationEngine {
 
             if (t.contains("acesso remoto")) remote.put(p, true);
             if (t.contains("serviço de acessibilidade ativo")) accessibility.put(p, true);
+            if (t.contains("serviço de acessibilidade ativo")
+                    && t.contains("capacidades avançadas")) {
+                accessibilityAdvanced.put(p, true);
+            }
             if (t.contains("serviço de acessibilidade declarado")) accessibilityDeclared.put(p, true);
             if (t.contains("sobreposição")) overlay.put(p, true);
             if (t.contains("administrador do dispositivo")) admin.put(p, true);
@@ -79,6 +87,16 @@ public final class ThreatCorrelationEngine {
             if (t.contains("origem de instalação alterada")) installerChanged.put(p, true);
             if (t.contains("teclado de terceiros ativo")) thirdPartyKeyboard.put(p, true);
             if (t.contains("payload de pacote embutido")) embeddedPayload.put(p, true);
+            if (t.contains("captura de tela declarada")
+                    || t.contains("captura de tela/projeção")) {
+                screenCapture.put(p, true);
+            }
+            if (t.contains("nome semelhante a aplicativo do sistema")) {
+                systemImpersonation.put(p, true);
+            }
+            if (t.contains("aplicativo sem inicializador visível")) {
+                hiddenLauncher.put(p, true);
+            }
             if (t.contains("acesso à localização")) location.put(p, true);
             if (t.contains("microfone/câmera")) media.put(p, true);
             if (t.contains("acesso a sms") || t.contains("histórico de chamadas")) {
@@ -240,6 +258,100 @@ public final class ThreatCorrelationEngine {
                         "O pacote contém APK/JAR embutido e também mantém uma capacidade privilegiada ativa. O payload isolado pode ser legítimo, mas a combinação merece inspeção adicional.",
                         p, 6,
                         "Confirme a origem e assinatura do aplicativo e revise o privilégio ativo antes de confiar no payload embutido"));
+            }
+        }
+
+        for (String p : screenCapture.keySet()) {
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean advanced = accessibilityAdvanced.getOrDefault(p, false);
+            boolean o = overlay.getOrDefault(p, false);
+            boolean r = remote.getOrDefault(p, false);
+            boolean b = boot.getOrDefault(p, false);
+            boolean h = hiddenLauncher.getOrDefault(p, false);
+
+            if (advanced || (a && (o || r))) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de captura de tela e controle de interface",
+                        "O pacote apresenta capacidade de captura/projeção de tela junto de acessibilidade com controle avançado, ou de acessibilidade combinada com sobreposição/acesso remoto. Essa combinação é compatível com fluxos de suporte remoto e também com abuso de captura de tela; não confirma espionagem sozinha.",
+                        p, 9,
+                        "Confirme se gravação/compartilhamento de tela foi autorizada e revise acessibilidade, sobreposição e origem do aplicativo"));
+            } else if (a || o || r || (b && h)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de captura de tela com capacidade privilegiada",
+                        "O pacote combina referências/capacidade de captura de tela com outro mecanismo de controle, sobreposição, acesso remoto ou persistência oculta.",
+                        p, 6,
+                        "Confirme a finalidade de captura de tela e remova privilégios que não sejam necessários"));
+            }
+        }
+
+        for (String p : systemImpersonation.keySet()) {
+            boolean advanced = accessibilityAdvanced.getOrDefault(p, false);
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean o = overlay.getOrDefault(p, false);
+            boolean m = admin.getOrDefault(p, false);
+            boolean r = remote.getOrDefault(p, false);
+            boolean i = apkInstall.getOrDefault(p, false);
+            boolean d = dynamicCode.getOrDefault(p, false);
+            boolean capture = screenCapture.getOrDefault(p, false);
+            boolean h = hiddenLauncher.getOrDefault(p, false);
+            boolean b = boot.getOrDefault(p, false);
+            boolean n = notification.getOrDefault(p, false);
+
+            if (advanced || m || r || capture || (i && d)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de possível disfarce de app do sistema",
+                        "Um aplicativo de terceiros usa o mesmo rótulo de um pacote de sistema do aparelho e também apresenta uma capacidade de alto impacto. A coincidência de nome isolada não prova imitação, mas a combinação aumenta a prioridade de revisão.",
+                        p, 9,
+                        "Compare pacote, assinatura e instalador com o app de sistema legítimo e remova privilégios se a identidade não for reconhecida"));
+            } else if (a || o || n || (h && b)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de nome de sistema com privilégio adicional",
+                        "O aplicativo de terceiros compartilha o rótulo de um app de sistema e também possui um privilégio adicional ou sinais de execução oculta/persistente.",
+                        p, 5,
+                        "Revise origem, assinatura, privilégios e se o app realmente deveria estar instalado"));
+            }
+        }
+
+        for (String p : hiddenLauncher.keySet()) {
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean m = admin.getOrDefault(p, false);
+            boolean n = notification.getOrDefault(p, false);
+            boolean capture = screenCapture.getOrDefault(p, false);
+            boolean b = boot.getOrDefault(p, false);
+            boolean i = apkInstall.getOrDefault(p, false);
+
+            if (b && (a || m || n || capture)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de ocultação e persistência privilegiada",
+                        "O pacote não apresenta inicializador comum, inicia após o boot e também possui acesso privilegiado ou capacidade de captura. Apps de serviço podem ser legítimos, mas essa combinação merece revisão prioritária.",
+                        p, 8,
+                        "Confirme a origem do pacote e se a execução oculta/persistente faz parte da função esperada"));
+            } else if (a || m || n || capture || i) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de aplicativo oculto com privilégio",
+                        "O pacote não apresenta inicializador comum e também possui uma capacidade privilegiada relevante.",
+                        p, 5,
+                        "Revise o pacote e os acessos concedidos, principalmente se você não reconhecer o aplicativo"));
+            }
+        }
+
+        for (String p : accessibilityAdvanced.keySet()) {
+            boolean o = overlay.getOrDefault(p, false);
+            boolean m = admin.getOrDefault(p, false);
+            boolean capture = screenCapture.getOrDefault(p, false);
+            if (o || m || capture) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de acessibilidade avançada com controle adicional",
+                        "O serviço de acessibilidade ativo pode observar/controlar a interface e o mesmo pacote também possui sobreposição, administrador ou capacidade de captura de tela.",
+                        p, 9,
+                        "Confirme se todas essas capacidades foram autorizadas conscientemente e são necessárias para a função do aplicativo"));
             }
         }
 
