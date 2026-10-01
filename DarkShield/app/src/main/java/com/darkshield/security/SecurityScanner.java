@@ -407,6 +407,19 @@ public final class SecurityScanner {
                     "Verifique se a instalação de APKs faz parte da função esperada"));
         }
 
+        if (!system) {
+            int directBootComponents = countDirectBootAwareComponents(p);
+            if (directBootComponents > 0) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Componentes Direct Boot declarados",
+                        directBootComponents
+                                + " componente(s) podem ser instanciados durante o modo Direct Boot, antes do primeiro desbloqueio após reinicialização. Isso é legítimo em alguns apps e não prova persistência maliciosa.",
+                        p.packageName, 0,
+                        "Correlacione com boot automático, foreground service, launcher oculto e outros privilégios"));
+            }
+        }
+
         if (!system && ps.contains("android.permission.RECEIVE_BOOT_COMPLETED")) {
             out.add(new ScanFinding(
                     ScanFinding.Level.LOW,
@@ -587,6 +600,32 @@ public final class SecurityScanner {
         if (!system && ai.sourceDir != null && !ai.sourceDir.isEmpty()) {
             out.addAll(StaticApkAnalyzer.analyze(ai.sourceDir, p.packageName));
         }
+    }
+
+    private int countDirectBootAwareComponents(PackageInfo p) {
+        if (p == null || Build.VERSION.SDK_INT < 24) return 0;
+        int count = 0;
+        if (p.services != null) {
+            for (ServiceInfo service : p.services) {
+                if (service != null && service.directBootAware) count++;
+            }
+        }
+        if (p.receivers != null) {
+            for (android.content.pm.ActivityInfo receiver : p.receivers) {
+                if (receiver != null && receiver.directBootAware) count++;
+            }
+        }
+        if (p.providers != null) {
+            for (android.content.pm.ProviderInfo provider : p.providers) {
+                if (provider != null && provider.directBootAware) count++;
+            }
+        }
+        if (p.activities != null) {
+            for (android.content.pm.ActivityInfo activity : p.activities) {
+                if (activity != null && activity.directBootAware) count++;
+            }
+        }
+        return count;
     }
 
     private ForegroundServiceDeclaration inspectForegroundServiceDeclaration(PackageInfo p) {
