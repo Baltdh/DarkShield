@@ -424,7 +424,7 @@ public final class SecurityScanner {
             out.add(new ScanFinding(
                     ScanFinding.Level.LOW,
                     "Nome semelhante a aplicativo do sistema",
-                    "O rótulo "" + label + "" também é usado pelo pacote de sistema "
+                    "O rótulo \"" + label + "\" também é usado pelo pacote de sistema "
                             + systemLabelOwner
                             + ". Isso pode ser legítimo, mas também é uma técnica de disfarce que merece correlação com privilégios e origem.",
                     p.packageName, 2,
