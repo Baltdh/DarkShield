@@ -16,6 +16,9 @@ public final class ThreatKnowledgeBase {
         if (title == null) return null;
         String t = title.toLowerCase(Locale.ROOT);
 
+        if (t.contains("foreground") && t.contains("persistência")) {
+            return "MITRE ATT&CK Mobile T1541 (Foreground Persistence): foreground services podem ser abusados para manter execução e acesso a sensores. O DarkShield só aumenta a prioridade quando essa capacidade aparece junto de boot, exceção de bateria, ocultação ou acessos sensíveis.";
+        }
         if (t.contains("ocultação") || t.contains("pouco visível")) {
             return "MITRE ATT&CK Mobile T1628/T1628.001 (Hide Artifacts/Suppress Application Icon): malware pode reduzir a presença no launcher para dificultar descoberta e remoção. Apps legítimos também podem não ter interface, por isso o DarkShield só aumenta a prioridade quando há persistência ou capacidades privilegiadas correlacionadas.";
         }
