@@ -50,6 +50,7 @@ public final class ThreatCorrelationEngine {
         Map<String, Boolean> thirdPartyKeyboard = new HashMap<>();
         Map<String, Boolean> embeddedPayload = new HashMap<>();
         Map<String, Boolean> systemImpersonation = new HashMap<>();
+        Map<String, Boolean> hiddenLauncher = new HashMap<>();
         Map<String, Boolean> location = new HashMap<>();
         Map<String, Boolean> media = new HashMap<>();
         Map<String, Boolean> messaging = new HashMap<>();
@@ -83,6 +84,10 @@ public final class ThreatCorrelationEngine {
             if (t.contains("possível app disfarçado de sistema")
                     || t.contains("identidade semelhante a componente de sistema")) {
                 systemImpersonation.put(p, true);
+            }
+            if (t.contains("entrada do app no launcher desativada")
+                    || t.contains("app sem entrada no launcher com sinais sensíveis")) {
+                hiddenLauncher.put(p, true);
             }
             if (t.contains("acesso à localização")) location.put(p, true);
             if (t.contains("microfone/câmera")) media.put(p, true);
@@ -286,6 +291,45 @@ public final class ThreatCorrelationEngine {
                         "O pacote combina inicialização automática com múltiplos acessos a dados/sensores sensíveis. Isso merece revisão de privacidade e persistência.",
                         p, 5,
                         "Revise permissões, inicialização automática e a necessidade real desses acessos"));
+            }
+        }
+
+        for (String p : hiddenLauncher.keySet()) {
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean o = overlay.getOrDefault(p, false);
+            boolean b = boot.getOrDefault(p, false);
+            boolean m = admin.getOrDefault(p, false);
+            boolean n = notification.getOrDefault(p, false);
+            boolean r = remote.getOrDefault(p, false);
+            boolean i = apkInstall.getOrDefault(p, false);
+            boolean u = unknownOrigin.getOrDefault(p, false);
+            boolean impersonates = systemImpersonation.getOrDefault(p, false);
+
+            int privileged = 0;
+            if (a) privileged++;
+            if (o) privileged++;
+            if (m) privileged++;
+            if (n) privileged++;
+            if (i) privileged++;
+
+            if ((a && o)
+                    || (m && a)
+                    || (b && privileged >= 2)
+                    || (impersonates && privileged >= 1)
+                    || (u && privileged >= 2)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de ocultação do app e atividade privilegiada",
+                        "O aplicativo apresenta redução de visibilidade no launcher e mantém capacidades privilegiadas, persistência ou sinais adicionais de evasão. Essa cadeia merece revisão prioritária, embora ainda não prove malware.",
+                        p, 9,
+                        "Abra os detalhes do aplicativo, confirme a origem e revise acessibilidade, sobreposição, administrador, notificações e inicialização automática"));
+            } else if (b || r || privileged > 0 || u || impersonates) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de app pouco visível e persistência",
+                        "O aplicativo tem presença reduzida no launcher e também apresenta outro sinal de persistência, privilégio, origem ou acesso remoto.",
+                        p, 6,
+                        "Confirme se a ausência do ícone é esperada e se o aplicativo precisa permanecer ativo em segundo plano"));
             }
         }
 
