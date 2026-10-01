@@ -57,6 +57,7 @@ public final class ThreatCorrelationEngine {
         Map<String, Boolean> wakeLock = new HashMap<>();
         Map<String, Boolean> exactAlarm = new HashMap<>();
         Map<String, Boolean> directBoot = new HashMap<>();
+        Map<String, Boolean> installFromFile = new HashMap<>();
         Map<String, Boolean> location = new HashMap<>();
         Map<String, Boolean> media = new HashMap<>();
         Map<String, Boolean> messaging = new HashMap<>();
@@ -108,6 +109,7 @@ public final class ThreatCorrelationEngine {
             if (t.contains("wake lock declarado")) wakeLock.put(p, true);
             if (t.contains("alarme exato declarado")) exactAlarm.put(p, true);
             if (t.contains("componentes direct boot declarados")) directBoot.put(p, true);
+            if (t.contains("instalação a partir de arquivo")) installFromFile.put(p, true);
             if (t.contains("acesso à localização")) location.put(p, true);
             if (t.contains("microfone/câmera")) media.put(p, true);
             if (t.contains("acesso a sms") || t.contains("histórico de chamadas")) {
@@ -362,6 +364,31 @@ public final class ThreatCorrelationEngine {
                         "O aplicativo tem presença reduzida no launcher e também apresenta outro sinal de persistência, privilégio, origem ou acesso remoto.",
                         p, 6,
                         "Confirme se a ausência do ícone é esperada e se o aplicativo precisa permanecer ativo em segundo plano"));
+            }
+        }
+
+        for (String p : installFromFile.keySet()) {
+            boolean h = hiddenLauncher.getOrDefault(p, false);
+            boolean d = dynamicCode.getOrDefault(p, false);
+            boolean i = apkInstall.getOrDefault(p, false);
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean o = overlay.getOrDefault(p, false);
+            boolean impersonates = systemImpersonation.getOrDefault(p, false);
+
+            if (impersonates && (h || d) && (a || o || i)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de sideload, identidade falsa e privilégio",
+                        "O pacote foi classificado pelo Android como instalado a partir de arquivo e também combina identidade semelhante ao sistema com ocultação/código dinâmico e capacidade privilegiada. O conjunto merece revisão prioritária, mas sideload isoladamente não é tratado como malware.",
+                        p, 8,
+                        "Confirme a origem do APK, o desenvolvedor e os privilégios antes de manter o aplicativo"));
+            } else if ((h && (a || o || d)) || (d && i)) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de sideload com evasão ou distribuição",
+                        "O pacote foi instalado a partir de arquivo e também apresenta ocultação, código dinâmico, instalação de APKs ou acesso privilegiado. A combinação aumenta a prioridade de revisão sem considerar o sideload uma ameaça por si só.",
+                        p, 6,
+                        "Compare assinatura, hash e origem do APK com a distribuição oficial"));
             }
         }
 
