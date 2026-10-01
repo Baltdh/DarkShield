@@ -32,6 +32,7 @@ import com.darkshield.security.analysis.PackageIdentityBaseline;
 import com.darkshield.security.analysis.SystemAppIdentityHeuristics;
 import com.darkshield.security.analysis.HiddenFileScanner;
 import com.darkshield.security.analysis.LauncherVisibilityHeuristics;
+import com.darkshield.security.analysis.PersistenceCapabilityHeuristics;
 
 public final class SecurityScanner {
     private static final String[] SENSITIVE_PERMISSIONS = {
@@ -319,6 +320,54 @@ public final class SecurityScanner {
                     "O aplicativo possui acesso operacional às estatísticas de uso de outros aplicativos e do dispositivo",
                     p.packageName, 3,
                     "Revise o acesso em Configurações > Acesso especial > Acesso aos dados de uso"));
+        }
+
+        if (!system) {
+            boolean foregroundService =
+                    PersistenceCapabilityHeuristics.hasForegroundServiceCapability(ps);
+            boolean wakeLock = PersistenceCapabilityHeuristics.hasWakeLock(ps);
+            boolean exactAlarm = PersistenceCapabilityHeuristics.hasExactAlarm(ps);
+            int sensitiveForegroundTypes =
+                    PersistenceCapabilityHeuristics.sensitiveForegroundServiceTypes(ps);
+
+            if (foregroundService) {
+                String typeSummary =
+                        PersistenceCapabilityHeuristics.sensitiveTypeSummary(ps);
+                out.add(new ScanFinding(
+                        sensitiveForegroundTypes > 0
+                                ? ScanFinding.Level.LOW
+                                : ScanFinding.Level.INFO,
+                        sensitiveForegroundTypes > 0
+                                ? "Serviço em primeiro plano com tipo sensível declarado"
+                                : "Serviço em primeiro plano declarado",
+                        sensitiveForegroundTypes > 0
+                                ? "O aplicativo declara capacidade de foreground service para: "
+                                        + typeSummary
+                                        + ". Isso não significa que o serviço esteja ativo."
+                                : "O aplicativo declara capacidade de executar foreground service. Isso é comum em apps legítimos e não significa que o serviço esteja ativo.",
+                        p.packageName,
+                        sensitiveForegroundTypes > 0 ? 2 : 0,
+                        sensitiveForegroundTypes > 0
+                                ? "Correlacione com boot, exceção de bateria, launcher oculto e permissões concedidas"
+                                : null));
+            }
+
+            if (wakeLock) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Wake lock declarado",
+                        "O aplicativo pode manter CPU/dispositivo acordado durante determinadas tarefas; o sinal isolado é comum em apps legítimos.",
+                        p.packageName, 0, null));
+            }
+
+            if (exactAlarm) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Alarme exato declarado",
+                        "O aplicativo declara capacidade de agendar alarmes exatos. Isso pode permitir reativação pontual em horários específicos, mas é legítimo em alarmes, calendários e automações.",
+                        p.packageName, 0,
+                        "Revise apenas quando combinado com ocultação, persistência ou privilégios inesperados"));
+            }
         }
 
         if (!system && ps.contains("android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS")) {
