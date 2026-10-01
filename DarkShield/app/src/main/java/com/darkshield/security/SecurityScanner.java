@@ -6,9 +6,11 @@ import android.app.admin.DevicePolicyManager;
 import android.app.KeyguardManager;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.content.pm.ServiceInfo;
 import android.net.ConnectivityManager;
 import android.net.LinkProperties;
@@ -29,6 +31,7 @@ import com.darkshield.security.analysis.ThreatCorrelationEngine;
 import com.darkshield.security.analysis.PackageIdentityBaseline;
 import com.darkshield.security.analysis.SystemAppIdentityHeuristics;
 import com.darkshield.security.analysis.HiddenFileScanner;
+import com.darkshield.security.analysis.LauncherVisibilityHeuristics;
 
 public final class SecurityScanner {
     private static final String[] SENSITIVE_PERMISSIONS = {
@@ -422,6 +425,39 @@ public final class SecurityScanner {
             }
         }
 
+        if (!system) {
+            LauncherVisibilityHeuristics.State launcherState =
+                    launcherVisibilityState(p.packageName);
+            int launcherRisk = LauncherVisibilityHeuristics.riskScore(
+                    false,
+                    launcherState,
+                    ps.contains("android.permission.RECEIVE_BOOT_COMPLETED"),
+                    hasAccessibilityService(p),
+                    isPermissionGranted("android.permission.SYSTEM_ALERT_WINDOW", p.packageName),
+                    installer != null && !installer.trim().isEmpty(),
+                    sensitive);
+            if (launcherRisk > 0) {
+                boolean disabled =
+                        launcherState == LauncherVisibilityHeuristics.State.DECLARED_BUT_DISABLED;
+                ScanFinding.Level level = launcherRisk >= 8
+                        ? ScanFinding.Level.HIGH
+                        : launcherRisk >= 5
+                                ? ScanFinding.Level.MEDIUM
+                                : ScanFinding.Level.LOW;
+                out.add(new ScanFinding(
+                        level,
+                        disabled
+                                ? "Entrada do app no launcher desativada"
+                                : "App sem entrada no launcher com sinais sensíveis",
+                        disabled
+                                ? "O pacote declara uma entrada de launcher, mas ela não está disponível como atividade de launcher ativa. Isso pode ser legítimo, porém também pode reduzir a visibilidade do app para o usuário."
+                                : "O pacote não expõe uma entrada de launcher e também apresenta outros sinais de persistência, privilégio ou acesso sensível. Apps de serviço legítimos podem funcionar assim, portanto a combinação deve ser revisada em contexto.",
+                        p.packageName,
+                        launcherRisk,
+                        "Confirme se o aplicativo deveria aparecer na gaveta e revise origem, persistência e privilégios"));
+            }
+        }
+
         if (debuggable && !system) {
             out.add(new ScanFinding(
                     ScanFinding.Level.INFO, "Aplicativo debuggable",
@@ -487,6 +523,32 @@ public final class SecurityScanner {
 
         if (!system && ai.sourceDir != null && !ai.sourceDir.isEmpty()) {
             out.addAll(StaticApkAnalyzer.analyze(ai.sourceDir, p.packageName));
+        }
+    }
+
+    private LauncherVisibilityHeuristics.State launcherVisibilityState(String packageName) {
+        if (packageName == null || packageName.trim().isEmpty()) {
+            return LauncherVisibilityHeuristics.State.UNKNOWN;
+        }
+        try {
+            Intent launcherIntent = new Intent(Intent.ACTION_MAIN);
+            launcherIntent.addCategory(Intent.CATEGORY_LAUNCHER);
+            launcherIntent.setPackage(packageName);
+
+            List<ResolveInfo> enabled = pm.queryIntentActivities(launcherIntent, 0);
+            if (enabled != null && !enabled.isEmpty()) {
+                return LauncherVisibilityHeuristics.State.VISIBLE;
+            }
+
+            List<ResolveInfo> declared = pm.queryIntentActivities(
+                    launcherIntent,
+                    PackageManager.MATCH_DISABLED_COMPONENTS);
+            if (declared != null && !declared.isEmpty()) {
+                return LauncherVisibilityHeuristics.State.DECLARED_BUT_DISABLED;
+            }
+            return LauncherVisibilityHeuristics.State.NO_LAUNCHER_DECLARED;
+        } catch (Exception e) {
+            return LauncherVisibilityHeuristics.State.UNKNOWN;
         }
     }
 
