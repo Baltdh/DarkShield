@@ -51,6 +51,7 @@ public final class ThreatCorrelationEngine {
         Map<String, Boolean> embeddedPayload = new HashMap<>();
         Map<String, Boolean> systemImpersonation = new HashMap<>();
         Map<String, Boolean> hiddenLauncher = new HashMap<>();
+        Map<String, Boolean> launcherEvasionCode = new HashMap<>();
         Map<String, Boolean> location = new HashMap<>();
         Map<String, Boolean> media = new HashMap<>();
         Map<String, Boolean> messaging = new HashMap<>();
@@ -88,6 +89,9 @@ public final class ThreatCorrelationEngine {
             if (t.contains("entrada do app no launcher desativada")
                     || t.contains("app sem entrada no launcher com sinais sensíveis")) {
                 hiddenLauncher.put(p, true);
+            }
+            if (t.contains("capacidade de alterar visibilidade do launcher")) {
+                launcherEvasionCode.put(p, true);
             }
             if (t.contains("acesso à localização")) location.put(p, true);
             if (t.contains("microfone/câmera")) media.put(p, true);
@@ -304,6 +308,7 @@ public final class ThreatCorrelationEngine {
             boolean i = apkInstall.getOrDefault(p, false);
             boolean u = unknownOrigin.getOrDefault(p, false);
             boolean impersonates = systemImpersonation.getOrDefault(p, false);
+            boolean evasionCode = launcherEvasionCode.getOrDefault(p, false);
 
             int privileged = 0;
             if (a) privileged++;
@@ -312,7 +317,8 @@ public final class ThreatCorrelationEngine {
             if (n) privileged++;
             if (i) privileged++;
 
-            if ((a && o)
+            if ((evasionCode && (privileged >= 1 || b || impersonates))
+                    || (a && o)
                     || (m && a)
                     || (b && privileged >= 2)
                     || (impersonates && privileged >= 1)
@@ -323,6 +329,13 @@ public final class ThreatCorrelationEngine {
                         "O aplicativo apresenta redução de visibilidade no launcher e mantém capacidades privilegiadas, persistência ou sinais adicionais de evasão. Essa cadeia merece revisão prioritária, embora ainda não prove malware.",
                         p, 9,
                         "Abra os detalhes do aplicativo, confirme a origem e revise acessibilidade, sobreposição, administrador, notificações e inicialização automática"));
+            } else if (evasionCode) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de launcher oculto e código de evasão",
+                        "O aplicativo está pouco visível no launcher e o APK referencia APIs capazes de desativar componentes/aplicativo. Essa combinação é mais específica do que qualquer um dos sinais isolados, mas ainda pode existir em funções legítimas.",
+                        p, 7,
+                        "Confirme se o aplicativo deveria ocultar sua entrada e compare o APK com a distribuição oficial"));
             } else if (b || r || privileged > 0 || u || impersonates) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,
