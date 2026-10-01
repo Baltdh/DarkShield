@@ -441,4 +441,25 @@ public class ThreatCorrelationEngineTest {
         assertEquals("Correlação de acesso remoto e administrador", out.get(0).title);
     }
 
+
+    @Test public void systemImpersonationWithAccessibilityBecomesHighRisk() {
+        java.util.List<ScanFinding> input = new java.util.ArrayList<>();
+        input.add(f("Possível disfarce de aplicativo do sistema", ScanFinding.Level.MEDIUM));
+        input.add(f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH));
+
+        java.util.List<ScanFinding> correlated = ThreatCorrelationEngine.correlate(input);
+        assertTrue(correlated.stream().anyMatch(x ->
+                "Correlação de disfarce de sistema e capacidade privilegiada".equals(x.title)
+                        && x.level == ScanFinding.Level.HIGH));
+    }
+
+    @Test public void systemImpersonationAloneDoesNotCreateExtraHighFinding() {
+        java.util.List<ScanFinding> input = new java.util.ArrayList<>();
+        input.add(f("Possível disfarce de aplicativo do sistema", ScanFinding.Level.MEDIUM));
+
+        java.util.List<ScanFinding> correlated = ThreatCorrelationEngine.correlate(input);
+        assertTrue(correlated.stream().noneMatch(x ->
+                "Correlação de disfarce de sistema e capacidade privilegiada".equals(x.title)));
+    }
+
 }
