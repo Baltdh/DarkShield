@@ -56,6 +56,7 @@ public final class ThreatCorrelationEngine {
         Map<String, Boolean> foregroundSensitive = new HashMap<>();
         Map<String, Boolean> wakeLock = new HashMap<>();
         Map<String, Boolean> exactAlarm = new HashMap<>();
+        Map<String, Boolean> directBoot = new HashMap<>();
         Map<String, Boolean> location = new HashMap<>();
         Map<String, Boolean> media = new HashMap<>();
         Map<String, Boolean> messaging = new HashMap<>();
@@ -106,6 +107,7 @@ public final class ThreatCorrelationEngine {
             }
             if (t.contains("wake lock declarado")) wakeLock.put(p, true);
             if (t.contains("alarme exato declarado")) exactAlarm.put(p, true);
+            if (t.contains("componentes direct boot declarados")) directBoot.put(p, true);
             if (t.contains("acesso à localização")) location.put(p, true);
             if (t.contains("microfone/câmera")) media.put(p, true);
             if (t.contains("acesso a sms") || t.contains("histórico de chamadas")) {
@@ -323,6 +325,7 @@ public final class ThreatCorrelationEngine {
             boolean impersonates = systemImpersonation.getOrDefault(p, false);
             boolean evasionCode = launcherEvasionCode.getOrDefault(p, false);
             boolean fg = foregroundService.getOrDefault(p, false);
+            boolean db = directBoot.getOrDefault(p, false);
 
             int privileged = 0;
             if (a) privileged++;
@@ -333,6 +336,7 @@ public final class ThreatCorrelationEngine {
 
             if ((evasionCode && (privileged >= 1 || b || impersonates))
                     || (fg && b && privileged >= 1)
+                    || (db && fg && b && privileged >= 1)
                     || (a && o)
                     || (m && a)
                     || (b && privileged >= 2)
@@ -351,13 +355,39 @@ public final class ThreatCorrelationEngine {
                         "O aplicativo está pouco visível no launcher e o APK referencia APIs capazes de desativar componentes/aplicativo. Essa combinação é mais específica do que qualquer um dos sinais isolados, mas ainda pode existir em funções legítimas.",
                         p, 7,
                         "Confirme se o aplicativo deveria ocultar sua entrada e compare o APK com a distribuição oficial"));
-            } else if ((fg && b) || b || r || privileged > 0 || u || impersonates) {
+            } else if ((db && (fg || b)) || (fg && b) || b || r || privileged > 0 || u || impersonates) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,
                         "Correlação de app pouco visível e persistência",
                         "O aplicativo tem presença reduzida no launcher e também apresenta outro sinal de persistência, privilégio, origem ou acesso remoto.",
                         p, 6,
                         "Confirme se a ausência do ícone é esperada e se o aplicativo precisa permanecer ativo em segundo plano"));
+            }
+        }
+
+        for (String p : directBoot.keySet()) {
+            boolean b = boot.getOrDefault(p, false);
+            boolean fg = foregroundService.getOrDefault(p, false);
+            boolean h = hiddenLauncher.getOrDefault(p, false);
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean e = batteryExempt.getOrDefault(p, false);
+            boolean w = wakeLock.getOrDefault(p, false);
+            boolean x = exactAlarm.getOrDefault(p, false);
+
+            if (h && fg && b && a) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de persistência antes do desbloqueio",
+                        "O pacote declara componentes Direct Boot e combina essa capacidade com launcher pouco visível, foreground service, boot automático e acessibilidade. Essa cadeia merece revisão prioritária; não confirma execução maliciosa antes do desbloqueio.",
+                        p, 9,
+                        "Revise a origem do aplicativo e se ele realmente precisa executar componentes antes do primeiro desbloqueio"));
+            } else if ((b && fg && (e || w || x)) || (h && (b || fg))) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de Direct Boot e persistência",
+                        "O pacote declara componentes aptos ao modo Direct Boot e também apresenta outros mecanismos de persistência ou reativação.",
+                        p, 6,
+                        "Confirme se execução antes do desbloqueio é necessária para a função legítima do aplicativo"));
             }
         }
 
