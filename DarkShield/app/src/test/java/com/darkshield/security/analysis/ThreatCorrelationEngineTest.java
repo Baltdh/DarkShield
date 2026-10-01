@@ -489,6 +489,30 @@ public class ThreatCorrelationEngineTest {
     }
 
 
+    @Test public void hiddenLauncherWithSuppressionApiCreatesSpecificMediumCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Entrada do app no launcher desativada", ScanFinding.Level.LOW),
+                f("Capacidade de alterar visibilidade do launcher", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(7, out.get(0).points);
+        assertTrue(out.get(0).title.contains("código de evasão"));
+    }
+
+    @Test public void hiddenLauncherSuppressionApiAndAccessibilityIsHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Entrada do app no launcher desativada", ScanFinding.Level.LOW),
+                f("Capacidade de alterar visibilidade do launcher", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(9, out.get(0).points);
+        assertTrue(out.get(0).title.contains("ocultação"));
+    }
+
+
     @Test public void correlationTieBreakIsStableForEqualStrengthFindings() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
