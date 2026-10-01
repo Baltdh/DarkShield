@@ -5,6 +5,7 @@ import android.os.Build;
 import android.os.Environment;
 import com.darkshield.security.ScanFinding;
 import java.io.File;
+import java.io.FileInputStream;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -119,13 +120,18 @@ public final class HiddenFileScanner {
 
     private static void inspectFile(File file, Root root, List<ScanFinding> out) {
         if (file.length() > MAX_SINGLE_FILE_BYTES) return;
-        int score = HiddenFileHeuristics.riskScore(file, root.sharedWritable);
+        byte[] header = readHeader(file, 4);
+        int metadataRisk = HiddenFileHeuristics.riskScore(file, root.sharedWritable);
+        int magicRisk = HiddenFileHeuristics.magicRisk(file.getName(), header);
+        int score = Math.min(10, metadataRisk + magicRisk);
         if (score < 4) return;
 
         ScanFinding.Level level = score >= 8
                 ? ScanFinding.Level.HIGH
                 : score >= 6 ? ScanFinding.Level.MEDIUM : ScanFinding.Level.LOW;
 
+        HiddenFileHeuristics.ExecutableMagic magic =
+                HiddenFileHeuristics.detectExecutableMagic(header);
         StringBuilder why = new StringBuilder();
         if (HiddenFileHeuristics.isHiddenName(file.getName())) why.append("nome oculto; ");
         if (HiddenFileHeuristics.looksLikeDisguisedPayload(file.getName())) {
@@ -133,16 +139,40 @@ public final class HiddenFileScanner {
         } else if (HiddenFileHeuristics.hasExecutablePayloadExtension(file.getName())) {
             why.append("tipo executável/payload; ");
         }
+        if (magic != HiddenFileHeuristics.ExecutableMagic.NONE) {
+            why.append("assinatura interna ").append(magic.name()).append("; ");
+            if (magicRisk >= 5) why.append("conteúdo executável incompatível com a extensão; ");
+        }
         if (file.canExecute()) why.append("marcado como executável; ");
         if (root.sharedWritable) why.append("local gravável/compartilhado; ");
 
         out.add(new ScanFinding(
                 level,
-                "Arquivo oculto ou payload suspeito",
+                magicRisk >= 5
+                        ? "Payload executável disfarçado pela extensão"
+                        : "Arquivo oculto ou payload suspeito",
                 file.getAbsolutePath() + " — " + why.toString(),
                 null,
                 score,
                 "Não exclua automaticamente: confirme origem, hash e relação com algum aplicativo antes de remover"));
+    }
+
+    private static byte[] readHeader(File file, int length) {
+        if (file == null || length <= 0 || !file.isFile() || !file.canRead()) return null;
+        byte[] header = new byte[length];
+        try (FileInputStream in = new FileInputStream(file)) {
+            int total = 0;
+            while (total < length) {
+                int read = in.read(header, total, length - total);
+                if (read < 0) break;
+                if (read == 0) continue;
+                total += read;
+            }
+            if (total < length) return null;
+            return header;
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private static boolean hasBroadStorageAccess() {
