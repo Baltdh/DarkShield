@@ -558,6 +558,29 @@ public class StaticApkAnalyzerTest {
         assertTrue(apk.delete());
     }
 
+    @Test public void launcherSuppressionApiIsDetectedAsLowConfidenceCapability() throws Exception {
+        File apk = File.createTempFile("darkshield-test", ".apk");
+        try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
+            add(zip, "AndroidManifest.xml", new byte[]{1});
+            add(zip, "classes.dex",
+                    "setComponentEnabledSetting COMPONENT_ENABLED_STATE_DISABLED"
+                            .getBytes("ISO-8859-1"));
+        }
+
+        List<ScanFinding> findings =
+                StaticApkAnalyzer.analyze(apk.getAbsolutePath(), "com.example.test");
+        ScanFinding hit = findings.stream()
+                .filter(x -> x.title.equals("Capacidade de alterar visibilidade do launcher"))
+                .findFirst().orElse(null);
+
+        assertTrue(hit != null);
+        assertEquals(ScanFinding.Level.LOW, hit.level);
+        assertEquals(2, hit.points);
+        assertTrue(hit.detail.contains("Apps legítimos"));
+        assertTrue(apk.delete());
+    }
+
+
     @Test public void embeddedApkPayloadIsLowConfidence() throws Exception {
         File apk = File.createTempFile("darkshield-test", ".apk");
         try (ZipOutputStream zip = new ZipOutputStream(new FileOutputStream(apk))) {
