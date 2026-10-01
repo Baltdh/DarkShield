@@ -33,7 +33,7 @@ public final class LauncherVisibilityHeuristics {
 
         // A background-only app with no launcher is common and should not be
         // reported unless another meaningful signal exists.
-        if (state == State.NO_LAUNCHER_DECLARED && score == 0) return 0;
+        if (state == State.NO_LAUNCHER_DECLARED && score < 4) return 0;
         return Math.min(10, score);
     }
 }
