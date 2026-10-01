@@ -559,6 +559,39 @@ public class ThreatCorrelationEngineTest {
     }
 
 
+    @Test public void directBootAloneDoesNotCreateCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Componentes Direct Boot declarados", ScanFinding.Level.INFO)));
+        assertTrue(out.isEmpty());
+    }
+
+    @Test public void directBootBootForegroundAndWakeCreateMediumCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Componentes Direct Boot declarados", ScanFinding.Level.INFO),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW),
+                f("Serviço em primeiro plano declarado", ScanFinding.Level.INFO),
+                f("Wake lock declarado", ScanFinding.Level.INFO)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(6, out.get(0).points);
+        assertTrue(out.get(0).title.contains("Direct Boot"));
+    }
+
+    @Test public void directBootHiddenForegroundBootAccessibilityIsHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Componentes Direct Boot declarados", ScanFinding.Level.INFO),
+                f("Entrada do app no launcher desativada", ScanFinding.Level.LOW),
+                f("Serviço em primeiro plano declarado", ScanFinding.Level.INFO),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(9, out.get(0).points);
+    }
+
+
     @Test public void correlationTieBreakIsStableForEqualStrengthFindings() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
