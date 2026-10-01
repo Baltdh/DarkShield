@@ -592,6 +592,38 @@ public class ThreatCorrelationEngineTest {
     }
 
 
+    @Test public void fileInstallAloneDoesNotCreateCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Instalação a partir de arquivo", ScanFinding.Level.INFO)));
+        assertTrue(out.isEmpty());
+    }
+
+    @Test public void fileInstallDynamicCodeAndApkInstallCreateMediumCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Instalação a partir de arquivo", ScanFinding.Level.INFO),
+                f("Capacidade de carregamento dinâmico de código", ScanFinding.Level.LOW),
+                f("Pode solicitar instalação de APKs", ScanFinding.Level.MEDIUM)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(6, out.get(0).points);
+        assertTrue(out.get(0).title.contains("sideload"));
+    }
+
+    @Test public void fileInstallSystemImpersonationHiddenAndAccessibilityAreHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Instalação a partir de arquivo", ScanFinding.Level.INFO),
+                f("Possível app disfarçado de sistema", ScanFinding.Level.MEDIUM),
+                f("Entrada do app no launcher desativada", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(8, out.get(0).points);
+        assertTrue(out.get(0).title.contains("sideload"));
+    }
+
+
     @Test public void correlationTieBreakIsStableForEqualStrengthFindings() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
