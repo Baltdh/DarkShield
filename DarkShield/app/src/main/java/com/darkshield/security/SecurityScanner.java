@@ -28,6 +28,7 @@ import com.darkshield.security.analysis.StaticApkAnalyzer;
 import com.darkshield.security.analysis.ThreatCorrelationEngine;
 import com.darkshield.security.analysis.PackageIdentityBaseline;
 import com.darkshield.security.analysis.SystemAppIdentityHeuristics;
+import com.darkshield.security.analysis.HiddenFileScanner;
 
 public final class SecurityScanner {
     private static final String[] SENSITIVE_PERMISSIONS = {
@@ -101,6 +102,8 @@ public final class SecurityScanner {
             out.addAll(ThreatCorrelationEngine.correlate(out));
             if (listener != null) listener.onStage("Verificando integridade do sistema…");
             checkSystemIntegrity(out);
+            if (listener != null) listener.onStage("Analisando arquivos ocultos acessíveis…");
+            out.addAll(HiddenFileScanner.scan(c));
             if (listener != null) listener.onStage("Verificando rede…");
             checkNetworkState(out);
             if (listener != null) listener.onStage("Finalizando relatório…");
@@ -159,6 +162,8 @@ public final class SecurityScanner {
         out.addAll(ThreatCorrelationEngine.correlate(out));
         if (listener != null) listener.onStage("Verificando integridade do sistema…");
         checkSystemIntegrity(out);
+        if (listener != null) listener.onStage("Analisando arquivos ocultos acessíveis…");
+        out.addAll(HiddenFileScanner.scan(c));
         if (listener != null) listener.onStage("Verificando rede…");
         checkNetworkState(out);
         if (listener != null) listener.onStage("Finalizando relatório…");
