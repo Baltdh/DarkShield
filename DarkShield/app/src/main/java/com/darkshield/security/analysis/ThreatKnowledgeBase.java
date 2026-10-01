@@ -16,6 +16,9 @@ public final class ThreatKnowledgeBase {
         if (title == null) return null;
         String t = title.toLowerCase(Locale.ROOT);
 
+        if (t.contains("direct boot") || t.contains("antes do desbloqueio")) {
+            return "Android Direct Boot permite que componentes explicitamente marcados executem antes do primeiro desbloqueio após reinicialização. O DarkShield trata isso como capacidade legítima por padrão e só aumenta a prioridade quando há outros sinais de persistência, ocultação ou privilégio.";
+        }
         if (t.contains("foreground") && t.contains("persistência")) {
             return "MITRE ATT&CK Mobile T1541 (Foreground Persistence): foreground services podem ser abusados para manter execução e acesso a sensores. O DarkShield só aumenta a prioridade quando essa capacidade aparece junto de boot, exceção de bateria, ocultação ou acessos sensíveis.";
         }
