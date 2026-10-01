@@ -607,6 +607,10 @@ public final class SecurityScanner {
             }
             if (mask == 0) continue;
             declared = true;
+            if (mask == ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST) {
+                types.add("tipos definidos pelo manifesto");
+                continue;
+            }
 
             if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA) != 0) {
                 types.add("câmera");
