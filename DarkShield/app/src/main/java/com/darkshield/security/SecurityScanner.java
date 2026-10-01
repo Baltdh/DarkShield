@@ -47,6 +47,7 @@ public final class SecurityScanner {
     private final PackageManager pm;
     private final AppOpsManager appOps;
     private final Map<String, ApplicationInfo> appInfoCache = new HashMap<>();
+    private final Map<String, String> systemLabelOwners = new HashMap<>();
 
     public SecurityScanner(Context c) {
         this.c = c.getApplicationContext();
@@ -105,6 +106,7 @@ public final class SecurityScanner {
             if (listener != null) listener.onStage("Finalizando relatório…");
             return out;
         }
+        indexSystemLabels(apps);
         out.add(new ScanFinding(
                 ScanFinding.Level.INFO, "Aplicativos analisados",
                 apps.size() + " pacote(s) visíveis para o scanner", null, 0, null));
@@ -182,6 +184,42 @@ public final class SecurityScanner {
         }
     }
 
+    private void indexSystemLabels(List<PackageInfo> apps) {
+        systemLabelOwners.clear();
+        if (apps == null) return;
+        for (PackageInfo p : apps) {
+            if (p == null || p.applicationInfo == null || p.packageName == null) continue;
+            if (!isSystemApp(p.applicationInfo)) continue;
+            String normalized = normalizeDisplayLabel(safeLabel(p.applicationInfo));
+            if (normalized.length() < 4) continue;
+            if (!systemLabelOwners.containsKey(normalized)) {
+                systemLabelOwners.put(normalized, p.packageName);
+            }
+        }
+    }
+
+    static String normalizeDisplayLabel(String label) {
+        if (label == null) return "";
+        return label.trim().toLowerCase(Locale.ROOT).replaceAll("\\s+", " ");
+    }
+
+    private String findMatchingSystemLabelOwner(String label, String packageName) {
+        String normalized = normalizeDisplayLabel(label);
+        if (normalized.length() < 4) return null;
+        String owner = systemLabelOwners.get(normalized);
+        if (owner == null || owner.equals(packageName)) return null;
+        return owner;
+    }
+
+    private boolean hasLaunchableActivity(String packageName) {
+        if (packageName == null) return false;
+        try {
+            return pm.getLaunchIntentForPackage(packageName) != null;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
     private void inspectApp(PackageInfo p, List<ScanFinding> out) {
         ApplicationInfo ai = p.applicationInfo;
         if (ai == null || c.getPackageName().equals(p.packageName)) return;
@@ -200,6 +238,13 @@ public final class SecurityScanner {
         boolean system = isSystemApp(ai);
         boolean remoteMarker = containsRemoteControlMarker(lower);
         boolean debuggable = (ai.flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+        boolean accessibilityDeclared = hasAccessibilityService(p);
+        boolean overlayGranted =
+                isPermissionGranted("android.permission.SYSTEM_ALERT_WINDOW", p.packageName);
+        boolean apkInstallGranted =
+                isPermissionGranted("android.permission.REQUEST_INSTALL_PACKAGES", p.packageName);
+        boolean bootDeclared = ps.contains("android.permission.RECEIVE_BOOT_COMPLETED");
+        boolean mediaProjectionDeclared = hasMediaProjectionCapability(p, ps);
 
         if (isPermissionGranted("android.permission.SYSTEM_ALERT_WINDOW", p.packageName)) {
             out.add(new ScanFinding(
@@ -355,15 +400,52 @@ public final class SecurityScanner {
         }
 
         if (remoteMarker) {
-            boolean corroborated = sensitive >= 2
-                    || isPermissionGranted("android.permission.SYSTEM_ALERT_WINDOW", p.packageName)
-                    || hasAccessibilityService(p);
+            boolean corroborated = sensitive >= 2 || overlayGranted || accessibilityDeclared;
             out.add(new ScanFinding(
                     corroborated ? ScanFinding.Level.MEDIUM : ScanFinding.Level.LOW,
                     "Indicador heurístico de acesso remoto",
                     "Nome do app/pacote contém um marcador associado a suporte ou acesso remoto; isso sozinho não prova malware",
                     p.packageName, corroborated ? 4 : 1,
                     "Confirme se você instalou e reconhece este aplicativo"));
+        }
+
+        if (!system && mediaProjectionDeclared) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.LOW,
+                    "Capacidade de captura de tela declarada",
+                    "O pacote declara capacidade relacionada a MediaProjection/captura de tela. Gravadores, casting e suporte remoto podem usar isso legitimamente.",
+                    p.packageName, 2,
+                    "Confirme se gravação, compartilhamento ou controle de tela faz parte da função esperada"));
+        }
+
+        String systemLabelOwner =
+                system ? null : findMatchingSystemLabelOwner(label, p.packageName);
+        if (systemLabelOwner != null) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.LOW,
+                    "Nome semelhante a aplicativo do sistema",
+                    "O rótulo \"" + label + "\" também é usado pelo pacote de sistema "
+                            + systemLabelOwner
+                            + ". Isso pode ser legítimo, mas também é uma técnica de disfarce que merece correlação com privilégios e origem.",
+                    p.packageName, 2,
+                    "Compare pacote, assinatura, instalador e ícone antes de confiar no aplicativo"));
+        }
+
+        boolean hiddenWithSensitiveCapability = !system
+                && !hasLaunchableActivity(p.packageName)
+                && (bootDeclared
+                    || accessibilityDeclared
+                    || overlayGranted
+                    || apkInstallGranted
+                    || mediaProjectionDeclared
+                    || hasVpnService(p));
+        if (hiddenWithSensitiveCapability) {
+            out.add(new ScanFinding(
+                    ScanFinding.Level.LOW,
+                    "Aplicativo sem inicializador visível",
+                    "O pacote não expõe uma atividade de inicialização comum e também possui ao menos uma capacidade persistente ou privilegiada. Apps de serviço podem ser legítimos; o sinal serve para detectar ocultação quando combinado com outros indicadores.",
+                    p.packageName, 2,
+                    "Revise a origem do app e os privilégios concedidos, especialmente se você não reconhecer o pacote"));
         }
 
         String installer = null;
@@ -738,6 +820,23 @@ public final class SecurityScanner {
         }
     }
 
+    private boolean hasMediaProjectionCapability(PackageInfo p, Set<String> requestedPermissions) {
+        if (requestedPermissions != null
+                && requestedPermissions.contains(
+                        "android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION")) {
+            return true;
+        }
+        if (Build.VERSION.SDK_INT < 29 || p == null || p.services == null) return false;
+        for (ServiceInfo s : p.services) {
+            if (s == null) continue;
+            if ((s.getForegroundServiceType()
+                    & ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION) != 0) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     private boolean hasVpnService(PackageInfo p) {
         if (p.services == null) return false;
         for (ServiceInfo s : p.services) {
@@ -996,11 +1095,71 @@ public final class SecurityScanner {
             String pkg = cn == null ? null : cn.getPackageName();
             boolean system = pkg != null && isSystemPackage(pkg);
 
+            int capabilities = 0;
+            int flags = 0;
+            try {
+                capabilities = info.getCapabilities();
+                flags = info.flags;
+            } catch (Exception ignored) {}
+
+            boolean canRetrieveWindows =
+                    (capabilities
+                            & AccessibilityServiceInfo.CAPABILITY_CAN_RETRIEVE_WINDOW_CONTENT) != 0;
+            boolean canPerformGestures =
+                    (capabilities
+                            & AccessibilityServiceInfo.CAPABILITY_CAN_PERFORM_GESTURES) != 0;
+            boolean canFilterKeys =
+                    (capabilities
+                            & AccessibilityServiceInfo.CAPABILITY_CAN_REQUEST_FILTER_KEY_EVENTS) != 0;
+            boolean canTakeScreenshot = Build.VERSION.SDK_INT >= 30
+                    && (capabilities
+                            & AccessibilityServiceInfo.CAPABILITY_CAN_TAKE_SCREENSHOT) != 0;
+            boolean retrievesInteractiveWindows =
+                    (flags & AccessibilityServiceInfo.FLAG_RETRIEVE_INTERACTIVE_WINDOWS) != 0;
+
+            boolean advancedControl = canRetrieveWindows
+                    && (canPerformGestures
+                        || canFilterKeys
+                        || canTakeScreenshot
+                        || retrievesInteractiveWindows);
+
+            StringBuilder detail = new StringBuilder(
+                    cn == null ? "Serviço ativo detectado" : cn.flattenToShortString());
+            detail.append("; capacidades: ");
+            boolean wrote = false;
+            if (canRetrieveWindows) {
+                detail.append("ler conteúdo de janelas");
+                wrote = true;
+            }
+            if (canPerformGestures) {
+                if (wrote) detail.append(", ");
+                detail.append("executar gestos");
+                wrote = true;
+            }
+            if (canFilterKeys) {
+                if (wrote) detail.append(", ");
+                detail.append("filtrar teclas");
+                wrote = true;
+            }
+            if (canTakeScreenshot) {
+                if (wrote) detail.append(", ");
+                detail.append("capturar tela");
+                wrote = true;
+            }
+            if (retrievesInteractiveWindows) {
+                if (wrote) detail.append(", ");
+                detail.append("inspecionar janelas interativas");
+                wrote = true;
+            }
+            if (!wrote) detail.append("nenhuma capacidade avançada identificada");
+
             out.add(new ScanFinding(
                     system ? ScanFinding.Level.LOW : ScanFinding.Level.HIGH,
-                    "Serviço de acessibilidade ativo",
-                    cn == null ? "Serviço ativo detectado" : cn.flattenToShortString(),
-                    pkg, system ? 1 : 8,
+                    advancedControl
+                            ? "Serviço de acessibilidade ativo com capacidades avançadas"
+                            : "Serviço de acessibilidade ativo",
+                    detail.toString(),
+                    pkg, system ? 1 : (advancedControl ? 9 : 8),
                     system
                             ? "Revise apenas se não reconhecer o componente"
                             : "Abra Acessibilidade e confirme se você o ativou conscientemente"));

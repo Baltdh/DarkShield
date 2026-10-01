@@ -428,6 +428,55 @@ public class ThreatCorrelationEngineTest {
         assertEquals("Correlação de acesso remoto e administrador", out.get(0).title);
     }
 
+    @Test public void correlatesEmbeddedPayloadWithActiveAccessibility() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Payload de pacote embutido", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(6, out.get(0).points);
+        assertTrue(out.get(0).title.contains("payload embutido"));
+    }
+
+    @Test public void correlatesUnknownOriginPayloadAndPrivilegeStrongly() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Origem de instalação não identificada", ScanFinding.Level.INFO),
+                f("Payload de pacote embutido", ScanFinding.Level.LOW),
+                f("Administrador do dispositivo ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(8, out.get(0).points);
+        assertTrue(out.get(0).title.contains("origem desconhecida"));
+    }
+
+    @Test public void correlatesUnknownOriginPersistentPrivilegeStrongly() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Origem de instalação não identificada", ScanFinding.Level.INFO),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW),
+                f("Exceção de otimização de bateria ativa", ScanFinding.Level.MEDIUM),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(8, out.get(0).points);
+        assertTrue(out.get(0).title.contains("origem desconhecida"));
+    }
+
+    @Test public void correlatesUnknownOriginBootPrivilegeAndSensitiveAccess() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Origem de instalação não identificada", ScanFinding.Level.INFO),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW),
+                f("Administrador do dispositivo ativo", ScanFinding.Level.HIGH),
+                f("Acesso à localização", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(6, out.get(0).points);
+        assertTrue(out.get(0).title.contains("origem desconhecida"));
+    }
+
     @Test public void correlationTieBreakIsStableForEqualStrengthFindings() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Indicador heurístico de acesso remoto", ScanFinding.Level.LOW),
@@ -439,6 +488,63 @@ public class ThreatCorrelationEngineTest {
         assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
         assertEquals(7, out.get(0).points);
         assertEquals("Correlação de acesso remoto e administrador", out.get(0).title);
+    }
+
+
+    @Test public void screenCaptureAloneDoesNotCreateCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Capacidade de captura de tela declarada", ScanFinding.Level.LOW)));
+        assertTrue(out.isEmpty());
+    }
+
+    @Test public void screenCaptureWithAdvancedAccessibilityIsHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Referências a captura de tela/projeção", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo com capacidades avançadas", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(9, out.get(0).points);
+        assertTrue(out.get(0).detail.contains("captura"));
+    }
+
+    @Test public void systemLabelCollisionAloneDoesNotCreateCorrelation() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Nome semelhante a aplicativo do sistema", ScanFinding.Level.LOW)));
+        assertTrue(out.isEmpty());
+    }
+
+    @Test public void systemLabelCollisionWithScreenCaptureIsHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Nome semelhante a aplicativo do sistema", ScanFinding.Level.LOW),
+                f("Capacidade de captura de tela declarada", ScanFinding.Level.LOW)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(9, out.get(0).points);
+        assertTrue(out.get(0).title.contains("disfarce"));
+    }
+
+    @Test public void hiddenLauncherBootAndAccessibilityIsHigh() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Aplicativo sem inicializador visível", ScanFinding.Level.LOW),
+                f("Inicialização automática declarada", ScanFinding.Level.LOW),
+                f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
+        assertEquals(8, out.get(0).points);
+        assertTrue(out.get(0).title.contains("ocultação"));
+    }
+
+    @Test public void hiddenLauncherWithApkInstallIsMedium() {
+        List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
+                f("Aplicativo sem inicializador visível", ScanFinding.Level.LOW),
+                f("Pode solicitar instalação de APKs", ScanFinding.Level.MEDIUM)));
+
+        assertEquals(1, out.size());
+        assertEquals(ScanFinding.Level.MEDIUM, out.get(0).level);
+        assertEquals(5, out.get(0).points);
     }
 
 }

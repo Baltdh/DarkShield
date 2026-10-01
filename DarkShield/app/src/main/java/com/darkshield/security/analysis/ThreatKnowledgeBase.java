@@ -16,6 +16,9 @@ public final class ThreatKnowledgeBase {
         if (title == null) return null;
         String t = title.toLowerCase(Locale.ROOT);
 
+        if (t.contains("captura de tela")) {
+            return "MITRE ATT&CK Mobile T1513 (Screen Capture): Android pode capturar conteúdo por MediaProjection e também por acessibilidade. Gravadores, casting e suporte remoto usam essas APIs legitimamente; a prioridade aumenta quando a captura aparece junto de controle privilegiado, ocultação ou persistência.";
+        }
         if (t.contains("teclado") && (t.contains("acessibilidade") || t.contains("captura"))) {
             return "MITRE ATT&CK Mobile T1417/T1417.001 (Input Capture/Keylogging): teclado de terceiros, acessibilidade e sobreposição são capacidades que podem ser abusadas para observar entrada. A correlação indica risco de captura, não confirmação de keylogging.";
         }
