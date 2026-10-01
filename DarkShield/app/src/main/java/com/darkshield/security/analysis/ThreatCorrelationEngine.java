@@ -49,6 +49,7 @@ public final class ThreatCorrelationEngine {
         Map<String, Boolean> installerChanged = new HashMap<>();
         Map<String, Boolean> thirdPartyKeyboard = new HashMap<>();
         Map<String, Boolean> embeddedPayload = new HashMap<>();
+        Map<String, Boolean> systemImpersonation = new HashMap<>();
         Map<String, Boolean> location = new HashMap<>();
         Map<String, Boolean> media = new HashMap<>();
         Map<String, Boolean> messaging = new HashMap<>();
@@ -79,6 +80,7 @@ public final class ThreatCorrelationEngine {
             if (t.contains("origem de instalação alterada")) installerChanged.put(p, true);
             if (t.contains("teclado de terceiros ativo")) thirdPartyKeyboard.put(p, true);
             if (t.contains("payload de pacote embutido")) embeddedPayload.put(p, true);
+            if (t.contains("possível disfarce de aplicativo do sistema")) systemImpersonation.put(p, true);
             if (t.contains("acesso à localização")) location.put(p, true);
             if (t.contains("microfone/câmera")) media.put(p, true);
             if (t.contains("acesso a sms") || t.contains("histórico de chamadas")) {
@@ -281,6 +283,33 @@ public final class ThreatCorrelationEngine {
                         "O pacote combina inicialização automática com múltiplos acessos a dados/sensores sensíveis. Isso merece revisão de privacidade e persistência.",
                         p, 5,
                         "Revise permissões, inicialização automática e a necessidade real desses acessos"));
+            }
+        }
+
+        for (String p : systemImpersonation.keySet()) {
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean o = overlay.getOrDefault(p, false);
+            boolean m = admin.getOrDefault(p, false);
+            boolean i = apkInstall.getOrDefault(p, false);
+            boolean d = dynamicCode.getOrDefault(p, false);
+            boolean b = boot.getOrDefault(p, false);
+            boolean u = unknownOrigin.getOrDefault(p, false);
+            int s = sensitive.getOrDefault(p, 0);
+
+            if (a || o || m || i || d) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de disfarce de sistema e capacidade privilegiada",
+                        "O pacote apresenta sinais de imitar um componente confiável e também possui uma capacidade privilegiada ou de execução/distribuição. Essa combinação merece revisão prioritária, mas não constitui prova automática de malware.",
+                        p, 9,
+                        "Confirme a origem e assinatura do aplicativo e remova acessos privilegiados se ele não for reconhecido"));
+            } else if (u || b || s >= 2) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de disfarce de sistema com persistência ou coleta",
+                        "O pacote apresenta sinais de imitar um componente confiável junto de origem incerta, persistência no boot ou múltiplos acessos sensíveis.",
+                        p, 5,
+                        "Revise a origem, as permissões e a finalidade do aplicativo"));
             }
         }
 
