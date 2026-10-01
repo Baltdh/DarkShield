@@ -323,16 +323,26 @@ public final class SecurityScanner {
         }
 
         if (!system) {
+            ForegroundServiceDeclaration foregroundDeclaration =
+                    inspectForegroundServiceDeclaration(p);
             boolean foregroundService =
-                    PersistenceCapabilityHeuristics.hasForegroundServiceCapability(ps);
+                    PersistenceCapabilityHeuristics.hasForegroundServiceCapability(ps)
+                            || foregroundDeclaration.declared;
             boolean wakeLock = PersistenceCapabilityHeuristics.hasWakeLock(ps);
             boolean exactAlarm = PersistenceCapabilityHeuristics.hasExactAlarm(ps);
-            int sensitiveForegroundTypes =
-                    PersistenceCapabilityHeuristics.sensitiveForegroundServiceTypes(ps);
+            int sensitiveForegroundTypes = Math.max(
+                    PersistenceCapabilityHeuristics.sensitiveForegroundServiceTypes(ps),
+                    foregroundDeclaration.sensitiveTypeCount);
 
             if (foregroundService) {
                 String typeSummary =
                         PersistenceCapabilityHeuristics.sensitiveTypeSummary(ps);
+                if (typeSummary.isEmpty()) {
+                    typeSummary = foregroundDeclaration.summary;
+                } else if (!foregroundDeclaration.summary.isEmpty()
+                        && !typeSummary.equals(foregroundDeclaration.summary)) {
+                    typeSummary = typeSummary + "; manifesto: " + foregroundDeclaration.summary;
+                }
                 out.add(new ScanFinding(
                         sensitiveForegroundTypes > 0
                                 ? ScanFinding.Level.LOW
@@ -343,8 +353,12 @@ public final class SecurityScanner {
                         sensitiveForegroundTypes > 0
                                 ? "O aplicativo declara capacidade de foreground service para: "
                                         + typeSummary
-                                        + ". Isso não significa que o serviço esteja ativo."
-                                : "O aplicativo declara capacidade de executar foreground service. Isso é comum em apps legítimos e não significa que o serviço esteja ativo.",
+                                        + ". Isso descreve a capacidade declarada no pacote e não significa que o serviço esteja ativo."
+                                : "O aplicativo declara capacidade de executar foreground service"
+                                        + (foregroundDeclaration.summary.isEmpty()
+                                            ? "."
+                                            : " (tipos: " + foregroundDeclaration.summary + ").")
+                                        + " Isso é comum em apps legítimos e não significa que o serviço esteja ativo.",
                         p.packageName,
                         sensitiveForegroundTypes > 0 ? 2 : 0,
                         sensitiveForegroundTypes > 0
@@ -572,6 +586,79 @@ public final class SecurityScanner {
 
         if (!system && ai.sourceDir != null && !ai.sourceDir.isEmpty()) {
             out.addAll(StaticApkAnalyzer.analyze(ai.sourceDir, p.packageName));
+        }
+    }
+
+    private ForegroundServiceDeclaration inspectForegroundServiceDeclaration(PackageInfo p) {
+        if (p == null || p.services == null || Build.VERSION.SDK_INT < 29) {
+            return new ForegroundServiceDeclaration(false, 0, "");
+        }
+
+        Set<String> types = new LinkedHashSet<>();
+        int sensitive = 0;
+        boolean declared = false;
+        for (ServiceInfo service : p.services) {
+            if (service == null) continue;
+            int mask;
+            try {
+                mask = service.getForegroundServiceType();
+            } catch (Exception e) {
+                continue;
+            }
+            if (mask == 0) continue;
+            declared = true;
+
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_CAMERA) != 0) {
+                types.add("câmera");
+                sensitive++;
+            }
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_MICROPHONE) != 0) {
+                types.add("microfone");
+                sensitive++;
+            }
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_LOCATION) != 0) {
+                types.add("localização");
+                sensitive++;
+            }
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PROJECTION) != 0) {
+                types.add("captura/projeção de tela");
+                sensitive++;
+            }
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_HEALTH) != 0) {
+                types.add("saúde/sensores");
+                sensitive++;
+            }
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC) != 0) {
+                types.add("sincronização de dados");
+            }
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK) != 0) {
+                types.add("reprodução de mídia");
+            }
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_CONNECTED_DEVICE) != 0) {
+                types.add("dispositivo conectado");
+            }
+            if ((mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_PHONE_CALL) != 0) {
+                types.add("chamada");
+            }
+            if (Build.VERSION.SDK_INT >= 34
+                    && (mask & ServiceInfo.FOREGROUND_SERVICE_TYPE_REMOTE_MESSAGING) != 0) {
+                types.add("mensageria remota");
+            }
+        }
+        return new ForegroundServiceDeclaration(
+                declared, sensitive, String.join(", ", types));
+    }
+
+    private static final class ForegroundServiceDeclaration {
+        final boolean declared;
+        final int sensitiveTypeCount;
+        final String summary;
+
+        ForegroundServiceDeclaration(
+                boolean declared, int sensitiveTypeCount, String summary) {
+            this.declared = declared;
+            this.sensitiveTypeCount = sensitiveTypeCount;
+            this.summary = summary == null ? "" : summary;
         }
     }
 
