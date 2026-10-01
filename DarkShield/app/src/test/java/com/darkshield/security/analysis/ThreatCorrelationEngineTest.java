@@ -505,7 +505,7 @@ public class ThreatCorrelationEngineTest {
         assertEquals(1, out.size());
         assertEquals(ScanFinding.Level.HIGH, out.get(0).level);
         assertEquals(9, out.get(0).points);
-        assertTrue(out.get(0).title.contains("captura de tela"));
+        assertTrue(out.get(0).detail.contains("captura"));
     }
 
     @Test public void systemLabelCollisionAloneDoesNotCreateCorrelation() {
