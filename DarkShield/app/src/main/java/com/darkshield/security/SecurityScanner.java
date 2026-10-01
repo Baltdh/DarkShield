@@ -27,6 +27,7 @@ import java.util.*;
 import com.darkshield.security.analysis.StaticApkAnalyzer;
 import com.darkshield.security.analysis.ThreatCorrelationEngine;
 import com.darkshield.security.analysis.PackageIdentityBaseline;
+import com.darkshield.security.analysis.SystemAppIdentityHeuristics;
 
 public final class SecurityScanner {
     private static final String[] SENSITIVE_PERMISSIONS = {
@@ -380,6 +381,39 @@ public final class SecurityScanner {
                         ScanFinding.Level.INFO, "Origem de instalação",
                         "Instalador informado pelo Android: " + installer,
                         p.packageName, 0, null));
+            }
+
+            boolean claimsSystemIdentity =
+                    SystemAppIdentityHeuristics.claimsSystemIdentity(
+                            label, p.packageName, Build.MANUFACTURER, Build.BRAND);
+            int impersonationRisk = SystemAppIdentityHeuristics.impersonationRisk(
+                    false,
+                    claimsSystemIdentity,
+                    installer != null && !installer.trim().isEmpty(),
+                    sensitive,
+                    hasAccessibilityService(p),
+                    isPermissionGranted("android.permission.SYSTEM_ALERT_WINDOW", p.packageName),
+                    isPermissionGranted("android.permission.REQUEST_INSTALL_PACKAGES", p.packageName));
+            if (impersonationRisk > 0) {
+                ScanFinding.Level level = impersonationRisk >= 8
+                        ? ScanFinding.Level.HIGH
+                        : impersonationRisk >= 5
+                                ? ScanFinding.Level.MEDIUM
+                                : ScanFinding.Level.LOW;
+                out.add(new ScanFinding(
+                        level,
+                        impersonationRisk >= 5
+                                ? "Possível app disfarçado de sistema"
+                                : "Identidade semelhante a componente de sistema",
+                        "O aplicativo não é marcado pelo Android como app de sistema, mas o nome ou pacote se apresenta como Android, Google ou fabricante do aparelho."
+                                + (impersonationRisk >= 5
+                                    ? " A identidade contradiz outros sinais observados no pacote."
+                                    : " O nome isoladamente não prova comportamento malicioso."),
+                        p.packageName,
+                        impersonationRisk,
+                        impersonationRisk >= 5
+                                ? "Confirme o desenvolvedor, a origem da instalação e as permissões antes de manter o aplicativo"
+                                : "Revise apenas se você não reconhecer o aplicativo"));
             }
         }
 
