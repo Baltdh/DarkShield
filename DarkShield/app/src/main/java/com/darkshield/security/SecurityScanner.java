@@ -453,7 +453,8 @@ public final class SecurityScanner {
 
         String installer = null;
         if (!system) {
-            installer = getInstaller(p.packageName);
+            InstallSourceDetails installSource = getInstallSourceDetails(p.packageName);
+            installer = installSource.installingPackage;
             if (installer == null || installer.trim().isEmpty()) {
                 out.add(new ScanFinding(
                         ScanFinding.Level.INFO, "Origem de instalação não identificada",
@@ -463,8 +464,19 @@ public final class SecurityScanner {
             } else {
                 out.add(new ScanFinding(
                         ScanFinding.Level.INFO, "Origem de instalação",
-                        "Instalador informado pelo Android: " + installer,
+                        installSource.describe(),
                         p.packageName, 0, null));
+            }
+
+            if (installSource.sideloadLike) {
+                out.add(new ScanFinding(
+                        ScanFinding.Level.INFO,
+                        "Instalação a partir de arquivo",
+                        "O Android classificou a origem como "
+                                + installSource.sourceLabel
+                                + ". Isso pode ser totalmente legítimo e não é tratado como ameaça isoladamente.",
+                        p.packageName, 0,
+                        "Confirme a procedência do arquivo quando houver outros sinais de risco"));
             }
 
             boolean claimsSystemIdentity =
@@ -1113,14 +1125,96 @@ public final class SecurityScanner {
         }
     }
 
-    private String getInstaller(String packageName) {
+    private InstallSourceDetails getInstallSourceDetails(String packageName) {
         try {
             if (Build.VERSION.SDK_INT >= 30) {
-                return pm.getInstallSourceInfo(packageName).getInstallingPackageName();
+                android.content.pm.InstallSourceInfo info =
+                        pm.getInstallSourceInfo(packageName);
+                String installing = info.getInstallingPackageName();
+                String initiating = info.getInitiatingPackageName();
+                String originating = info.getOriginatingPackageName();
+                String updateOwner = Build.VERSION.SDK_INT >= 34
+                        ? info.getUpdateOwnerPackageName()
+                        : null;
+                int packageSource = Build.VERSION.SDK_INT >= 33
+                        ? info.getPackageSource()
+                        : android.content.pm.PackageInstaller.PACKAGE_SOURCE_UNSPECIFIED;
+                return new InstallSourceDetails(
+                        installing,
+                        initiating,
+                        originating,
+                        updateOwner,
+                        packageSourceLabel(packageSource),
+                        packageSource == android.content.pm.PackageInstaller.PACKAGE_SOURCE_LOCAL_FILE
+                                || packageSource
+                                   == android.content.pm.PackageInstaller.PACKAGE_SOURCE_DOWNLOADED_FILE);
             }
-            return pm.getInstallerPackageName(packageName);
+            String installer = pm.getInstallerPackageName(packageName);
+            return new InstallSourceDetails(
+                    installer, installer, null, null, "não especificada", false);
         } catch (Exception e) {
-            return null;
+            return new InstallSourceDetails(
+                    null, null, null, null, "não especificada", false);
+        }
+    }
+
+    private String packageSourceLabel(int source) {
+        if (Build.VERSION.SDK_INT < 33) return "não especificada";
+        if (source == android.content.pm.PackageInstaller.PACKAGE_SOURCE_STORE) {
+            return "loja";
+        }
+        if (source == android.content.pm.PackageInstaller.PACKAGE_SOURCE_LOCAL_FILE) {
+            return "arquivo local";
+        }
+        if (source == android.content.pm.PackageInstaller.PACKAGE_SOURCE_DOWNLOADED_FILE) {
+            return "arquivo baixado";
+        }
+        if (source == android.content.pm.PackageInstaller.PACKAGE_SOURCE_OTHER) {
+            return "outra origem";
+        }
+        return "não especificada";
+    }
+
+    private static final class InstallSourceDetails {
+        final String installingPackage;
+        final String initiatingPackage;
+        final String originatingPackage;
+        final String updateOwnerPackage;
+        final String sourceLabel;
+        final boolean sideloadLike;
+
+        InstallSourceDetails(
+                String installingPackage,
+                String initiatingPackage,
+                String originatingPackage,
+                String updateOwnerPackage,
+                String sourceLabel,
+                boolean sideloadLike) {
+            this.installingPackage = installingPackage;
+            this.initiatingPackage = initiatingPackage;
+            this.originatingPackage = originatingPackage;
+            this.updateOwnerPackage = updateOwnerPackage;
+            this.sourceLabel = sourceLabel == null ? "não especificada" : sourceLabel;
+            this.sideloadLike = sideloadLike;
+        }
+
+        String describe() {
+            StringBuilder detail = new StringBuilder();
+            detail.append("Instalador: ")
+                    .append(installingPackage == null ? "não informado" : installingPackage);
+            if (initiatingPackage != null
+                    && !initiatingPackage.equals(installingPackage)) {
+                detail.append("; iniciador: ").append(initiatingPackage);
+            }
+            if (originatingPackage != null) {
+                detail.append("; origem declarada: ").append(originatingPackage);
+            }
+            if (updateOwnerPackage != null) {
+                detail.append("; responsável por atualizações: ")
+                        .append(updateOwnerPackage);
+            }
+            detail.append("; categoria: ").append(sourceLabel);
+            return detail.toString();
         }
     }
 
