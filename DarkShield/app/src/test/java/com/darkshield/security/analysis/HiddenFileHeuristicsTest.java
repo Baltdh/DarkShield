@@ -24,6 +24,27 @@ public class HiddenFileHeuristicsTest {
         assertFalse(HiddenFileHeuristics.looksLikeDisguisedPayload("normal.apk"));
     }
 
+    @Test public void detectsDexAndElfMagicRegardlessOfFilename() {
+        assertEquals(
+                HiddenFileHeuristics.ExecutableMagic.DEX,
+                HiddenFileHeuristics.detectExecutableMagic(
+                        new byte[]{'d','e','x','\n'}));
+        assertEquals(
+                HiddenFileHeuristics.ExecutableMagic.ELF,
+                HiddenFileHeuristics.detectExecutableMagic(
+                        new byte[]{0x7F,'E','L','F'}));
+    }
+
+    @Test public void disguisedExecutableMagicGetsHigherRisk() {
+        assertEquals(5, HiddenFileHeuristics.magicRisk(
+                "photo.jpg", new byte[]{0x7F,'E','L','F'}));
+        assertEquals(5, HiddenFileHeuristics.magicRisk(
+                "notes.txt", new byte[]{'d','e','x','\n'}));
+        assertEquals(2, HiddenFileHeuristics.magicRisk(
+                "classes.dex", new byte[]{'d','e','x','\n'}));
+    }
+
+
     @Test public void normalDocumentsStayBelowReportingThreshold() {
         File normal = new File("notes.txt");
         assertFalse(HiddenFileHeuristics.shouldReport(normal, true));
