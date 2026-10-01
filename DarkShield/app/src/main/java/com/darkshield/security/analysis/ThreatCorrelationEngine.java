@@ -52,6 +52,10 @@ public final class ThreatCorrelationEngine {
         Map<String, Boolean> systemImpersonation = new HashMap<>();
         Map<String, Boolean> hiddenLauncher = new HashMap<>();
         Map<String, Boolean> launcherEvasionCode = new HashMap<>();
+        Map<String, Boolean> foregroundService = new HashMap<>();
+        Map<String, Boolean> foregroundSensitive = new HashMap<>();
+        Map<String, Boolean> wakeLock = new HashMap<>();
+        Map<String, Boolean> exactAlarm = new HashMap<>();
         Map<String, Boolean> location = new HashMap<>();
         Map<String, Boolean> media = new HashMap<>();
         Map<String, Boolean> messaging = new HashMap<>();
@@ -93,6 +97,15 @@ public final class ThreatCorrelationEngine {
             if (t.contains("capacidade de alterar visibilidade do launcher")) {
                 launcherEvasionCode.put(p, true);
             }
+            if (t.contains("serviço em primeiro plano declarado")
+                    || t.contains("serviço em primeiro plano com tipo sensível declarado")) {
+                foregroundService.put(p, true);
+            }
+            if (t.contains("serviço em primeiro plano com tipo sensível declarado")) {
+                foregroundSensitive.put(p, true);
+            }
+            if (t.contains("wake lock declarado")) wakeLock.put(p, true);
+            if (t.contains("alarme exato declarado")) exactAlarm.put(p, true);
             if (t.contains("acesso à localização")) location.put(p, true);
             if (t.contains("microfone/câmera")) media.put(p, true);
             if (t.contains("acesso a sms") || t.contains("histórico de chamadas")) {
@@ -309,6 +322,7 @@ public final class ThreatCorrelationEngine {
             boolean u = unknownOrigin.getOrDefault(p, false);
             boolean impersonates = systemImpersonation.getOrDefault(p, false);
             boolean evasionCode = launcherEvasionCode.getOrDefault(p, false);
+            boolean fg = foregroundService.getOrDefault(p, false);
 
             int privileged = 0;
             if (a) privileged++;
@@ -318,6 +332,7 @@ public final class ThreatCorrelationEngine {
             if (i) privileged++;
 
             if ((evasionCode && (privileged >= 1 || b || impersonates))
+                    || (fg && b && privileged >= 1)
                     || (a && o)
                     || (m && a)
                     || (b && privileged >= 2)
@@ -336,13 +351,48 @@ public final class ThreatCorrelationEngine {
                         "O aplicativo está pouco visível no launcher e o APK referencia APIs capazes de desativar componentes/aplicativo. Essa combinação é mais específica do que qualquer um dos sinais isolados, mas ainda pode existir em funções legítimas.",
                         p, 7,
                         "Confirme se o aplicativo deveria ocultar sua entrada e compare o APK com a distribuição oficial"));
-            } else if (b || r || privileged > 0 || u || impersonates) {
+            } else if ((fg && b) || b || r || privileged > 0 || u || impersonates) {
                 derived.add(new ScanFinding(
                         ScanFinding.Level.MEDIUM,
                         "Correlação de app pouco visível e persistência",
                         "O aplicativo tem presença reduzida no launcher e também apresenta outro sinal de persistência, privilégio, origem ou acesso remoto.",
                         p, 6,
                         "Confirme se a ausência do ícone é esperada e se o aplicativo precisa permanecer ativo em segundo plano"));
+            }
+        }
+
+        for (String p : foregroundService.keySet()) {
+            boolean b = boot.getOrDefault(p, false);
+            boolean e = batteryExempt.getOrDefault(p, false);
+            boolean w = wakeLock.getOrDefault(p, false);
+            boolean x = exactAlarm.getOrDefault(p, false);
+            boolean h = hiddenLauncher.getOrDefault(p, false);
+            boolean a = accessibility.getOrDefault(p, false);
+            boolean o = overlay.getOrDefault(p, false);
+            boolean fs = foregroundSensitive.getOrDefault(p, false);
+
+            int privacySignals = 0;
+            if (location.getOrDefault(p, false)) privacySignals++;
+            if (media.getOrDefault(p, false)) privacySignals++;
+            if (messaging.getOrDefault(p, false)) privacySignals++;
+
+            if ((h && b && (a || o))
+                    || (b && e && (privacySignals > 0 || a || o || fs))) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.HIGH,
+                        "Correlação de persistência em foreground e acesso sensível",
+                        "O pacote declara foreground service e combina essa capacidade com boot, exceção ativa de bateria, ocultação ou acesso privilegiado/sensível. Essa cadeia pode sustentar execução e coleta por longos períodos, mas também pode existir em apps legítimos.",
+                        p, 8,
+                        "Confirme se a execução persistente é esperada e revise launcher, bateria, sensores, acessibilidade e sobreposição"));
+            } else if ((b && (w || x || e) && (privacySignals > 0 || fs))
+                    || (h && b)
+                    || (fs && (b || e))) {
+                derived.add(new ScanFinding(
+                        ScanFinding.Level.MEDIUM,
+                        "Correlação de capacidades de persistência em segundo plano",
+                        "O pacote combina foreground service com mecanismos adicionais de reativação/manutenção, como boot, wake lock, alarme exato, exceção de bateria ou tipos sensíveis de serviço.",
+                        p, 6,
+                        "Revise se o comportamento em segundo plano é necessário para a função esperada do aplicativo"));
             }
         }
 
