@@ -83,4 +83,15 @@ public class SecurityScannerTest {
                         "2026-03-24", null));
     }
 
+
+    @Test public void normalizeDisplayLabelIsCaseAndWhitespaceInsensitive() {
+        assertEquals("android system",
+                SecurityScanner.normalizeDisplayLabel("  Android   System  "));
+    }
+
+    @Test public void normalizeDisplayLabelPreservesMeaningfulAccents() {
+        assertEquals("configurações",
+                SecurityScanner.normalizeDisplayLabel("Configurações"));
+    }
+
 }
