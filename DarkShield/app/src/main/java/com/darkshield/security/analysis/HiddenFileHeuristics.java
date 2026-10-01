@@ -5,6 +5,8 @@ import java.util.Locale;
 
 /** Pure scoring helpers for hidden filesystem artifacts. */
 public final class HiddenFileHeuristics {
+    public enum ExecutableMagic { NONE, DEX, ELF }
+
     private HiddenFileHeuristics() {}
 
     public static boolean isHiddenName(String name) {
@@ -24,6 +26,31 @@ public final class HiddenFileHeuristics {
         if (n.isEmpty()) return false;
         return n.matches(".*\\.(jpg|jpeg|png|gif|mp3|mp4|pdf|txt)\\.(apk|jar|dex|so|sh|bin)$")
                 || n.matches(".*\\.(apk|jar|dex|so|sh|bin)\\.(jpg|jpeg|png|gif|mp3|mp4|pdf|txt)$");
+    }
+
+
+    public static ExecutableMagic detectExecutableMagic(byte[] header) {
+        if (header == null || header.length < 4) return ExecutableMagic.NONE;
+        if ((header[0] == 'd' && header[1] == 'e' && header[2] == 'x' && header[3] == '\n')
+                || (header[0] == 'd' && header[1] == 'e' && header[2] == 'y' && header[3] == '\n')
+                || (header[0] == 'v' && header[1] == 'd' && header[2] == 'e' && header[3] == 'x')) {
+            return ExecutableMagic.DEX;
+        }
+        if ((header[0] & 0xFF) == 0x7F
+                && header[1] == 'E' && header[2] == 'L' && header[3] == 'F') {
+            return ExecutableMagic.ELF;
+        }
+        return ExecutableMagic.NONE;
+    }
+
+    public static int magicRisk(String name, byte[] header) {
+        ExecutableMagic kind = detectExecutableMagic(header);
+        if (kind == ExecutableMagic.NONE) return 0;
+        String n = lower(name);
+        boolean expected = kind == ExecutableMagic.DEX
+                ? n.endsWith(".dex") || n.endsWith(".odex") || n.endsWith(".vdex")
+                : n.endsWith(".so") || n.endsWith(".bin");
+        return expected ? 2 : 5;
     }
 
     public static int riskScore(File file, boolean sharedWritableLocation) {
