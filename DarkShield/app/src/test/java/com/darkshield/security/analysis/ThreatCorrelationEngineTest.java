@@ -610,11 +610,11 @@ public class ThreatCorrelationEngineTest {
         assertTrue(out.get(0).title.contains("sideload"));
     }
 
-    @Test public void fileInstallSystemImpersonationHiddenAndAccessibilityAreHigh() {
+    @Test public void fileInstallSystemImpersonationDynamicCodeAndAccessibilityAreHigh() {
         List<ScanFinding> out = ThreatCorrelationEngine.correlate(Arrays.asList(
                 f("Instalação a partir de arquivo", ScanFinding.Level.INFO),
                 f("Possível app disfarçado de sistema", ScanFinding.Level.MEDIUM),
-                f("Entrada do app no launcher desativada", ScanFinding.Level.LOW),
+                f("Capacidade de carregamento dinâmico de código", ScanFinding.Level.LOW),
                 f("Serviço de acessibilidade ativo", ScanFinding.Level.HIGH)));
 
         assertEquals(1, out.size());
